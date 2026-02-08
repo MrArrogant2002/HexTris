@@ -5,6 +5,7 @@
 
 import { databases } from '@lib/appwrite';
 import { ID, Query } from 'appwrite';
+import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 
 // User document interface (matches Appwrite schema)
 export interface UserDocument {
@@ -19,6 +20,12 @@ export interface UserDocument {
   themesUnlocked: string[];
   selectedTheme: string;
   timerAttackBest: number;
+  inventory?: Record<string, number>;
+  inventory_continue?: number;
+  inventory_extraLife?: number;
+  inventory_hammer?: number;
+  inventory_slowmo?: number;
+  inventory_shield?: number;
   $createdAt: string;
   $updatedAt: string;
 }
@@ -76,11 +83,20 @@ export class AppwriteClient {
           themesUnlocked: ['classic'],
           selectedTheme: 'classic',
           timerAttackBest: 0,
+          inventory_continue: 0,
+          inventory_extraLife: 0,
+          inventory_hammer: 0,
+          inventory_slowmo: 0,
+          inventory_shield: 0,
         }
       );
 
       console.log('User database record created:', name);
-      return user as unknown as UserDocument;
+      const document = user as unknown as UserDocument;
+      return {
+        ...document,
+        inventory: this.buildInventoryFromDocument(document),
+      };
     } catch (error: any) {
       console.error('Failed to create user record:', error);
       console.error('Error details:', error.message, error.code);
@@ -100,7 +116,11 @@ export class AppwriteClient {
       );
 
       if (response.documents.length > 0) {
-        return response.documents[0] as unknown as UserDocument;
+        const document = response.documents[0] as unknown as UserDocument;
+        return {
+          ...document,
+          inventory: this.buildInventoryFromDocument(document),
+        };
       }
 
       return null;
@@ -266,6 +286,28 @@ export class AppwriteClient {
   }
 
   /**
+   * Update user inventory counts
+   */
+  async updateInventory(userId: string, inventory: Record<string, number>): Promise<boolean> {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) return false;
+
+      await databases.updateDocument(
+        this.databaseId,
+        this.usersCollectionId,
+        user.$id,
+        this.buildInventoryPayload(inventory)
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Failed to update inventory:', error);
+      return false;
+    }
+  }
+
+  /**
    * Unlock theme for user
    */
   async unlockTheme(userId: string, themeId: string): Promise<boolean> {
@@ -425,6 +467,34 @@ export class AppwriteClient {
       console.error('Failed to delete user:', error);
       return false;
     }
+  }
+
+  private buildInventoryPayload(inventory: Record<string, number>): Record<string, number> {
+    return {
+      inventory_continue: inventory[ShopItemId.CONTINUE] ?? 0,
+      inventory_extraLife: inventory[ShopItemId.EXTRA_LIFE] ?? 0,
+      inventory_hammer: inventory[ShopItemId.HAMMER] ?? 0,
+      inventory_slowmo: inventory[ShopItemId.SLOWMO] ?? 0,
+      inventory_shield: inventory[ShopItemId.SHIELD] ?? 0,
+    };
+  }
+
+  private buildInventoryFromDocument(document: UserDocument): Record<ShopItemId, number> {
+    const base = createEmptyInventory();
+    if (document.inventory) {
+      return {
+        ...base,
+        ...document.inventory,
+      } as Record<ShopItemId, number>;
+    }
+    return {
+      ...base,
+      [ShopItemId.CONTINUE]: document.inventory_continue ?? base[ShopItemId.CONTINUE],
+      [ShopItemId.EXTRA_LIFE]: document.inventory_extraLife ?? base[ShopItemId.EXTRA_LIFE],
+      [ShopItemId.HAMMER]: document.inventory_hammer ?? base[ShopItemId.HAMMER],
+      [ShopItemId.SLOWMO]: document.inventory_slowmo ?? base[ShopItemId.SLOWMO],
+      [ShopItemId.SHIELD]: document.inventory_shield ?? base[ShopItemId.SHIELD],
+    };
   }
 }
 

@@ -7,6 +7,7 @@ import { account } from '@lib/appwrite';
 import { ID } from 'appwrite';
 import { stateManager } from '@core/StateManager';
 import { ThemeName } from '@config/themes';
+import { createEmptyInventory } from '@config/shopItems';
 
 export interface AuthCredentials {
   email: string;
@@ -208,6 +209,7 @@ export class AuthService {
           totalPlayTime: 0,
           themesUnlocked: [ThemeName.CLASSIC],
           selectedTheme: ThemeName.CLASSIC,
+          inventory: createEmptyInventory(),
         });
       }
     } catch (error) {

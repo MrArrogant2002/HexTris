@@ -73,15 +73,13 @@ export class InventoryUI {
   /**
    * Get power-up icon
    */
-  private getPowerUpIcon(type: string): string {
-    const icons: Record<string, string> = {
-      hammer: 'HAMMER',
-      slowmo: 'TIMER',
-      shield: 'SHIELD',
-      star: 'STAR',
-      lightning: 'BOLT'
+  private getPowerUpAsset(type: string): { src?: string; emoji: string; label: string } {
+    const map: Record<string, { src?: string; emoji: string; label: string }> = {
+      hammer: { src: '/images/icons/hammer-drop.svg', emoji: '🛠️', label: 'Hammer' },
+      slowmo: { emoji: '⏱️', label: 'Slow Motion' },
+      shield: { src: '/images/icons/shield-power-up.svg', emoji: '🛡️', label: 'Shield' },
     };
-    return icons[type] || '?';
+    return map[type] || { emoji: '❓', label: 'Unknown' };
   }
 
   /**
@@ -151,14 +149,25 @@ export class InventoryUI {
 
     if (type) {
       // Add icon
-      const icon = document.createElement('div');
-      icon.className = 'power-up-icon text-5xl';
-      icon.textContent = this.getPowerUpIcon(type);
-      icon.style.lineHeight = '1';
-      icon.style.display = 'flex';
-      icon.style.alignItems = 'center';
-      icon.style.justifyContent = 'center';
-      slot.appendChild(icon);
+      const iconWrap = document.createElement('div');
+      iconWrap.className = 'power-up-icon text-4xl';
+      iconWrap.style.lineHeight = '1';
+      iconWrap.style.display = 'flex';
+      iconWrap.style.alignItems = 'center';
+      iconWrap.style.justifyContent = 'center';
+
+      const asset = this.getPowerUpAsset(type);
+      if (asset.src) {
+        const img = document.createElement('img');
+        img.src = asset.src;
+        img.alt = asset.label;
+        img.className = 'w-12 h-12';
+        iconWrap.appendChild(img);
+      } else {
+        iconWrap.textContent = asset.emoji;
+      }
+
+      slot.appendChild(iconWrap);
 
       // Active state
       slot.style.borderColor = '#1f2937';

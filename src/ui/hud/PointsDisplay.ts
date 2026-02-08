@@ -1,15 +1,24 @@
 ﻿/**
  * Special Points Display HUD Component
- * Shows diamond counter and shop button in top-right corner
+ * Shows diamond counter and optional shop button in top-right corner
  */
+
+export interface PointsDisplayOptions {
+  showShopButton?: boolean;
+  onShopClick?: () => void;
+}
 
 export class PointsDisplay {
   private element: HTMLDivElement;
   private pointsText!: HTMLSpanElement;
   private currentPoints: number = 0;
+  private showShopButton: boolean;
+  private onShopClick?: () => void;
 
-  constructor(initialPoints: number = 0) {
+  constructor(initialPoints: number = 0, options: PointsDisplayOptions = {}) {
     this.currentPoints = initialPoints;
+    this.showShopButton = options.showShopButton !== false;
+    this.onShopClick = options.onShopClick;
     this.element = this.createElements();
   }
 
@@ -35,7 +44,7 @@ export class PointsDisplay {
     // Diamond icon
     const diamond = document.createElement('span');
     diamond.className = 'text-xl filter drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]';
-    diamond.textContent = 'DIAMOND';
+    diamond.textContent = '💎';
 
     // Points text
     this.pointsText = document.createElement('span');
@@ -45,6 +54,21 @@ export class PointsDisplay {
     pointsContainer.appendChild(diamond);
     pointsContainer.appendChild(this.pointsText);
     container.appendChild(pointsContainer);
+
+    if (this.showShopButton) {
+      const shopButton = document.createElement('button');
+      shopButton.type = 'button';
+      shopButton.className = `
+        px-3 py-2
+        bg-black text-white text-xs font-bold
+        rounded-lg shadow-lg
+        transition-all duration-200
+        hover:bg-gray-800 hover:scale-105
+      `.trim().replace(/\s+/g, ' ');
+      shopButton.textContent = '🛒 Shop';
+      shopButton.addEventListener('click', () => this.onShopClick?.());
+      container.appendChild(shopButton);
+    }
 
     return container;
   }

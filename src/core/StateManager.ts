@@ -7,6 +7,7 @@ import type { GameState, StateEvent, StateListener } from '../types/game';
 import { GameStatus, STARTING_LIVES } from './constants';
 import { DEFAULT_DIFFICULTY } from '@config/difficulty';
 import { DEFAULT_THEME } from '@config/themes';
+import { createEmptyInventory } from '@config/shopItems';
 
 export class StateManager {
   private static instance: StateManager;
@@ -43,6 +44,7 @@ export class StateManager {
         totalPlayTime: 0,
         themesUnlocked: [DEFAULT_THEME],
         selectedTheme: DEFAULT_THEME,
+        inventory: createEmptyInventory(),
       },
       game: {
         score: 0,
@@ -59,7 +61,11 @@ export class StateManager {
         isPaused: false,
         isShopOpen: false,
         isModalOpen: false,
-        isMuted: false,
+        isMusicMuted: false,
+        isSfxMuted: false,
+        musicVolume: 0.35,
+        sfxVolume: 0.6,
+        preGamePowerUps: [],
         currentGameMode: 'standard',
         timerDuration: 90,
         currentGroupId: undefined,
@@ -175,7 +181,10 @@ export class StateManager {
       this.emit('statusChanged', value);
     } else if (key === 'game') {
       if ('score' in value) this.emit('scoreUpdated', value.score);
-      if ('lives' in value) this.emit('livesChanged', value.lives);
+      if ('lives' in value) {
+        this.emit('livesChanged', value.lives);
+        window.dispatchEvent(new CustomEvent('livesChanged', { detail: { currentLives: value.lives } }));
+      }
       if ('combo' in value) this.emit('comboChanged', value.combo);
     } else if (key === 'player') {
       if ('specialPoints' in value) this.emit('specialPointsChanged', value.specialPoints);

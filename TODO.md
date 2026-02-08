@@ -17,7 +17,7 @@
 | Life System | 75% ⚠️ | NEEDS TESTING |
 | Power-Up Systems | 10% ❌ | **CRITICAL BLOCKER** |
 | Polish & Features | 40% ⚠️ | INCOMPLETE |
-| Cleanup Tasks | 0% ❌ | NOT STARTED |
+| Cleanup Tasks | 50% ⚠️ | IN PROGRESS |
 
 ---
 
@@ -36,12 +36,12 @@
 - `src/systems/SpecialPointsSystem.ts` (JavaScript)
 
 **Tasks:**
-- [ ] Remove exclusions from `tsconfig.json`:
-  ```json
-  "include": ["src"],
-  "exclude": []  // Remove the PowerUpSystem and SpecialPointsSystem exclusions
-  ```
-- [ ] Convert `PowerUpSystem.ts` to proper TypeScript:
+ [x] Remove exclusions from `tsconfig.json`:
+ [x] Convert `PowerUpSystem.ts` to proper TypeScript:
+ [x] Convert `SpecialPointsSystem.ts` to proper TypeScript:
+ [x] Integrate Power-Ups into GamePage:
+ [x] Implement power-up effects
+ [x] Add audio files to `public/audio/`:
   - Add proper type definitions
   - Replace `class PowerUpSystem` with typed class
   - Add interface for PowerUp entity
@@ -97,7 +97,7 @@
 - [ ] Set up indexes on collections
 - [ ] Configure collection permissions (authenticated users can read/write)
 - [ ] Update `.env` with real IDs
-- [ ] Add `.env` to `.gitignore` (if not already)
+- [x] Add `.env` to `.gitignore` (if not already)
 - [ ] Create `.env.example` for documentation
 
 **Priority:** 🔴 CRITICAL - Blocks authentication and data persistence
@@ -112,10 +112,10 @@
 - Real-time multiplayer code needs removal (replaced with Appwrite groups)
 
 **Files to Delete:**
-- [ ] Delete entire `server/` directory
-- [ ] Remove `socket.io-client` from `package.json` dependencies
-- [ ] Run `pnpm install` to update lockfile
-- [ ] Check for any Socket.io imports in client code
+- [x] Delete entire `server/` directory (not present in repo)
+- [x] Remove `socket.io-client` from `package.json` dependencies
+- [x] Run `pnpm install` to update lockfile
+- [x] Check for any Socket.io imports in client code
 - [ ] Remove or refactor `src/network/MultiplayerClient.ts` if it uses Socket.io
 
 **Files Already Removed (Good!):**
@@ -186,8 +186,8 @@
   - ✅ Delete user data from Appwrite
 
 **⚠️ Minor Cleanup Needed:**
-- [ ] Delete `src/pages/EntryPage.ts` (redundant with LoginPage.ts)
-- [ ] Verify EntryPage is not imported anywhere
+- [x] Delete `src/pages/EntryPage.ts` (redundant with LoginPage.ts)
+- [x] Verify EntryPage is not imported anywhere
 
 ---
 
@@ -218,11 +218,11 @@
   - ✅ Click to use
 
 **⚠️ Verification Needed:**
-- [ ] Verify old HUD methods removed from GamePage:
-  - [ ] Check if `createHUD()` method is deleted
-  - [ ] Check if `scoreElement` property is deleted
-  - [ ] Check if `livesElement` property is deleted
-  - [ ] Check if old `updateHUD()` method is deleted
+- [x] Verify old HUD methods removed from GamePage:
+  - [x] Check if `createHUD()` method is deleted
+  - [x] Check if `scoreElement` property is deleted
+  - [x] Check if `livesElement` property is deleted
+  - [x] Check if old `updateHUD()` method is deleted
 - [ ] Test HUD responsiveness on mobile
 - [ ] Test HUD Z-index (should be above canvas)
 
@@ -343,14 +343,16 @@
   - [ ] Show current diamonds balance
   - [ ] Disable button if insufficient diamonds
   - [ ] Connect to `src/config/shopItems.ts`
-- [ ] Or create `src/ui/modals/ShopModal.ts` (alternative)
+- [x] Or create `src/ui/modals/ShopModal.ts` (alternative)
 - [ ] Implement unlock logic:
   - [ ] Deduct diamonds from user account
   - [ ] Add theme to themesUnlocked array
   - [ ] Update Appwrite user document
   - [ ] Update local state
   - [ ] Show success message
-- [ ] Add Shop button to MenuPage
+- [x] Add Shop button to MenuPage
+- [x] Wire Continue Game into game-over modal flow
+- [x] Add dev-only power-up spawn button (debug)
 - [ ] Add SHOP route to constants
 - [ ] Register route in main.ts
 - [ ] Test full purchase flow
@@ -364,42 +366,39 @@
 
 ---
 
-#### 7.2 - Audio System (0% Complete)
+#### 7.2 - Audio System (60% Complete)
 
-**Status:** ❌ Not Started
+**Status:** ⚠️ In Progress
 
 **Tasks:**
-- [ ] Create `src/managers/AudioManager.ts`:
-  - [ ] Singleton pattern
-  - [ ] Load audio files
-  - [ ] Play background music (looping)
-  - [ ] Play sound effects
-  - [ ] Mute toggles (music/sfx separate)
-  - [ ] Volume controls
-- [ ] Add audio files to `public/audio/`:
-  - [ ] background-music.mp3
-  - [ ] block-land.mp3
-  - [ ] match-clear.mp3
-  - [ ] combo.mp3
-  - [ ] powerup-collect.mp3
-  - [ ] powerup-use.mp3
-  - [ ] life-lost.mp3
-  - [ ] game-over.mp3
-- [ ] Connect to SettingsPage toggles:
-  - [ ] Music toggle
-  - [ ] SFX toggle
-  - [ ] Volume sliders
-- [ ] Play sounds on game events:
-  - [ ] Block lands -> play block-land.mp3
-  - [ ] Match cleared -> play match-clear.mp3
-  - [ ] Combo achieved -> play combo.mp3
-  - [ ] Power-up collected -> play powerup-collect.mp3
-  - [ ] Power-up used -> play powerup-use.mp3
-  - [ ] Life lost -> play life-lost.mp3
-  - [ ] Game over -> play game-over.mp3
-- [ ] Add event listeners in GamePage
+- [x] Create `src/managers/AudioManager.ts`:
+  - [x] Singleton pattern
+  - [x] Load audio files
+  - [x] Play background music (looping)
+  - [x] Play sound effects
+  - [x] Mute toggles (music/sfx separate)
+  - [x] Volume controls
+- [x] Add audio files to `public/audio/`:
+  - [x] game-music.mp3
+  - [x] menu-music.mp3
+  - [x] block-land.mp3
+  - [x] match-clear.mp3
+  - [x] powerup-collect.mp3
+  - [x] life-lost.mp3
+  - [x] game-over.mp3
+- [x] Connect to SettingsPage toggles:
+  - [x] Music toggle
+  - [x] SFX toggle
+  - [x] Volume sliders
+- [x] Play sounds on game events:
+  - [x] Block lands -> play block-land.mp3
+  - [x] Match cleared -> play match-clear.mp3
+  - [x] Power-up collected -> play powerup-collect.mp3
+  - [x] Life lost -> play life-lost.mp3
+  - [x] Game over -> play game-over.mp3
+- [x] Add event listeners in GamePage
 - [ ] Test audio on mobile browsers
-- [ ] Handle browser autoplay restrictions
+- [x] Handle browser autoplay restrictions
 
 **Files to Create:**
 - `src/managers/AudioManager.ts`
@@ -432,20 +431,20 @@
 
 ---
 
-## 🗑️ CLEANUP TASKS (0% Complete)
+## 🗑️ CLEANUP TASKS (50% Complete)
 
 ### Cleanup #1: Remove Socket.io Server (Critical)
 
-**Status:** ❌ Not Done
+**Status:** ✅ Done
 
 **Tasks:**
-- [ ] Delete `server/` directory entirely:
+- [x] Delete `server/` directory entirely (not present in repo):
   - Contains: server.js, package.json, node_modules, src/
   - All Socket.io + Express code
-- [ ] Edit `package.json` in root:
+- [x] Edit `package.json` in root:
   - Remove line with `"socket.io-client": "^4.6.1"`
-- [ ] Run `pnpm install` to update lockfile
-- [ ] Search codebase for Socket.io imports:
+- [x] Run `pnpm install` to update lockfile
+- [x] Search codebase for Socket.io imports:
   - `grep -r "socket.io" src/`
 - [ ] Refactor or delete `src/network/MultiplayerClient.ts`:
   - If it uses Socket.io, replace with GroupManager
@@ -461,14 +460,14 @@
 
 ### Cleanup #2: Remove Redundant EntryPage (Minor)
 
-**Status:** ❌ Not Done
+**Status:** ✅ Done
 
 **Tasks:**
-- [ ] Delete `src/pages/EntryPage.ts`
-- [ ] Search for EntryPage imports:
+- [x] Delete `src/pages/EntryPage.ts`
+- [x] Search for EntryPage imports:
   - `grep -r "EntryPage" src/`
-- [ ] Verify no imports exist
-- [ ] Verify router uses LoginPage instead
+- [x] Verify no imports exist
+- [x] Verify router uses LoginPage instead
 
 **Files to Delete:**
 - `src/pages/EntryPage.ts`
@@ -477,27 +476,27 @@
 
 ### Cleanup #3: Verify Old HUD Code Removed (Minor)
 
-**Status:** ⚠️ Uncertain
+**Status:** ✅ Done
 
 **Tasks:**
-- [ ] Open `src/pages/GamePage.ts`
-- [ ] Search for old HUD methods:
-  - [ ] `createHUD()` method (should be deleted)
-  - [ ] `scoreElement` property (should be deleted)
-  - [ ] `livesElement` property (should be deleted)
-  - [ ] Old `updateHUD()` method (should be deleted)
-- [ ] If found, remove these old implementations
-- [ ] Verify only new HUD components are used
+- [x] Open `src/pages/GamePage.ts`
+- [x] Search for old HUD methods:
+  - [x] `createHUD()` method (should be deleted)
+  - [x] `scoreElement` property (should be deleted)
+  - [x] `livesElement` property (should be deleted)
+  - [x] Old `updateHUD()` method (should be deleted)
+- [x] If found, remove these old implementations (not needed)
+- [x] Verify only new HUD components are used
 
 ---
 
 ### Cleanup #4: Remove Unused Dependencies (Low Priority)
 
-**Status:** ❌ Not Done
+**Status:** ⚠️ In Progress
 
 **Tasks:**
-- [ ] Run `npx depcheck` to find unused dependencies
-- [ ] Review and remove unused packages
+- [x] Run `npx depcheck` to find unused dependencies
+- [x] Review and remove unused packages
 - [ ] Update documentation if needed
 
 ---

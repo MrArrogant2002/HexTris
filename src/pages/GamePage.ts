@@ -10,13 +10,15 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
-import { ROUTES, GameStatus } from '@core/constants';
+import { MAX_LIVES, ROUTES, GameStatus } from '@core/constants';
 import { Hex } from '@entities/Hex';
 import { Block } from '@entities/Block';
 import { FloatingText } from '@entities/FloatingText';
 import { WaveSystem } from '@systems/WaveSystem';
 import { PhysicsSystem } from '@systems/PhysicsSystem';
 import { MatchingSystem } from '@systems/MatchingSystem';
+import { PowerUpSystem } from '@systems/PowerUpSystem';
+import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import { getInputManager } from '@utils/input';
 import { themes, ThemeName } from '@config/themes';
 import { appwriteClient } from '@network/AppwriteClient';
@@ -24,18 +26,26 @@ import { GroupManager } from '@network/GroupManager';
 import { DailyChallengeSystem } from '@modes/DailyChallengeMode';
 import { TimerAttackMode } from '@modes/TimerAttackMode';
 import { DailyChallengeModal } from '@ui/modals/DailyChallengeModal';
+import { ShopModal } from '@ui/modals/ShopModal';
 import { 
   LivesDisplay, 
   PointsDisplay, 
   ScoreDisplay, 
   InventoryUI 
 } from '@ui/hud';
+import { audioManager } from '@/managers/AudioManager';
+import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 
 export class GamePage extends BasePage {
   private canvas!: Canvas;
   private gameLoop!: GameLoop;
   private pauseModal: Modal | null = null;
   private gameOverModal: Modal | null = null;
+  private shopModal: ShopModal | null = null;
+  private shopPausedGame = false;
+  private hasContinued = false;
+  private lastLives = 0;
+  private unsubscribeLivesChanged: (() => void) | null = null;
   
   // HUD Components
   private livesDisplay!: LivesDisplay;
@@ -48,15 +58,35 @@ export class GamePage extends BasePage {
   private waveSystem!: WaveSystem;
   private physicsSystem!: PhysicsSystem;
   private matchingSystem!: MatchingSystem;
+  private powerUpSystem!: PowerUpSystem;
+  private specialPointsSystem!: SpecialPointsSystem;
   private floatingTexts: FloatingText[] = [];
   private frameCount: number = 0;
   private rushMultiplier: number = 1;
+  private powerUpSpeedMultiplier: number = 1;
+  private slowMoTimeoutId: number | null = null;
+  private shieldTimeoutId: number | null = null;
   private blockSettings: any;
   private dailyChallenge: DailyChallengeSystem | null = null;
   private dailyChallengeModal: DailyChallengeModal | null = null;
   private timerAttack: TimerAttackMode | null = null;
   private groupManager = new GroupManager();
   private unsubscribeGameOver: (() => void) | null = null;
+  private handleGameOverSfx = (): void => {
+    audioManager.playSfx('gameOver');
+  };
+  private handleBlockLandSfx = (): void => {
+    audioManager.playSfx('blockLand');
+  };
+  private handlePowerUpCollectedSfx = (): void => {
+    audioManager.playSfx('powerUpCollect');
+  };
+  private handlePowerUpUsedInventory = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ type?: ShopItemId }>;
+    const type = customEvent.detail?.type;
+    if (!type) return;
+    this.consumeInventoryItem(type);
+  };
 
   private handleTimerModeTimeUp = (): void => {
     if (stateManager.getState().status !== GameStatus.PLAYING) return;
@@ -127,9 +157,15 @@ export class GamePage extends BasePage {
     // Initialize HUD components
     const state = stateManager.getState();
     this.livesDisplay = new LivesDisplay(state.game.lives);
-    this.pointsDisplay = new PointsDisplay(state.player.specialPoints);
+    this.pointsDisplay = new PointsDisplay(state.player.specialPoints, {
+      onShopClick: () => this.openShopModal(),
+    });
     this.scoreDisplay = new ScoreDisplay(state.game.score);
     this.inventoryUI = new InventoryUI(3);
+    this.lastLives = state.game.lives;
+
+    this.seedInventorySlots();
+    this.applyStoredExtraLives();
 
     // Mount to overlay
     this.livesDisplay.mount(hudContainer);
@@ -150,6 +186,19 @@ export class GamePage extends BasePage {
     pauseButton.textContent = 'PAUSE (P)';
     pauseButton.onclick = () => this.pauseGame();
     hudContainer.appendChild(pauseButton);
+
+    if (import.meta.env.DEV) {
+      const spawnButton = document.createElement('button');
+      spawnButton.className = `
+        fixed bottom-4 right-4 z-20
+        px-3 py-2 bg-black text-white text-xs font-bold
+        rounded-lg shadow-lg
+        hover:bg-gray-800 transition-all duration-200
+      `;
+      spawnButton.textContent = 'SPAWN POWER-UP';
+      spawnButton.onclick = () => this.powerUpSystem.forceSpawn();
+      hudContainer.appendChild(spawnButton);
+    }
 
     // Initialize game entities
     const centerX = this.canvas.element.width / 2;
@@ -186,6 +235,14 @@ export class GamePage extends BasePage {
     this.physicsSystem = new PhysicsSystem(hexRadius);
     
     this.matchingSystem = new MatchingSystem(speedModifier, creationSpeedModifier);
+    this.specialPointsSystem = new SpecialPointsSystem();
+    this.powerUpSystem = new PowerUpSystem({
+      hex: this.hex,
+      canvas: this.canvas,
+      inventoryUI: this.inventoryUI,
+      onSlowMo: (multiplier, durationMs) => this.applySlowMo(multiplier, durationMs),
+      onShield: (durationMs) => this.applyShield(durationMs),
+    });
     
     // Reset frame counter
     this.frameCount = 0;
@@ -261,7 +318,7 @@ export class GamePage extends BasePage {
     if (state.status !== GameStatus.PLAYING) return;
     
     // Apply rush multiplier to deltaTime (original: dt * rush)
-    const dt = deltaTime * this.rushMultiplier;
+    const dt = deltaTime * this.rushMultiplier * this.powerUpSpeedMultiplier;
     
     this.frameCount++;
     
@@ -277,6 +334,8 @@ export class GamePage extends BasePage {
     // Update physics (falling blocks move toward center and check collision)
     // Pass scale=1 for now (can be adjusted for screen scaling later)
     this.physicsSystem.update(this.hex, dt, 1);
+
+    this.powerUpSystem.update(dt);
     
     // Check for matches on newly settled blocks (checked=1)
     // Original: for each block, if (block.checked == 1) consolidateBlocks(...)
@@ -315,17 +374,12 @@ export class GamePage extends BasePage {
     }
 
     if (matchResults.length > 0) {
+      audioManager.playSfx('matchClear');
       stateManager.updateGame({ score: runningScore });
     }
 
     if (diamondsToAdd > 0) {
-      const player = stateManager.getState().player;
-      const newTotal = player.specialPoints + diamondsToAdd;
-      console.log(`Diamonds: ${player.specialPoints} -> ${newTotal}`);
-      stateManager.updatePlayer({ specialPoints: newTotal });
-      if (player.id) {
-        void appwriteClient.addDiamonds(player.id, diamondsToAdd);
-      }
+      this.specialPointsSystem.addPoints(diamondsToAdd);
     }
     
     // Remove fully deleted blocks (deleted=2) and reset settled flags
@@ -445,6 +499,8 @@ export class GamePage extends BasePage {
     for (const block of fallingBlocks) {
       block.draw(ctx);
     }
+
+    this.powerUpSystem.render(ctx);
     
     // Draw floating texts (score popups)
     for (const text of this.floatingTexts) {
@@ -639,9 +695,19 @@ export class GamePage extends BasePage {
     this.physicsSystem.reset();
     this.waveSystem.reset();
     this.matchingSystem.resetCombo();
+    this.powerUpSystem.reset();
     this.floatingTexts = [];
     this.frameCount = 0;
     this.rushMultiplier = 1;
+    this.powerUpSpeedMultiplier = 1;
+    if (this.slowMoTimeoutId) {
+      window.clearTimeout(this.slowMoTimeoutId);
+      this.slowMoTimeoutId = null;
+    }
+    if (this.shieldTimeoutId) {
+      window.clearTimeout(this.shieldTimeoutId);
+      this.shieldTimeoutId = null;
+    }
     
     this.resumeGame();
   }
@@ -656,6 +722,54 @@ export class GamePage extends BasePage {
     }
     this.gameLoop.stop();
     Router.getInstance().navigate(ROUTES.MENU);
+  }
+
+  private applySlowMo(multiplier: number, durationMs: number): void {
+    if (this.slowMoTimeoutId) {
+      window.clearTimeout(this.slowMoTimeoutId);
+    }
+    this.powerUpSpeedMultiplier = multiplier;
+    this.slowMoTimeoutId = window.setTimeout(() => {
+      this.powerUpSpeedMultiplier = 1;
+      this.slowMoTimeoutId = null;
+    }, durationMs);
+  }
+
+  private applyShield(durationMs: number): void {
+    if (this.shieldTimeoutId) {
+      window.clearTimeout(this.shieldTimeoutId);
+    }
+    stateManager.updateGame({ isInvulnerable: true });
+    this.shieldTimeoutId = window.setTimeout(() => {
+      stateManager.updateGame({ isInvulnerable: false });
+      this.shieldTimeoutId = null;
+    }, durationMs);
+  }
+
+  private openShopModal(): void {
+    if (this.shopModal || this.pauseModal || this.gameOverModal) {
+      return;
+    }
+
+    this.shopPausedGame = this.gameLoop.getIsRunning();
+    if (this.shopPausedGame) {
+      this.gameLoop.pause();
+    }
+
+    stateManager.updateUI({ isShopOpen: true });
+    this.shopModal = new ShopModal({
+      mode: 'game',
+      inventoryUI: this.inventoryUI,
+      onClose: () => {
+        this.shopModal = null;
+        stateManager.updateUI({ isShopOpen: false });
+        if (this.shopPausedGame && stateManager.getState().status === GameStatus.PLAYING) {
+          this.gameLoop.resume();
+        }
+        this.shopPausedGame = false;
+      },
+    });
+    this.shopModal.open();
   }
 
   /**
@@ -718,6 +832,29 @@ export class GamePage extends BasePage {
     });
     content.appendChild(playAgainBtn.element);
 
+    const continueCount = this.getInventoryCount(ShopItemId.CONTINUE);
+    const canContinue = !this.hasContinued && continueCount > 0;
+    const continueBtn = new Button(`Continue (${continueCount})`, {
+      variant: 'secondary',
+      size: 'medium',
+      fullWidth: true,
+      disabled: !canContinue,
+      onClick: () => this.continueGame(),
+    });
+    content.appendChild(continueBtn.element);
+
+    if (this.hasContinued) {
+      const continueHint = document.createElement('p');
+      continueHint.className = 'text-xs text-gray-500 text-center';
+      continueHint.textContent = 'Continue already used this run.';
+      content.appendChild(continueHint);
+    } else if (continueCount === 0) {
+      const continueHint = document.createElement('p');
+      continueHint.className = 'text-xs text-gray-500 text-center';
+      continueHint.textContent = 'No continues in inventory.';
+      content.appendChild(continueHint);
+    }
+
     // Main menu button
     const menuBtn = new Button('Main Menu', {
       variant: 'outline',
@@ -761,8 +898,85 @@ export class GamePage extends BasePage {
       this.gameOverModal.close();
       this.gameOverModal = null;
     }
+    this.hasContinued = false;
     stateManager.resetGame();
     this.startGameLoop();
+  }
+
+  private continueGame(): void {
+    if (this.hasContinued || !this.specialPointsSystem) {
+      return;
+    }
+
+    const consumed = this.consumeInventoryItem(ShopItemId.CONTINUE);
+    if (!consumed) {
+      return;
+    }
+
+    this.hasContinued = true;
+    if (this.gameOverModal) {
+      this.gameOverModal.close();
+      this.gameOverModal = null;
+    }
+
+    this.applyContinueRecovery();
+    stateManager.setState('status', GameStatus.PLAYING);
+    stateManager.updateGame({ lives: 1 });
+    this.gameLoop.start();
+  }
+
+  private seedInventorySlots(): void {
+    const inventory = stateManager.getState().player.inventory ?? createEmptyInventory();
+    const slotOrder: ShopItemId[] = [ShopItemId.HAMMER, ShopItemId.SLOWMO, ShopItemId.SHIELD];
+
+    for (const itemId of slotOrder) {
+      const count = Math.max(0, inventory[itemId] ?? 0);
+      for (let i = 0; i < count; i++) {
+        if (!this.inventoryUI.addPowerUp(itemId)) {
+          return;
+        }
+      }
+    }
+  }
+
+  private applyStoredExtraLives(): void {
+    const state = stateManager.getState();
+    const inventory = state.player.inventory ?? createEmptyInventory();
+    const available = Math.max(0, inventory[ShopItemId.EXTRA_LIFE] ?? 0);
+    if (available === 0) return;
+
+    const lifeRoom = Math.max(0, MAX_LIVES - state.game.lives);
+    const toApply = Math.min(available, lifeRoom);
+    if (toApply === 0) return;
+
+    const nextInventory = {
+      ...inventory,
+      [ShopItemId.EXTRA_LIFE]: available - toApply,
+    };
+
+    stateManager.updateGame({ lives: state.game.lives + toApply });
+    stateManager.updatePlayer({ inventory: nextInventory });
+
+    if (state.player.id) {
+      void appwriteClient.updateInventory(state.player.id, nextInventory);
+    }
+  }
+
+  private applyContinueRecovery(): void {
+    const maxRows = 8;
+    const targetRows = Math.max(4, maxRows - 2);
+
+    for (let i = 0; i < this.hex.blocks.length; i++) {
+      const lane = this.hex.blocks[i];
+      let active = lane.filter(block => block.deleted === 0).length;
+
+      for (let j = lane.length - 1; j >= 0 && active > targetRows; j--) {
+        if (lane[j].deleted === 0) {
+          lane.splice(j, 1);
+          active -= 1;
+        }
+      }
+    }
   }
 
   /**
@@ -825,14 +1039,22 @@ export class GamePage extends BasePage {
 
   public onMount(): void {
     this.element.classList.add('animate-fade-in');
+
+    this.hasContinued = false;
+
+    audioManager.playGameMusic();
+
+    const uiState = stateManager.getState().ui;
+    audioManager.setMusicMuted(uiState.isMusicMuted);
+    audioManager.setSfxMuted(uiState.isSfxMuted);
+    audioManager.setMusicVolume(uiState.musicVolume);
+    audioManager.setSfxVolume(uiState.sfxVolume);
     
     // Set game status to playing
     stateManager.setState('status', GameStatus.PLAYING);
     
     this.initCanvas();
     this.startGameLoop();
-
-    const uiState = stateManager.getState().ui;
 
     if (uiState.currentGameMode === 'dailyChallenge') {
       if (!this.dailyChallenge) {
@@ -890,8 +1112,21 @@ export class GamePage extends BasePage {
     window.addEventListener('keyup', this.handleKeyUp);
 
     // Listen for game over event
-    this.unsubscribeGameOver = stateManager.subscribe('gameOver', () => this.showGameOver());
+    this.unsubscribeGameOver = stateManager.subscribe('gameOver', () => {
+      this.handleGameOverSfx();
+      this.showGameOver();
+    });
+    this.unsubscribeLivesChanged = stateManager.subscribe('livesChanged', (lives) => {
+      if (typeof lives !== 'number') return;
+      if (lives < this.lastLives) {
+        this.handleLifeLostSfx();
+      }
+      this.lastLives = lives;
+    });
     window.addEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.addEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
+    window.addEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
+    window.addEventListener('blockLand', this.handleBlockLandSfx as EventListener);
   }
 
   public onUnmount(): void {
@@ -909,6 +1144,22 @@ export class GamePage extends BasePage {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.removeEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
+    window.removeEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
+    window.removeEventListener('blockLand', this.handleBlockLandSfx as EventListener);
+
+    if (this.slowMoTimeoutId) {
+      window.clearTimeout(this.slowMoTimeoutId);
+      this.slowMoTimeoutId = null;
+    }
+    if (this.shieldTimeoutId) {
+      window.clearTimeout(this.shieldTimeoutId);
+      this.shieldTimeoutId = null;
+    }
+
+    if (this.powerUpSystem) {
+      this.powerUpSystem.destroy();
+    }
 
     if (this.timerAttack) {
       this.timerAttack.deactivate();
@@ -936,10 +1187,49 @@ export class GamePage extends BasePage {
       this.gameOverModal = null;
     }
 
+    if (this.shopModal) {
+      this.shopModal.close();
+      this.shopModal = null;
+    }
+
     if (this.unsubscribeGameOver) {
       this.unsubscribeGameOver();
       this.unsubscribeGameOver = null;
     }
+
+    if (this.unsubscribeLivesChanged) {
+      this.unsubscribeLivesChanged();
+      this.unsubscribeLivesChanged = null;
+    }
+  }
+
+  private handleLifeLostSfx(): void {
+    if (stateManager.getState().status !== GameStatus.PLAYING) return;
+    audioManager.playSfx('lifeLost');
+  }
+
+  private consumeInventoryItem(itemId: ShopItemId): boolean {
+    const state = stateManager.getState();
+    const inventory = state.player.inventory ?? createEmptyInventory();
+    const current = inventory[itemId] ?? 0;
+    if (current <= 0) return false;
+
+    const nextInventory = {
+      ...inventory,
+      [itemId]: current - 1,
+    };
+
+    stateManager.updatePlayer({ inventory: nextInventory });
+    if (state.player.id) {
+      void appwriteClient.updateInventory(state.player.id, nextInventory);
+    }
+
+    return true;
+  }
+
+  private getInventoryCount(itemId: ShopItemId): number {
+    const inventory = stateManager.getState().player.inventory ?? createEmptyInventory();
+    return inventory[itemId] ?? 0;
   }
 }
 

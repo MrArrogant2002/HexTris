@@ -17,6 +17,7 @@ import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
 import { stateManager } from '@core/StateManager';
 import { ThemeName } from '@config/themes';
+import { createEmptyInventory } from '@config/shopItems';
 
 /**
  * Restore user session if exists
@@ -40,6 +41,7 @@ async function restoreSession(): Promise<boolean> {
           totalPlayTime: user.totalPlayTime,
           themesUnlocked: user.themesUnlocked as ThemeName[],
           selectedTheme: user.selectedTheme as ThemeName,
+          inventory: user.inventory ?? createEmptyInventory(),
         });
         
         console.log('Session restored for:', user.name);

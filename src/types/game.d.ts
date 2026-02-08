@@ -4,7 +4,10 @@
 
 import type { DifficultyLevel } from '@config/difficulty';
 import type { ThemeName } from '@config/themes';
+import type { ShopItemId } from '@config/shopItems';
 import type { GameStatus } from '@core/constants';
+
+export type PlayerInventory = Record<ShopItemId, number>;
 
 export interface PlayerState {
   id: string;
@@ -15,6 +18,7 @@ export interface PlayerState {
   totalPlayTime: number;
   themesUnlocked: ThemeName[];
   selectedTheme: ThemeName;
+  inventory: PlayerInventory;
 }
 
 export interface GamePlayState {
@@ -33,7 +37,11 @@ export interface UIState {
   isPaused: boolean;
   isShopOpen: boolean;
   isModalOpen: boolean;
-  isMuted: boolean;
+  isMusicMuted: boolean;
+  isSfxMuted: boolean;
+  musicVolume: number;
+  sfxVolume: number;
+  preGamePowerUps?: string[];
   currentGameMode?: 'standard' | 'dailyChallenge' | 'timerAttack';
   timerDuration?: number;
   currentGroupId?: string;

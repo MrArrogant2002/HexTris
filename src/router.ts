@@ -6,6 +6,8 @@
 import type { BasePage } from '@/pages/BasePage';
 import { authService } from '@services/AuthService';
 import { stateManager } from '@core/StateManager';
+import { ROUTES } from '@core/constants';
+import { audioManager } from '@/managers/AudioManager';
 
 export interface Route {
   path: string;
@@ -101,6 +103,20 @@ export class Router {
         this.navigate('/'); // Redirect to login
         return;
       }
+    }
+
+    const uiState = stateManager.getState().ui;
+    audioManager.setMusicMuted(uiState.isMusicMuted);
+    audioManager.setSfxMuted(uiState.isSfxMuted);
+    audioManager.setMusicVolume(uiState.musicVolume);
+    audioManager.setSfxVolume(uiState.sfxVolume);
+
+    if (path === ROUTES.GAME) {
+      audioManager.playGameMusic();
+    } else if (route.requiresAuth) {
+      audioManager.playMenuMusic();
+    } else {
+      audioManager.stopMusic();
     }
 
     // Unmount current page

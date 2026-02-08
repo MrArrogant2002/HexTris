@@ -120,6 +120,8 @@ export class Hex {
     // Update block state
     block.attachedLane = lane;
     block.checked = 1;
+
+    window.dispatchEvent(new CustomEvent('blockLand'));
   }
 
   /**

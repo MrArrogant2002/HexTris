@@ -12,6 +12,7 @@ import { ROUTES } from '@core/constants';
 import { ThemeName, themes, availableThemes } from '@config/themes';
 import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
+import { audioManager } from '@/managers/AudioManager';
 
 export class SettingsPage extends BasePage {
   private buttons: Button[] = [];
@@ -155,18 +156,38 @@ export class SettingsPage extends BasePage {
 
     const state = stateManager.getState();
 
+    audioManager.setMusicMuted(state.ui.isMusicMuted);
+    audioManager.setSfxMuted(state.ui.isSfxMuted);
+    audioManager.setMusicVolume(state.ui.musicVolume);
+    audioManager.setSfxVolume(state.ui.sfxVolume);
+
     // Sound Effects Toggle
-    const sfxToggle = this.createToggle('Sound Effects', !state.ui.isMuted, (enabled) => {
-      console.log('Sound effects:', enabled);
-      stateManager.updateUI({ isMuted: !enabled });
+    const sfxToggle = this.createToggle('Sound Effects', !state.ui.isSfxMuted, (enabled) => {
+      stateManager.updateUI({ isSfxMuted: !enabled });
+      audioManager.setSfxMuted(!enabled);
     });
     audioControls.appendChild(sfxToggle);
 
     // Music Toggle
-    const musicToggle = this.createToggle('Background Music', false, (enabled) => {
-      console.log('Music:', enabled);
+    const musicToggle = this.createToggle('Background Music', !state.ui.isMusicMuted, (enabled) => {
+      stateManager.updateUI({ isMusicMuted: !enabled });
+      audioManager.setMusicMuted(!enabled);
     });
     audioControls.appendChild(musicToggle);
+
+    // Music Volume Slider
+    const musicSlider = this.createSlider('Music Volume', state.ui.musicVolume, (value) => {
+      stateManager.updateUI({ musicVolume: value });
+      audioManager.setMusicVolume(value);
+    });
+    audioControls.appendChild(musicSlider);
+
+    // SFX Volume Slider
+    const sfxSlider = this.createSlider('SFX Volume', state.ui.sfxVolume, (value) => {
+      stateManager.updateUI({ sfxVolume: value });
+      audioManager.setSfxVolume(value);
+    });
+    audioControls.appendChild(sfxSlider);
 
     card.appendChild(audioControls);
     return card.element;
@@ -297,6 +318,41 @@ export class SettingsPage extends BasePage {
     });
 
     container.appendChild(toggle);
+    return container;
+  }
+
+  private createSlider(label: string, initialValue: number, onChange: (value: number) => void): HTMLElement {
+    const container = document.createElement('div');
+    container.className = 'space-y-2 p-3 bg-gray-50 rounded-lg';
+
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between';
+
+    const labelElement = document.createElement('span');
+    labelElement.className = 'font-medium';
+    labelElement.textContent = label;
+
+    const valueElement = document.createElement('span');
+    valueElement.className = 'text-sm text-gray-600';
+    valueElement.textContent = `${Math.round(initialValue * 100)}%`;
+
+    header.appendChild(labelElement);
+    header.appendChild(valueElement);
+    container.appendChild(header);
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = `${Math.round(initialValue * 100)}`;
+    slider.className = 'w-full accent-black';
+    slider.addEventListener('input', () => {
+      const value = Number(slider.value) / 100;
+      valueElement.textContent = `${Math.round(value * 100)}%`;
+      onChange(value);
+    });
+
+    container.appendChild(slider);
     return container;
   }
 

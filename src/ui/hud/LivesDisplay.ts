@@ -43,7 +43,7 @@ export class LivesDisplay {
           : 'opacity-30 scale-90 grayscale'
         }
       `;
-      heart.textContent = 'LIFE';
+      heart.textContent = '❤️';
       heart.title = `Life ${i + 1}`;
       this.heartsContainer.appendChild(heart);
     }

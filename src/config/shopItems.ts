@@ -102,3 +102,16 @@ export function canAfford(item: ShopItem, playerPoints: number): boolean {
   return playerPoints >= item.cost;
 }
 
+/**
+ * Create an empty inventory for all shop items
+ */
+export function createEmptyInventory(): Record<ShopItemId, number> {
+  return {
+    [ShopItemId.CONTINUE]: 0,
+    [ShopItemId.EXTRA_LIFE]: 0,
+    [ShopItemId.HAMMER]: 0,
+    [ShopItemId.SLOWMO]: 0,
+    [ShopItemId.SHIELD]: 0,
+  };
+}
+

@@ -11,9 +11,14 @@ import { stateManager } from '@core/StateManager';
 import { ROUTES, GameStatus } from '@core/constants';
 import { appwriteClient } from '@network/AppwriteClient';
 import { LeaderboardModal } from '@ui/modals/LeaderboardModal';
+import { ShopModal } from '@ui/modals/ShopModal';
+import { authService } from '@services/AuthService';
 
 export class MenuPage extends BasePage {
   private buttons: Button[] = [];
+  private diamondCountEl: HTMLDivElement | null = null;
+  private unsubscribeSpecialPoints: (() => void) | null = null;
+  private shopModal: ShopModal | null = null;
 
   public render(): void {
     // Modern black and white background with scroll
@@ -70,12 +75,26 @@ export class MenuPage extends BasePage {
     // Diamonds Card
     const diamondsCard = document.createElement('div');
     diamondsCard.className = 'bg-white border-2 border-gray-300 rounded-lg p-3 sm:p-4 text-center hover:border-gray-500 transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
-    diamondsCard.innerHTML = `
-      <div class="text-2xl sm:text-3xl mb-1">DIAMOND</div>
-      <div class="text-3xl sm:text-4xl font-bold text-black mb-1">${state.player.specialPoints}</div>
-      <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Diamonds</div>
-      <div class="text-xs text-gray-500 mt-2">Earn by playing</div>
-    `;
+    const diamondsIcon = document.createElement('div');
+    diamondsIcon.className = 'text-2xl sm:text-3xl mb-1';
+    diamondsIcon.textContent = '💎';
+
+    this.diamondCountEl = document.createElement('div');
+    this.diamondCountEl.className = 'text-3xl sm:text-4xl font-bold text-black mb-1';
+    this.diamondCountEl.textContent = state.player.specialPoints.toString();
+
+    const diamondsLabel = document.createElement('div');
+    diamondsLabel.className = 'text-xs font-semibold text-gray-700 uppercase tracking-wide';
+    diamondsLabel.textContent = 'Diamonds';
+
+    const diamondsHint = document.createElement('div');
+    diamondsHint.className = 'text-xs text-gray-500 mt-2';
+    diamondsHint.textContent = 'Earn by playing';
+
+    diamondsCard.appendChild(diamondsIcon);
+    diamondsCard.appendChild(this.diamondCountEl);
+    diamondsCard.appendChild(diamondsLabel);
+    diamondsCard.appendChild(diamondsHint);
     statsSection.appendChild(diamondsCard);
 
     // Games Played Card
@@ -157,6 +176,14 @@ export class MenuPage extends BasePage {
     this.buttons.push(settingsBtn);
     actionSection.appendChild(settingsBtn.element);
 
+    const shopBtn = new Button('🛒 Shop', {
+      variant: 'outline',
+      size: 'medium',
+      onClick: () => this.openShop(),
+    });
+    this.buttons.push(shopBtn);
+    actionSection.appendChild(shopBtn.element);
+
     const leaderboardBtn = new Button('Leaderboard', {
       variant: 'outline',
       size: 'medium',
@@ -177,6 +204,12 @@ export class MenuPage extends BasePage {
 
     this.element.appendChild(container);
     this.mount();
+
+    this.unsubscribeSpecialPoints = stateManager.subscribe('specialPointsChanged', (points) => {
+      if (this.diamondCountEl) {
+        this.diamondCountEl.textContent = points.toString();
+      }
+    });
   }
 
   /**
@@ -185,9 +218,31 @@ export class MenuPage extends BasePage {
   /**
    * Logout user
    */
-  private logout(): void {
-    stateManager.setState('status', GameStatus.ENTRY);
-    Router.getInstance().navigate(ROUTES.ENTRY);
+  private async logout(): Promise<void> {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      stateManager.setState('status', GameStatus.ENTRY);
+      Router.getInstance().navigate(ROUTES.ENTRY);
+    }
+  }
+
+  private openShop(): void {
+    if (this.shopModal) {
+      return;
+    }
+
+    stateManager.updateUI({ isShopOpen: true });
+    this.shopModal = new ShopModal({
+      mode: 'menu',
+      onClose: () => {
+        this.shopModal = null;
+        stateManager.updateUI({ isShopOpen: false });
+      },
+    });
+    this.shopModal.open();
   }
 
   /**
@@ -255,6 +310,22 @@ export class MenuPage extends BasePage {
     });
   }
 
+  public onUnmount(): void {
+    if (this.unsubscribeSpecialPoints) {
+      this.unsubscribeSpecialPoints();
+      this.unsubscribeSpecialPoints = null;
+    }
+
+    if (this.shopModal) {
+      this.shopModal.close();
+      this.shopModal = null;
+    }
+
+    // Clean up buttons
+    this.buttons.forEach(btn => btn.destroy());
+    this.buttons = [];
+  }
+
   /**
    * Show leaderboard modal
    */
@@ -280,10 +351,5 @@ export class MenuPage extends BasePage {
     this.element.classList.add('animate-fade-in');
   }
 
-  public onUnmount(): void {
-    // Clean up buttons
-    this.buttons.forEach(btn => btn.destroy());
-    this.buttons = [];
-  }
 }
 
