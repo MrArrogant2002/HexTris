@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Input utilities - Keyboard and touch controls
  * Modern event-driven input system
  */
@@ -168,6 +168,7 @@ export class InputManager {
         // Vertical swipe down
         else if (deltaY > this.swipeThreshold) {
           this.trigger('speedUp', true);
+          setTimeout(() => this.trigger('speedUp', false), 50);
         }
         // Tap (no significant movement)
         else if (Math.abs(deltaX) < 20 && Math.abs(deltaY) < 20) {
@@ -257,3 +258,4 @@ export function getInputManager(): InputManager {
 export function resetInputManager(): void {
   inputManagerInstance = null;
 }
+

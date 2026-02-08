@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LoginPage - Authentication page with login/signup tabs
  * First screen where users login or create an account
  */
@@ -107,7 +107,7 @@ export class LoginPage extends BasePage {
 		this.passwordInput = new Input({
 			label: 'Password',
 			type: 'password',
-			placeholder: '••••••••',
+			placeholder: '********',
 			required: true,
 			onEnter: () => this.handleSubmit(),
 		});
@@ -349,3 +349,4 @@ export class LoginPage extends BasePage {
 		this.submitButton?.destroy();
 	}
 }
+

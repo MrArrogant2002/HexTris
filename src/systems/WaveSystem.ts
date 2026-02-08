@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WaveSystem - Handles block spawning patterns and difficulty progression
  * Ports logic from wavegen.js
  */
@@ -308,3 +308,4 @@ export class WaveSystem {
     return this.nextGen;
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AppwriteClient - User data management with authentication
  * Handles all database operations for user game data
  */
@@ -51,7 +51,7 @@ export class AppwriteClient {
 
     // Validate environment variables
     if (!this.databaseId || !this.usersCollectionId) {
-      console.error('❌ Missing Appwrite environment variables!');
+      console.error('Missing Appwrite environment variables!');
     }
   }
 
@@ -60,7 +60,7 @@ export class AppwriteClient {
    */
   async createUser(userId: string, name: string, email: string): Promise<UserDocument> {
     try {
-      console.log('🔄 Creating user database record:', { userId, name, email });
+      console.log('Creating user database record:', { userId, name, email });
       const user = await databases.createDocument(
         this.databaseId,
         this.usersCollectionId,
@@ -79,10 +79,10 @@ export class AppwriteClient {
         }
       );
 
-      console.log('✅ User database record created:', name);
+      console.log('User database record created:', name);
       return user as unknown as UserDocument;
     } catch (error: any) {
-      console.error('❌ Failed to create user record:', error);
+      console.error('Failed to create user record:', error);
       console.error('Error details:', error.message, error.code);
       throw new Error(`Failed to create user database record: ${error.message}`);
     }
@@ -137,7 +137,7 @@ export class AppwriteClient {
           { singlePlayerHighScore: newScore }
         );
 
-        console.log(`🏆 New high score: ${newScore}`);
+        console.log(`New high score: ${newScore}`);
         return true;
       }
 
@@ -165,7 +165,7 @@ export class AppwriteClient {
           { timerAttackBest: score }
         );
 
-        console.log(`⏱️ New timer attack record: ${score}`);
+        console.log(`New timer attack record: ${score}`);
         return true;
       }
 
@@ -192,7 +192,7 @@ export class AppwriteClient {
         { totalDiamonds: newTotal }
       );
 
-      console.log(`💎 +${amount} diamonds (Total: ${newTotal})`);
+      console.log(`+${amount} diamonds (Total: ${newTotal})`);
       return newTotal;
     } catch (error) {
       console.error('Failed to add diamonds:', error);
@@ -221,7 +221,7 @@ export class AppwriteClient {
         { totalDiamonds: newTotal }
       );
 
-      console.log(`💎 -${amount} diamonds (Remaining: ${newTotal})`);
+      console.log(`-${amount} diamonds (Remaining: ${newTotal})`);
       return true;
     } catch (error) {
       console.error('Failed to spend diamonds:', error);
@@ -286,7 +286,7 @@ export class AppwriteClient {
         { themesUnlocked: updatedThemes }
       );
 
-      console.log(`✅ Theme unlocked: ${themeId}`);
+      console.log(`Theme unlocked: ${themeId}`);
       return true;
     } catch (error) {
       console.error('Failed to unlock theme:', error);
@@ -314,7 +314,7 @@ export class AppwriteClient {
         { selectedTheme: themeId }
       );
 
-      console.log(`✅ Theme selected: ${themeId}`);
+      console.log(`Theme selected: ${themeId}`);
       return true;
     } catch (error) {
       console.error('Failed to update selected theme:', error);
@@ -377,6 +377,35 @@ export class AppwriteClient {
   }
 
   /**
+   * Update user themes (unlocked themes and selected theme)
+   */
+  async updateThemes(userId: string, themesUnlocked: string[], selectedTheme: string): Promise<boolean> {
+    try {
+      const user = await this.getUserById(userId);
+      if (!user) {
+        console.error('User not found');
+        return false;
+      }
+
+      await databases.updateDocument(
+        this.databaseId,
+        this.usersCollectionId,
+        user.$id,
+        {
+          themesUnlocked,
+          selectedTheme,
+        }
+      );
+
+      console.log('Themes updated:', { themesUnlocked, selectedTheme });
+      return true;
+    } catch (error) {
+      console.error('Failed to update themes:', error);
+      return false;
+    }
+  }
+
+  /**
    * Delete user record (for account deletion)
    */
   async deleteUser(userId: string): Promise<boolean> {
@@ -390,7 +419,7 @@ export class AppwriteClient {
         user.$id
       );
 
-      console.log('✅ User record deleted');
+      console.log('User record deleted');
       return true;
     } catch (error) {
       console.error('Failed to delete user:', error);
@@ -401,3 +430,4 @@ export class AppwriteClient {
 
 // Export singleton instance
 export const appwriteClient = new AppwriteClient();
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * FloatingText entity - Animated score popups and messages
  * Displays text that fades out and floats upward
  */
@@ -95,14 +95,14 @@ export class FloatingText {
    * Create a life lost popup
    */
   public static createLifeLost(x: number, y: number): FloatingText {
-    return new FloatingText(x, y, '❤️ LOST', '#e74c3c', 36);
+    return new FloatingText(x, y, 'LIFE LOST', '#e74c3c', 36);
   }
 
   /**
    * Create a life gained popup
    */
   public static createLifeGained(x: number, y: number): FloatingText {
-    return new FloatingText(x, y, '❤️ +1 LIFE', '#2ecc71', 36);
+    return new FloatingText(x, y, '+1 LIFE', '#2ecc71', 36);
   }
 
   /**
@@ -112,3 +112,4 @@ export class FloatingText {
     return new FloatingText(x, y, powerUpName.toUpperCase(), '#f1c40f', 28);
   }
 }
+

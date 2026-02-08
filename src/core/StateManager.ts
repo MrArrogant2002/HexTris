@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized state management for Hextris
  * Provides immutable state updates with event notification
  */
@@ -71,7 +71,25 @@ export class StateManager {
    * Get current state (readonly)
    */
   public getState(): Readonly<GameState> {
-    return Object.freeze({ ...this.state });
+    const clone = typeof globalThis.structuredClone === 'function'
+      ? globalThis.structuredClone(this.state)
+      : JSON.parse(JSON.stringify(this.state));
+    return this.deepFreeze(clone) as Readonly<GameState>;
+  }
+
+  /**
+   * Deep-freeze object to prevent accidental mutation
+   */
+  private deepFreeze<T>(obj: T): T {
+    if (!obj || typeof obj !== 'object') return obj;
+    Object.freeze(obj);
+    for (const key of Object.keys(obj as object)) {
+      const value = (obj as any)[key];
+      if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+        this.deepFreeze(value);
+      }
+    }
+    return obj;
   }
 
   /**
@@ -187,3 +205,4 @@ export class StateManager {
 
 // Export singleton instance
 export const stateManager = StateManager.getInstance();
+

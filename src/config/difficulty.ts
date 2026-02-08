@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Difficulty configuration for Hextris
  * Defines speed, spawn rates, and game behavior for each difficulty level
  */
@@ -72,3 +72,4 @@ export function getDifficultyConfig(level: DifficultyLevel): DifficultyConfig {
  * Default difficulty level
  */
 export const DEFAULT_DIFFICULTY = DifficultyLevel.MEDIUM;
+

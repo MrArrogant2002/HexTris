@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ResetPasswordPage - Password recovery page
  * Handles password reset flow from email link
  */
@@ -40,7 +40,7 @@ export class ResetPasswordPage extends BasePage {
     
     const title = document.createElement('h1');
     title.className = 'text-5xl font-black text-black mb-3';
-    title.textContent = '🔒 Reset Password';
+    title.textContent = 'Reset Password';
     header.appendChild(title);
 
     const subtitle = document.createElement('p');
@@ -97,7 +97,7 @@ export class ResetPasswordPage extends BasePage {
 
     // Back to login link
     const backLink = document.createElement('button');
-    backLink.textContent = '← Back to Login';
+    backLink.textContent = '<- Back to Login';
     backLink.className = 'w-full text-sm text-gray-600 hover:text-black transition-colors';
     backLink.onclick = () => Router.getInstance().navigate(ROUTES.ENTRY);
     buttonContainer.appendChild(backLink);
@@ -212,3 +212,4 @@ export class ResetPasswordPage extends BasePage {
     this.submitButton?.destroy();
   }
 }
+

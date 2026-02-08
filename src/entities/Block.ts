@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Block entity - Falling and attached blocks in the game
  * Ported from js/Block.js with TypeScript types
  */
@@ -251,3 +251,4 @@ export class Block {
     this.height = this.settings.blockHeight;
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Button component for Hextris
  * Reusable button with multiple variants and styles
  */
@@ -175,3 +175,4 @@ export class Button {
     this.element.remove();
   }
 }
+

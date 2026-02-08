@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Daily Challenge System
  * Procedurally generates a unique challenge each day using date seed
  * Same challenge for all players worldwide
@@ -56,21 +56,21 @@ class DailyChallengeSystem {
       {
         id: 'score_target',
         name: 'Score Target',
-        icon: '🎯',
+        icon: 'TARGET',
         description: 'Reach {target} points',
         generateParams: () => ({ target: this.randomRange(5000, 15000, 1000) })
       },
       {
         id: 'survival_time',
         name: 'Survival Challenge',
-        icon: '⏰',
+        icon: 'TIME',
         description: 'Survive for {duration} seconds',
         generateParams: () => ({ duration: this.randomRange(120, 300, 30) })
       },
       {
         id: 'combo_master',
         name: 'Combo Master',
-        icon: '🔥',
+        icon: 'COMBO',
         description: 'Achieve {combos} combos of {size}+ blocks',
         generateParams: () => ({ 
           combos: this.randomRange(3, 8, 1), 
@@ -80,7 +80,7 @@ class DailyChallengeSystem {
       {
         id: 'color_challenge',
         name: 'Color Challenge',
-        icon: '🎨',
+        icon: 'COLOR',
         description: 'Clear {clears} groups using only {colors} colors',
         generateParams: () => ({ 
           clears: this.randomRange(15, 30, 5),
@@ -90,14 +90,14 @@ class DailyChallengeSystem {
       {
         id: 'no_life_loss',
         name: 'Perfect Run',
-        icon: '💯',
+        icon: 'PERFECT',
         description: 'Reach {target} points without losing a life',
         generateParams: () => ({ target: this.randomRange(3000, 8000, 500) })
       },
       {
         id: 'speed_run',
         name: 'Speed Run',
-        icon: '⚡',
+        icon: 'SPEED',
         description: 'Reach {target} points in under {time} seconds',
         generateParams: () => ({ 
           target: this.randomRange(5000, 10000, 1000),
@@ -134,8 +134,8 @@ class DailyChallengeSystem {
     // Update streak on daily login
     this.checkDailyLogin();
 
-    console.log('🎲 Daily Challenge System initialized');
-    console.log(`📅 Today's challenge: ${this.currentChallenge?.name}`);
+    console.log('Daily Challenge System initialized');
+    console.log(`Today's challenge: ${this.currentChallenge?.name}`);
   }
 
   generateTodaysChallenge() {
@@ -188,13 +188,13 @@ class DailyChallengeSystem {
   activate() {
     this.isActive = true;
     this.trackingData = this.initTrackingData();
-    console.log('🎲 Daily Challenge ACTIVATED:', this.currentChallenge?.name);
+    console.log('Daily Challenge ACTIVATED:', this.currentChallenge?.name);
   }
 
   deactivate() {
     this.isActive = false;
     this.trackingData = null;
-    console.log('🎲 Daily Challenge deactivated');
+    console.log('Daily Challenge deactivated');
   }
 
   startTracking(): void {
@@ -294,7 +294,7 @@ class DailyChallengeSystem {
   onChallengeCompleted(): void {
     if (!this.currentChallenge) return;
     
-    console.log('🎉 DAILY CHALLENGE COMPLETED!');
+    console.log('DAILY CHALLENGE COMPLETED!');
     
     // Mark as completed
     this.markCompleted();
@@ -313,7 +313,7 @@ class DailyChallengeSystem {
     if (!this.currentChallenge) return;
     
     const streakBonus = this.streakDays >= 7 ? ' (2x Streak Bonus!)' : '';
-    console.log(`🎉 Challenge Complete! You earned ${this.currentChallenge.totalReward} special points!${streakBonus} 🔥 ${this.streakDays}-day streak!`);
+    console.log(`Challenge Complete! You earned ${this.currentChallenge.totalReward} special points!${streakBonus} ${this.streakDays}-day streak!`);
   }
 
   checkDailyLogin() {
@@ -322,7 +322,7 @@ class DailyChallengeSystem {
     
     if (lastLogin !== today) {
       localStorage.setItem('lastDailyLogin', today);
-      console.log('📅 Daily login registered');
+      console.log('Daily login registered');
     }
   }
 
@@ -345,7 +345,7 @@ class DailyChallengeSystem {
     this.saveStreak();
     this.saveLastCompletion();
     
-    console.log(`🔥 Challenge streak: ${this.streakDays} days`);
+    console.log(`Challenge streak: ${this.streakDays} days`);
   }
 
   // Seeded random number generator (for consistent daily challenges)
@@ -448,7 +448,7 @@ class DailyChallengeSystem {
     try {
       // This would require an Appwrite collection for daily challenges
       // For now, just log it
-      console.log('☁️ Would sync challenge completion to cloud');
+      console.log('Would sync challenge completion to cloud');
     } catch (error) {
       console.error('Error syncing to cloud:', error);
     }
@@ -475,6 +475,7 @@ export { DailyChallengeSystem, type DailyChallenge, type TrackingData };
 // if (typeof window !== 'undefined') {
 //   document.addEventListener('DOMContentLoaded', () => {
 //     new DailyChallengeSystem();
-//     console.log('✅ Daily Challenge System initialized');
+//     console.log('Daily Challenge System initialized');
 //   });
 // }
+

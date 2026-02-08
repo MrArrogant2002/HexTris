@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Difficulty Page - Difficulty selection screen
  * Allows players to choose game difficulty before starting
  */
@@ -20,7 +20,7 @@ export class DifficultyPage extends BasePage {
     this.element.innerHTML = '';
 
     // Back button
-    const backBtn = this.createBackButton('← Back', () => {
+    const backBtn = this.createBackButton('<- Back', () => {
       Router.getInstance().navigate(ROUTES.MENU);
     });
     backBtn.style.marginBottom = '1rem';
@@ -92,21 +92,21 @@ export class DifficultyPage extends BasePage {
         text: 'text-black',
         border: 'border-gray-300',
         hover: 'hover:bg-gray-50',
-        emoji: '😌'
+        emoji: 'EASY'
       },
       medium: {
         bg: 'bg-white',
         text: 'text-black',
         border: 'border-gray-300',
         hover: 'hover:bg-gray-50',
-        emoji: '😎'
+        emoji: 'NORMAL'
       },
       hard: {
         bg: 'bg-gray-900',
         text: 'text-white',
         border: 'border-gray-600',
         hover: 'hover:bg-black',
-        emoji: '😤'
+        emoji: 'HARD'
       }
     };
 
@@ -148,7 +148,7 @@ export class DifficultyPage extends BasePage {
     const statItems = [
       { label: 'Block Speed', value: `${config.blockSpeed}px/s` },
       { label: 'Spawn Delay', value: `${config.spawnDelay}ms` },
-      { label: 'Score Bonus', value: `×${config.scoreMultiplier}` },
+      { label: 'Score Bonus', value: `x${config.scoreMultiplier}` },
     ];
 
     statItems.forEach(({ label, value }) => {
@@ -221,7 +221,7 @@ export class DifficultyPage extends BasePage {
     if (isSelected) {
       const indicator = document.createElement('div');
       indicator.className = 'text-center mt-3 font-bold text-sm flex items-center justify-center gap-2';
-      indicator.innerHTML = `<span class="text-2xl">✓</span> SELECTED`;
+      indicator.innerHTML = `<span class="text-2xl">OK</span> SELECTED`;
       footer.appendChild(indicator);
     } else {
       const hint = document.createElement('div');
@@ -250,3 +250,4 @@ export class DifficultyPage extends BasePage {
     this.difficultyCards = [];
   }
 }
+

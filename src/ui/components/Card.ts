@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Card component for Hextris
  * Reusable card container with glassmorphic effect
  */
@@ -167,3 +167,4 @@ export class Card {
     this.element.remove();
   }
 }
+

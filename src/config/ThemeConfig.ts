@@ -1,4 +1,4 @@
-
+﻿
 /**
  * Theme Configuration
  * Defines all available themes with their colors, backgrounds, and properties
@@ -144,3 +144,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ThemeConfig;
 }
+

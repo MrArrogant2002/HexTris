@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SpecialPointsSystem
  * Manages special points economy - earning and spending
  */
@@ -16,11 +16,11 @@ class SpecialPointsSystem {
     };
     
     this.shop = {
-      continue: { cost: 500, name: 'Continue Game', icon: '🔄' },
-      extraLife: { cost: 300, name: 'Extra Life', icon: '❤️' },
-      hammer: { cost: 200, name: 'Hammer Power-up', icon: '🔨' },
-      slowmo: { cost: 150, name: 'Slow Motion', icon: '⏱️' },
-      shield: { cost: 250, name: 'Shield', icon: '🛡️' }
+      continue: { cost: 500, name: 'Continue Game', icon: 'RETRY' },
+      extraLife: { cost: 300, name: 'Extra Life', icon: 'HEART' },
+      hammer: { cost: 200, name: 'Hammer Power-up', icon: 'HAMMER' },
+      slowmo: { cost: 150, name: 'Slow Motion', icon: 'TIMER' },
+      shield: { cost: 250, name: 'Shield', icon: 'SHIELD' }
     };
     
     this.init();
@@ -57,7 +57,7 @@ class SpecialPointsSystem {
       this.onUserLogin(e.detail.user);
     });
 
-    console.log(`✅ SpecialPointsSystem initialized (${this.points} points)`);
+    console.log(`SpecialPointsSystem initialized (${this.points} points)`);
   }
 
   /**
@@ -67,7 +67,7 @@ class SpecialPointsSystem {
     this.points += amount;
     this.save();
     
-    console.log(`💎 +${amount} special points ${reason ? `(${reason})` : ''}`);
+    console.log(`+${amount} special points ${reason ? `(${reason})` : ''}`);
     
     // Show notification
     this.showPointsNotification(amount, reason);
@@ -95,7 +95,7 @@ class SpecialPointsSystem {
     this.points -= amount;
     this.save();
     
-    console.log(`💎 -${amount} special points ${item ? `(${item})` : ''}`);
+    console.log(`-${amount} special points ${item ? `(${item})` : ''}`);
     
     // Dispatch event for transaction history
     window.dispatchEvent(new CustomEvent('specialPointsSpent', {
@@ -227,9 +227,9 @@ class SpecialPointsSystem {
       case 'extraLife':
         if (window.lifeSystem) {
           window.lifeSystem.addLife();
-          console.log('✅ Extra life purchased and added!');
+          console.log('Extra life purchased and added!');
         } else {
-          console.error('❌ Life system not available');
+          console.error('Life system not available');
         }
         break;
         
@@ -279,7 +279,7 @@ class SpecialPointsSystem {
       const text = new Text(
         trueCanvas.width / 2,
         trueCanvas.height / 2 - 100,
-        `+${amount} 💎 ${reason}`,
+        `+${amount} points ${reason}`,
         '#ffd700',
         25
       );
@@ -349,3 +349,4 @@ export { SpecialPointsSystem };
 // if (typeof window !== 'undefined') {
 //   new SpecialPointsSystem();
 // }
+

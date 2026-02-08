@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Type definitions for game entities
  */
 
@@ -80,3 +80,4 @@ export interface PowerUpState {
 // Import type to avoid circular dependency
 import type { Block } from '@entities/Block';
 import type { Hex } from '@entities/Hex';
+

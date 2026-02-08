@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Game constants for Hextris
  * Core configuration values used throughout the game
  */
@@ -89,3 +89,4 @@ export const MIN_TOUCH_TARGET_SIZE = 48; // pixels
 // Performance
 export const TARGET_FPS = 60;
 export const FRAME_TIME = 1000 / TARGET_FPS;
+

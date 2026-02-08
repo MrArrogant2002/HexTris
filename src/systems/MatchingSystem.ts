@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MatchingSystem - Detects and clears matching blocks
  * Ports logic from checking.js - flood fill algorithm
  */
@@ -230,3 +230,4 @@ export class MatchingSystem {
     return currentFrame - this.lastComboFrame < this.comboTime;
   }
 }
+

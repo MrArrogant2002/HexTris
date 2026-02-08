@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Type definitions for game state
  */
 
@@ -84,3 +84,4 @@ export type StateEvent =
   | 'powerUpUsed';
 
 export type StateListener = (data?: any) => void;
+

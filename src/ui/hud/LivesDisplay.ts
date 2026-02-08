@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Lives Display HUD Component
  * Shows player lives as hearts in the top-left corner
  */
@@ -43,7 +43,7 @@ export class LivesDisplay {
           : 'opacity-30 scale-90 grayscale'
         }
       `;
-      heart.textContent = '❤️';
+      heart.textContent = 'LIFE';
       heart.title = `Life ${i + 1}`;
       this.heartsContainer.appendChild(heart);
     }
@@ -116,3 +116,4 @@ export class LivesDisplay {
     return this.element;
   }
 }
+

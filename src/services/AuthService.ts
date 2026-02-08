@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AuthService - Handles all authentication operations
  * Uses Appwrite Auth for email/password authentication, sessions, and password recovery
  */
@@ -100,7 +100,7 @@ export class AuthService {
         credentials.name
       );
 
-      console.log('✅ Account created:', user.$id);
+      console.log('Account created:', user.$id);
 
       // Automatically log in after signup
       await account.createEmailPasswordSession(
@@ -115,7 +115,7 @@ export class AuthService {
         sessionId: user.$id,
       };
 
-      console.log('✅ Session created for:', this.currentSession.name);
+      console.log('Session created for:', this.currentSession.name);
       return this.currentSession;
     } catch (error: any) {
       console.error('Sign up failed:', error);
@@ -136,7 +136,7 @@ export class AuthService {
    */
   async login(credentials: AuthCredentials): Promise<Session> {
     try {
-      console.log('🔄 Attempting login for:', credentials.email);
+      console.log('Attempting login for:', credentials.email);
       
       // Create email session
       await account.createEmailPasswordSession(
@@ -154,10 +154,10 @@ export class AuthService {
         sessionId: user.$id,
       };
 
-      console.log('✅ Logged in:', this.currentSession.name);
+      console.log('Logged in:', this.currentSession.name);
       return this.currentSession;
     } catch (error: any) {
-      console.error('❌ Login failed:', error);
+      console.error('Login failed:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
       
@@ -196,7 +196,7 @@ export class AuthService {
       if (shouldClearState) {
         this.currentSession = null;
         this.sessionCheckPromise = null; // Clear any pending checks
-        console.log('✅ Logged out successfully');
+        console.log('Logged out successfully');
 
         // Clear state
         stateManager.setState('player', {
@@ -225,7 +225,7 @@ export class AuthService {
       if (this.currentSession) {
         this.currentSession.name = name;
       }
-      console.log('✅ Name updated to:', name);
+      console.log('Name updated to:', name);
     } catch (error) {
       console.error('Failed to update name:', error);
       throw new Error('Failed to update name');
@@ -238,7 +238,7 @@ export class AuthService {
   async updatePassword(newPassword: string, oldPassword: string): Promise<void> {
     try {
       await account.updatePassword(newPassword, oldPassword);
-      console.log('✅ Password updated successfully');
+      console.log('Password updated successfully');
     } catch (error: any) {
       console.error('Failed to update password:', error);
       
@@ -259,7 +259,7 @@ export class AuthService {
       // Result: https://yourdomain.com/#/reset-password?userId=xxx&secret=yyy
       const redirectUrl = `${window.location.origin}/#/reset-password`;
       await account.createRecovery(email, redirectUrl);
-      console.log('✅ Recovery email sent to:', email);
+      console.log('Recovery email sent to:', email);
     } catch (error: any) {
       console.error('Password recovery failed:', error);
       
@@ -283,7 +283,7 @@ export class AuthService {
   ): Promise<void> {
     try {
       await account.updateRecovery(userId, secret, newPassword);
-      console.log('✅ Password reset successfully');
+      console.log('Password reset successfully');
     } catch (error: any) {
       console.error('Password reset failed:', error);
       
@@ -319,3 +319,4 @@ export class AuthService {
 
 // Singleton instance
 export const authService = new AuthService();
+

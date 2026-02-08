@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Canvas utility for Hextris
  * Handles canvas setup, scaling, and responsive behavior
  */
@@ -163,3 +163,4 @@ export class Canvas {
     this.element.remove();
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hex entity - Central hexagon that blocks attach to
  * Ported from js/Hex.js with TypeScript types
  */
@@ -81,15 +81,6 @@ export class Hex {
    * Apply shake effect
    */
   public shake(obj: Shake): void {
-    const angle = (30 + obj.lane * 60) * (Math.PI / 180);
-    // Calculate offset for shake effect (currently not applied to draw)
-    const dx = Math.cos(angle) * obj.magnitude;
-    const dy = Math.sin(angle) * obj.magnitude;
-    
-    // Store for potential use in draw method
-    this.x += dx * 0.001; // Minimal effect to prevent unused warning
-    this.y += dy * 0.001;
-
     obj.magnitude /= 2 * (this.dt + 0.5);
 
     if (obj.magnitude < 1) {
@@ -312,8 +303,6 @@ export class Hex {
       }
     }
 
-    // Increment frame counter
-    this.ct++;
   }
 
   /**
@@ -421,3 +410,4 @@ export class Hex {
     this.settings = settings;
   }
 }
+

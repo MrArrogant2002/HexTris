@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Timer Attack Mode
  * Race against the clock - survive for 90 seconds and maximize score
  */
@@ -48,13 +48,13 @@ class TimerAttackMode {
       this.resume();
     });
 
-    console.log('⏱️ Timer Attack Mode initialized');
+    console.log('Timer Attack Mode initialized');
   }
 
   activate() {
     this.isActive = true;
     this.timeRemaining = this.timeLimit;
-    console.log('⏱️ Timer Attack Mode ACTIVATED');
+    console.log('Timer Attack Mode ACTIVATED');
     
     // Show mode indicator
     this.showModeIndicator();
@@ -64,7 +64,7 @@ class TimerAttackMode {
     this.isActive = false;
     this.stop();
     this.hideModeIndicator();
-    console.log('⏱️ Timer Attack Mode deactivated');
+    console.log('Timer Attack Mode deactivated');
   }
 
   start() {
@@ -81,7 +81,7 @@ class TimerAttackMode {
       }
     }, 100); // Update every 100ms for smooth display
 
-    console.log('⏱️ Timer started!');
+    console.log('Timer started!');
   }
 
   stop() {
@@ -128,7 +128,7 @@ class TimerAttackMode {
     this.checkNewBest(finalScore);
     
     // Trigger game over
-    console.log('⏱️ TIME UP! Final score:', finalScore);
+    console.log('TIME UP! Final score:', finalScore);
     
     // Dispatch time up event
     window.dispatchEvent(new CustomEvent('timerModeTimeUp', {
@@ -143,7 +143,7 @@ class TimerAttackMode {
     
     this.stop();
     
-    console.log(`⏱️ Game ended at ${timeElapsed.toFixed(1)}s. Score: ${finalScore}`);
+    console.log(`Game ended at ${timeElapsed.toFixed(1)}s. Score: ${finalScore}`);
     
     window.dispatchEvent(new CustomEvent('timerModeEnded', {
       detail: { 
@@ -166,7 +166,7 @@ class TimerAttackMode {
     
     finalScore += timeBonus + completionBonus;
     
-    console.log(`⏱️ Score breakdown: Base=${currentScore}, Time bonus=${timeBonus}, Completion=${completionBonus}`);
+    console.log(`Score breakdown: Base=${currentScore}, Time bonus=${timeBonus}, Completion=${completionBonus}`);
     
     return finalScore;
   }
@@ -177,7 +177,7 @@ class TimerAttackMode {
       this.bestScore = finalScore;
       this.saveBestScore(finalScore);
       
-      console.log('🏆 NEW TIMER ATTACK RECORD:', finalScore);
+      console.log('NEW TIMER ATTACK RECORD:', finalScore);
     }
     
     // Check best time (if survived)
@@ -232,7 +232,7 @@ class TimerAttackMode {
       modeBadge = document.createElement('div');
       modeBadge.id = 'timer-mode-badge';
       modeBadge.className = 'timer-mode-badge';
-      modeBadge.innerHTML = '⏱️ TIMER ATTACK';
+      modeBadge.innerHTML = 'TIMER ATTACK';
       document.body.appendChild(modeBadge);
     }
     modeBadge.style.display = 'block';
@@ -306,6 +306,7 @@ export { TimerAttackMode };
 // if (typeof window !== 'undefined') {
 //   document.addEventListener('DOMContentLoaded', () => {
 //     new TimerAttackMode();
-//     console.log('✅ Timer Attack Mode system initialized');
+//     console.log('Timer Attack Mode system initialized');
 //   });
 // }
+

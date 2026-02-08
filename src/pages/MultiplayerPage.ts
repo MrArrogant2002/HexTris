@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MultiplayerPage - Group management (create/join/list)
  */
 
@@ -44,7 +44,7 @@ export class MultiplayerPage extends BasePage {
     this.contentContainer.className = 'space-y-4';
     container.appendChild(this.contentContainer);
 
-    const backButton = this.createBackButton('← Back', () => {
+    const backButton = this.createBackButton('<- Back', () => {
       Router.getInstance().navigate(ROUTES.MENU);
     });
     backButton.style.marginTop = '1rem';
@@ -407,3 +407,4 @@ export class MultiplayerPage extends BasePage {
     this.buttons = [];
   }
 }
+

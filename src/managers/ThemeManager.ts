@@ -1,9 +1,51 @@
-/**
+﻿/**
  * ThemeManager
  * Manages theme loading, application, and persistence
  */
 
+// Make this a module
+export {};
+
+interface Theme {
+  id: string;
+  name: string;
+  description?: string;
+  colors: {
+    blocks: string[];
+    hex: { dark: string; light: string };
+    background?: string;
+    hexOutline?: string;
+    textPrimary?: string;
+    textSecondary?: string;
+    accent?: string;
+  };
+  background?: any;
+  fonts?: any;
+  particles?: any;
+  unlockScore?: number;
+}
+
+interface ThemeConfig {
+  [key: string]: Theme;
+}
+
+// Extend Window interface
+declare global {
+  interface Window {
+    ThemeConfig?: ThemeConfig;
+    colors?: string[];
+    currentBlockColors?: string[];
+    particleEffectsEnabled?: boolean;
+    particleConfig?: any;
+  }
+}
+
 class ThemeManager {
+  private currentTheme: Theme | null;
+  private availableThemes: ThemeConfig;
+  private unlockedThemes: string[];
+  private userId: string | null;
+
   constructor() {
     this.currentTheme = null;
     this.availableThemes = window.ThemeConfig || {};
@@ -16,7 +58,7 @@ class ThemeManager {
   /**
    * Initialize the theme manager
    */
-  init() {
+  init(): void {
     // Load unlocked themes from localStorage
     const savedUnlocked = localStorage.getItem('unlockedThemes');
     if (savedUnlocked) {
@@ -32,16 +74,16 @@ class ThemeManager {
     this.applyTheme(selectedThemeId);
 
     // Listen for score changes to unlock themes
-    document.addEventListener('scoreUpdated', (e) => {
+    document.addEventListener('scoreUpdated', ((e: CustomEvent) => {
       this.checkUnlocks(e.detail.totalScore);
-    });
+    }) as EventListener);
   }
 
   /**
    * Apply a theme to the game
    * @param {string} themeId - The ID of the theme to apply
    */
-  applyTheme(themeId) {
+  applyTheme(themeId: string): boolean {
     const theme = this.availableThemes[themeId];
     
     if (!theme) {
@@ -82,14 +124,14 @@ class ThemeManager {
       detail: { theme: theme }
     }));
 
-    console.log(`✅ Theme applied: ${theme.name}`);
+    console.log(`Theme applied: ${theme.name}`);
     return true;
   }
 
   /**
    * Apply theme colors to CSS variables
    */
-  applyColors(colors) {
+  applyColors(colors: any): void {
     const root = document.documentElement;
     
     root.style.setProperty('--theme-bg', colors.background);
@@ -107,7 +149,7 @@ class ThemeManager {
     window.currentBlockColors = colors.blocks;
     
     // Update tinted colors mapping if it exists
-    if (window.hexColorsToTintedColors && window.rgbColorsToTintedColors) {
+    if ((window as any).hexColorsToTintedColors && (window as any).rgbColorsToTintedColors) {
       this.updateTintedColors(colors.blocks);
     }
   }
@@ -115,16 +157,16 @@ class ThemeManager {
   /**
    * Update tinted colors mapping for theme
    */
-  updateTintedColors(blockColors) {
+  updateTintedColors(blockColors: string[]): void {
     // Clear existing mappings
-    window.hexColorsToTintedColors = {};
-    window.rgbColorsToTintedColors = {};
+    (window as any).hexColorsToTintedColors = {};
+    (window as any).rgbColorsToTintedColors = {};
     
     // Create new mappings for each block color
     blockColors.forEach(color => {
       // Create lighter tinted version (add 20% brightness)
       const tinted = this.lightenColor(color, 0.2);
-      window.hexColorsToTintedColors[color] = tinted;
+      (window as any).hexColorsToTintedColors[color] = tinted;
       
       // Convert to RGB format as well
       const rgb = this.hexToRgb(color);
@@ -132,7 +174,7 @@ class ThemeManager {
       if (rgb && tintedRgb) {
         const rgbKey = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
         const rgbVal = `rgb(${tintedRgb.r}, ${tintedRgb.g}, ${tintedRgb.b})`;
-        window.rgbColorsToTintedColors[rgbKey] = rgbVal;
+        (window as any).rgbColorsToTintedColors[rgbKey] = rgbVal;
       }
     });
   }
@@ -140,7 +182,7 @@ class ThemeManager {
   /**
    * Lighten a hex color by a percentage
    */
-  lightenColor(hex, percent) {
+  lightenColor(hex: string, percent: number): string {
     const rgb = this.hexToRgb(hex);
     if (!rgb) return hex;
     
@@ -154,7 +196,7 @@ class ThemeManager {
   /**
    * Convert hex color to RGB object
    */
-  hexToRgb(hex) {
+  hexToRgb(hex: string): { r: number; g: number; b: number } | null {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result ? {
       r: parseInt(result[1], 16),
@@ -166,8 +208,8 @@ class ThemeManager {
   /**
    * Apply theme background
    */
-  applyBackground(background) {
-    const canvas = document.getElementById('canvas');
+  applyBackground(background: any): void {
+    // const canvas = document.getElementById('canvas');
     const container = document.body;
 
     if (background.type === 'solid') {
@@ -180,7 +222,7 @@ class ThemeManager {
   /**
    * Apply theme fonts
    */
-  applyFonts(fonts) {
+  applyFonts(fonts: any): void {
     const root = document.documentElement;
     
     root.style.setProperty('--theme-font-primary', fonts.primary);
@@ -190,7 +232,7 @@ class ThemeManager {
   /**
    * Enable particle effects
    */
-  enableParticles(particleConfig) {
+  enableParticles(particleConfig: any): void {
     window.particleEffectsEnabled = true;
     window.particleConfig = particleConfig;
   }
@@ -198,7 +240,7 @@ class ThemeManager {
   /**
    * Disable particle effects
    */
-  disableParticles() {
+  disableParticles(): void {
     window.particleEffectsEnabled = false;
     window.particleConfig = null;
   }
@@ -206,14 +248,14 @@ class ThemeManager {
   /**
    * Check if a theme is unlocked
    */
-  isUnlocked(themeId) {
+  isUnlocked(themeId: string): boolean {
     return this.unlockedThemes.includes(themeId);
   }
 
   /**
    * Unlock a theme
    */
-  unlockTheme(themeId) {
+  unlockTheme(themeId: string): boolean {
     if (this.isUnlocked(themeId)) {
       return false; // Already unlocked
     }
@@ -230,26 +272,21 @@ class ThemeManager {
     // Show unlock notification
     this.showUnlockNotification(theme);
 
-    // TODO: Update to use new AppwriteClient in future priority
-    /*
-    if (window.appwriteClient && window.currentUser) {
-      window.appwriteClient.updateUnlockedThemes(window.currentUser.$id, this.unlockedThemes)
-        .catch(err => console.warn('Failed to sync unlocked themes:', err));
-    }
-    */
+    // Update to Appwrite if user is logged in
+    this.syncToAppwrite().catch(err => console.warn('Failed to sync unlocked themes:', err));
 
-    console.log(`🎉 Theme unlocked: ${theme.name}`);
+    console.log(`Theme unlocked: ${theme.name}`);
     return true;
   }
 
   /**
    * Check score and unlock themes
    */
-  checkUnlocks(totalScore) {
+  checkUnlocks(totalScore: number): void {
     for (const [themeId, theme] of Object.entries(this.availableThemes)) {
       if (themeId === 'classic') continue; // Skip classic, always unlocked
 
-      if (!this.isUnlocked(themeId) && totalScore >= theme.unlockScore) {
+      if (!this.isUnlocked(themeId) && theme.unlockScore && totalScore >= theme.unlockScore) {
         this.unlockTheme(themeId);
       }
     }
@@ -258,21 +295,21 @@ class ThemeManager {
   /**
    * Show unlock notification using SweetAlert
    */
-  showUnlockNotification(theme) {
-    if (typeof swal !== 'undefined') {
-      swal({
-        title: '🎉 Theme Unlocked!',
-        text: `You've unlocked the ${theme.name} theme!\n${theme.description}`,
+  showUnlockNotification(theme: Theme): void {
+    if (typeof (window as any).swal !== 'undefined') {
+      (window as any).swal({
+        title: 'Theme Unlocked!',
+        text: `You've unlocked the ${theme.name} theme!${theme.description ? '\n' + theme.description : ''}`,
         type: 'success',
         confirmButtonText: 'Apply Now',
         showCancelButton: true,
         cancelButtonText: 'Later'
-      }, (applyNow) => {
+      }, (applyNow: any) => {
         if (applyNow) {
           this.applyTheme(theme.id);
           // Refresh theme selector if open
-          if (window.themeSelector) {
-            window.themeSelector.refresh();
+          if ((window as any).themeSelector) {
+            (window as any).themeSelector.refresh();
           }
         }
       });
@@ -282,7 +319,7 @@ class ThemeManager {
   /**
    * Get all available themes with unlock status
    */
-  getAllThemes() {
+  getAllThemes(): any[] {
     return Object.entries(this.availableThemes).map(([id, theme]) => ({
       ...theme,
       unlocked: this.isUnlocked(id),
@@ -293,23 +330,23 @@ class ThemeManager {
   /**
    * Get current theme
    */
-  getCurrentTheme() {
+  getCurrentTheme(): Theme | null {
     return this.currentTheme;
   }
 
   /**
    * Load themes from Appwrite user profile
    */
-  async loadFromAppwrite(userId) {
+  async loadFromAppwrite(userId: string): Promise<void> {
     this.userId = userId;
 
-    if (!window.appwriteClient) {
-      return;
-    }
-
     try {
-      const user = await window.appwriteClient.getUser(userId);
+      // Dynamically import to avoid circular dependency
+      const { appwriteClient } = await import('../network/AppwriteClient');
+      const user = await appwriteClient.getUserById(userId);
       
+      if (!user) return;
+
       if (user.themesUnlocked && Array.isArray(user.themesUnlocked)) {
         this.unlockedThemes = user.themesUnlocked;
         localStorage.setItem('unlockedThemes', JSON.stringify(this.unlockedThemes));
@@ -326,19 +363,29 @@ class ThemeManager {
   /**
    * Save current theme selection to Appwrite
    */
-  async saveToAppwrite() {
-    // TODO: Refactor to use new AppwriteClient in future priority
-    /*
-    if (!this.userId || !window.appwriteClient || !this.currentTheme) {
+  async saveToAppwrite(): Promise<void> {
+    return this.syncToAppwrite();
+  }
+
+  /**
+   * Sync theme data to Appwrite
+   */
+  async syncToAppwrite(): Promise<void> {
+    if (!this.userId || !this.currentTheme) {
       return;
     }
 
     try {
-      await window.appwriteClient.updateUserTheme(this.userId, this.currentTheme.id);
+      // Dynamically import to avoid circular dependency
+      const { appwriteClient } = await import('../network/AppwriteClient');
+      await appwriteClient.updateThemes(
+        this.userId,
+        this.unlockedThemes,
+        this.currentTheme.id
+      );
     } catch (err) {
-      console.warn('Failed to save theme to Appwrite:', err);
+      console.warn('Failed to sync theme to Appwrite:', err);
     }
-    */
   }
 }
 
@@ -352,3 +399,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ThemeManager;
 }
+

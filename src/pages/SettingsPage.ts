@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Settings Page - Game settings and preferences
  * Theme selector, audio settings, accessibility options, account management
  */
@@ -20,7 +20,7 @@ export class SettingsPage extends BasePage {
     this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 p-4 sm:p-6 md:p-8 overflow-y-auto';
 
     // Back button
-    const backBtn = this.createBackButton('← Back', () => {
+    const backBtn = this.createBackButton('<- Back', () => {
       Router.getInstance().navigate(ROUTES.MENU);
     });
     backBtn.style.marginBottom = '1.5rem';
@@ -121,7 +121,7 @@ export class SettingsPage extends BasePage {
     if (isSelected) {
       const indicator = document.createElement('div');
       indicator.className = 'mt-2 text-center text-sm font-bold';
-      indicator.textContent = '✓';
+      indicator.textContent = 'OK';
       card.appendChild(indicator);
     }
 
@@ -354,3 +354,4 @@ export class SettingsPage extends BasePage {
     this.buttons = [];
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Base page class for Hextris
  * Abstract class that all pages extend
  */
@@ -84,7 +84,7 @@ export abstract class BasePage {
   /**
    * Helper: Create a back button
    */
-  protected createBackButton(text: string = '← Back', onClick: () => void): HTMLButtonElement {
+  protected createBackButton(text: string = '<- Back', onClick: () => void): HTMLButtonElement {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `
@@ -118,3 +118,4 @@ export abstract class BasePage {
     this.element.remove();
   }
 }
+

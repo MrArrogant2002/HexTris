@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Main Menu Page - Menu selection screen
  * Shows game mode options and player stats
  */
@@ -71,7 +71,7 @@ export class MenuPage extends BasePage {
     const diamondsCard = document.createElement('div');
     diamondsCard.className = 'bg-white border-2 border-gray-300 rounded-lg p-3 sm:p-4 text-center hover:border-gray-500 transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
     diamondsCard.innerHTML = `
-      <div class="text-2xl sm:text-3xl mb-1">💎</div>
+      <div class="text-2xl sm:text-3xl mb-1">DIAMOND</div>
       <div class="text-3xl sm:text-4xl font-bold text-black mb-1">${state.player.specialPoints}</div>
       <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Diamonds</div>
       <div class="text-xs text-gray-500 mt-2">Earn by playing</div>
@@ -103,7 +103,7 @@ export class MenuPage extends BasePage {
     modesGrid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 px-0 sm:px-2';
 
     // Single Player
-    const singlePlayerBtn = new Button('🎮 SINGLE PLAYER', {
+    const singlePlayerBtn = new Button('SINGLE PLAYER', {
       variant: 'primary',
       size: 'large',
       fullWidth: true,
@@ -113,7 +113,7 @@ export class MenuPage extends BasePage {
     modesGrid.appendChild(singlePlayerBtn.element);
 
     // Multiplayer
-    const multiplayerBtn = new Button('👥 MULTIPLAYER', {
+    const multiplayerBtn = new Button('MULTIPLAYER', {
       variant: 'secondary',
       size: 'large',
       fullWidth: true,
@@ -123,7 +123,7 @@ export class MenuPage extends BasePage {
     modesGrid.appendChild(multiplayerBtn.element);
 
     // Daily Challenge
-    const dailyChallengeBtn = new Button('📅 DAILY CHALLENGE', {
+    const dailyChallengeBtn = new Button('DAILY CHALLENGE', {
       variant: 'primary',
       size: 'large',
       fullWidth: true,
@@ -133,7 +133,7 @@ export class MenuPage extends BasePage {
     modesGrid.appendChild(dailyChallengeBtn.element);
 
     // Timer Attack
-    const timerAttackBtn = new Button('⏱️ TIMER ATTACK', {
+    const timerAttackBtn = new Button('TIMER ATTACK', {
       variant: 'secondary',
       size: 'large',
       fullWidth: true,
@@ -149,7 +149,7 @@ export class MenuPage extends BasePage {
     const actionSection = document.createElement('div');
     actionSection.className = 'flex gap-2 sm:gap-3 justify-center flex-wrap px-0 sm:px-2 pb-2 sm:pb-4';
 
-    const settingsBtn = new Button('⚙️ Settings', {
+    const settingsBtn = new Button('Settings', {
       variant: 'outline',
       size: 'medium',
       onClick: () => Router.getInstance().navigate(ROUTES.SETTINGS),
@@ -157,7 +157,7 @@ export class MenuPage extends BasePage {
     this.buttons.push(settingsBtn);
     actionSection.appendChild(settingsBtn.element);
 
-    const leaderboardBtn = new Button('🏆 Leaderboard', {
+    const leaderboardBtn = new Button('Leaderboard', {
       variant: 'outline',
       size: 'medium',
       onClick: () => this.showLeaderboard(),
@@ -165,7 +165,7 @@ export class MenuPage extends BasePage {
     this.buttons.push(leaderboardBtn);
     actionSection.appendChild(leaderboardBtn.element);
 
-    const logoutBtn = new Button('🚪 Logout', {
+    const logoutBtn = new Button('Logout', {
       variant: 'ghost',
       size: 'small',
       onClick: () => this.logout(),
@@ -286,3 +286,4 @@ export class MenuPage extends BasePage {
     this.buttons = [];
   }
 }
+

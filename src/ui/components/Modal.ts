@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Modal component for Hextris
  * Reusable modal dialog with backdrop and animations
  */
@@ -103,7 +103,7 @@ export class Modal {
       const closeBtn = document.createElement('button');
       closeBtn.type = 'button';
       closeBtn.className = 'text-gray-500 hover:text-black transition-colors';
-      closeBtn.innerHTML = '✕';
+      closeBtn.innerHTML = 'X';
       closeBtn.style.fontSize = '24px';
       closeBtn.addEventListener('click', () => this.close());
       header.appendChild(closeBtn);
@@ -217,3 +217,4 @@ export class Modal {
     document.body.style.overflow = '';
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Main entry point for Hextris TypeScript version
  * Initializes the application and sets up routing
  */
@@ -42,7 +42,7 @@ async function restoreSession(): Promise<boolean> {
           selectedTheme: user.selectedTheme as ThemeName,
         });
         
-        console.log('✅ Session restored for:', user.name);
+        console.log('Session restored for:', user.name);
         return true;
       }
     }
@@ -124,7 +124,7 @@ async function init(): Promise<void> {
     window.dispatchEvent(new Event('hashchange'));
   }
 
-  console.log('🎮 Hextris initialized successfully!');
+  console.log('Hextris initialized successfully!');
 }
 
 // Initialize when DOM is ready
@@ -137,11 +137,44 @@ if (document.readyState === 'loading') {
 // Handle unhandled errors
 window.addEventListener('error', (event) => {
   console.error('Unhandled error:', event.error);
-  // TODO: Show error modal to user
+  showErrorNotification('An unexpected error occurred', event.error?.message || 'Unknown error');
 });
 
 // Handle unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
-  // TODO: Show error modal to user
+  showErrorNotification('Promise Error', event.reason?.message || 'An async operation failed');
 });
+
+/**
+ * Show error notification to user
+ */
+function showErrorNotification(title: string, message: string): void {
+  // Create error notification element
+  const notification = document.createElement('div');
+  notification.className = `
+    fixed top-4 right-4 z-[9999]
+    max-w-md p-4 rounded-lg shadow-2xl
+    bg-red-600 text-white border-2 border-red-800
+    animate-slide-down
+  `;
+  
+  const titleEl = document.createElement('div');
+  titleEl.className = 'font-bold text-lg mb-1';
+  titleEl.textContent = title;
+  
+  const messageEl = document.createElement('div');
+  messageEl.className = 'text-sm opacity-90';
+  messageEl.textContent = message;
+  
+  notification.appendChild(titleEl);
+  notification.appendChild(messageEl);
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.add('animate-fade-out');
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Daily Challenge Modal - Show challenge preview and completion rewards
  */
 
@@ -14,7 +14,7 @@ export class DailyChallengeModal {
    */
   public showPreview(challenge: DailyChallenge, streak: number): void {
     this.modal = new Modal({
-      title: '📅 TODAY\'S CHALLENGE',
+      title: 'TODAY\'S CHALLENGE',
       closeOnBackdrop: true,
       closeOnEscape: true,
       maxWidth: 'lg',
@@ -39,7 +39,7 @@ export class DailyChallengeModal {
     difficulty.innerHTML = `
       <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Difficulty</div>
       <div class="text-lg font-bold text-blue-900 mt-1">
-        ${challenge.baseReward <= 250 ? '⭐ Easy' : challenge.baseReward <= 500 ? '⭐⭐ Medium' : '⭐⭐⭐ Hard'}
+        ${challenge.baseReward <= 250 ? 'Easy' : challenge.baseReward <= 500 ? 'Medium' : 'Hard'}
       </div>
     `;
     content.appendChild(difficulty);
@@ -53,7 +53,7 @@ export class DailyChallengeModal {
     baseReward.className = 'flex justify-between items-center bg-gray-50 rounded-lg p-3 border border-gray-200';
     baseReward.innerHTML = `
       <span class="text-sm font-semibold text-gray-700">Base Reward</span>
-      <span class="text-lg font-bold text-gray-900">${challenge.baseReward} 💎</span>
+      <span class="text-lg font-bold text-gray-900">${challenge.baseReward} DIAMOND</span>
     `;
     rewardsSection.appendChild(baseReward);
 
@@ -62,8 +62,8 @@ export class DailyChallengeModal {
       const bonusReward = document.createElement('div');
       bonusReward.className = 'flex justify-between items-center bg-yellow-50 rounded-lg p-3 border-2 border-yellow-300 animate-pulse';
       bonusReward.innerHTML = `
-        <span class="text-sm font-semibold text-yellow-700">🔥 Streak Bonus (${streak} days)</span>
-        <span class="text-lg font-bold text-yellow-900">+${challenge.streakBonus} 💎</span>
+        <span class="text-sm font-semibold text-yellow-700">Streak Bonus (${streak} days)</span>
+        <span class="text-lg font-bold text-yellow-900">+${challenge.streakBonus} DIAMOND</span>
       `;
       rewardsSection.appendChild(bonusReward);
     }
@@ -73,7 +73,7 @@ export class DailyChallengeModal {
     totalReward.className = 'flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-400';
     totalReward.innerHTML = `
       <span class="text-sm font-bold text-green-700 uppercase tracking-wide">Total Reward</span>
-      <span class="text-2xl font-black text-green-900">${challenge.totalReward} 💎</span>
+      <span class="text-2xl font-black text-green-900">${challenge.totalReward} DIAMOND</span>
     `;
     rewardsSection.appendChild(totalReward);
 
@@ -85,7 +85,7 @@ export class DailyChallengeModal {
       streakDisplay.className = 'text-center bg-orange-50 rounded-lg p-3 border border-orange-200';
       streakDisplay.innerHTML = `
         <div class="text-xs font-semibold text-orange-700 uppercase">Current Streak</div>
-        <div class="text-3xl font-black text-orange-600 mt-1">🔥 ${streak}</div>
+        <div class="text-3xl font-black text-orange-600 mt-1">STREAK ${streak}</div>
         <div class="text-xs text-orange-600 mt-1">Keep it going!</div>
       `;
       content.appendChild(streakDisplay);
@@ -95,9 +95,9 @@ export class DailyChallengeModal {
     const motivationMessages = [
       'Make every second count!',
       'Challenge yourself to greatness!',
-      'You got this! 💪',
-      'Time to shine! ✨',
-      'Today\'s your day! ⭐',
+      'You got this!',
+      'Time to shine!',
+      'Today\'s your day!',
     ];
     const randomMessage = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
 
@@ -136,7 +136,7 @@ export class DailyChallengeModal {
     // Celebration animation
     const celebration = document.createElement('div');
     celebration.className = 'text-7xl mb-4 animate-bounce';
-    celebration.textContent = '🎉';
+    celebration.textContent = 'SUCCESS';
     content.appendChild(celebration);
 
     // Title
@@ -163,7 +163,7 @@ export class DailyChallengeModal {
     baseRewardEl.className = 'flex justify-between items-center bg-gray-50 rounded-lg p-3 border border-gray-200';
     baseRewardEl.innerHTML = `
       <span class="font-semibold text-gray-700">Base Reward</span>
-      <span class="font-bold text-gray-900">+${challenge.baseReward} 💎</span>
+      <span class="font-bold text-gray-900">+${challenge.baseReward} DIAMOND</span>
     `;
     rewardBreakdown.appendChild(baseRewardEl);
 
@@ -171,8 +171,8 @@ export class DailyChallengeModal {
       const bonusEl = document.createElement('div');
       bonusEl.className = 'flex justify-between items-center bg-yellow-50 rounded-lg p-3 border-2 border-yellow-300 animate-pulse';
       bonusEl.innerHTML = `
-        <span class="font-semibold text-yellow-700">🔥 Streak Bonus (${streak} days)</span>
-        <span class="font-bold text-yellow-900">+${challenge.streakBonus} 💎</span>
+        <span class="font-semibold text-yellow-700">Streak Bonus (${streak} days)</span>
+        <span class="font-bold text-yellow-900">+${challenge.streakBonus} DIAMOND</span>
       `;
       rewardBreakdown.appendChild(bonusEl);
     }
@@ -182,7 +182,7 @@ export class DailyChallengeModal {
     totalRewardEl.className = 'flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-400 scale-105';
     totalRewardEl.innerHTML = `
       <span class="text-sm font-bold text-green-700 uppercase tracking-wide">Reward Earned</span>
-      <span class="text-3xl font-black text-green-900 animate-pulse">+${challenge.totalReward} 💎</span>
+      <span class="text-3xl font-black text-green-900 animate-pulse">+${challenge.totalReward} DIAMOND</span>
     `;
     rewardBreakdown.appendChild(totalRewardEl);
 
@@ -193,7 +193,7 @@ export class DailyChallengeModal {
       const streakAlert = document.createElement('div');
       streakAlert.className = 'bg-orange-100 rounded-lg p-4 border-2 border-orange-400';
       streakAlert.innerHTML = `
-        <div class="text-2xl mb-2">🔥 AMAZING!</div>
+        <div class="text-2xl mb-2">AMAZING!</div>
         <div class="text-lg font-bold text-orange-900 mb-1">${streak}-Day Streak!</div>
         <div class="text-sm text-orange-700">You're on fire! Keep the streak alive!</div>
       `;
@@ -223,3 +223,4 @@ export class DailyChallengeModal {
     }
   }
 }
+

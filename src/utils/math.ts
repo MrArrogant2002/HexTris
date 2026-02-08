@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mathematical utility functions for Hextris
  * Coordinate transformations, rotations, and random numbers
  */
@@ -117,3 +117,4 @@ export function angleDifference(from: number, to: number): number {
   while (diff < -180) diff += 360;
   return diff;
 }
+

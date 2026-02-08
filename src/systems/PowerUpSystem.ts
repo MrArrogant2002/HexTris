@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PowerUpSystem
  * Manages power-up spawning, collection, and activation
  */
@@ -36,7 +36,7 @@ class PowerUpSystem {
       this.handleKeyPress(e);
     });
 
-    console.log('✅ PowerUpSystem initialized');
+    console.log('PowerUpSystem initialized');
   }
 
   /**
@@ -103,7 +103,7 @@ class PowerUpSystem {
     const powerUp = new PowerUp(type, lane, settings.startDist * settings.scale);
     this.activePowerUps.push(powerUp);
 
-    console.log(`🎁 Power-up spawned: ${type} on lane ${lane}`);
+    console.log(`Power-up spawned: ${type} on lane ${lane}`);
   }
 
   /**
@@ -119,7 +119,7 @@ class PowerUpSystem {
     if (this.inventory[type] < 3) {
       this.inventory[type]++;
       
-      console.log(`📦 Power-up collected: ${type} (x${this.inventory[type]})`);
+      console.log(`Power-up collected: ${type} (x${this.inventory[type]})`);
       
       // Update UI
       this.updateInventoryUI();
@@ -145,7 +145,7 @@ class PowerUpSystem {
     // Activate effect
     this.activatePowerUp(type);
 
-    console.log(`⚡ Power-up used: ${type} (${this.inventory[type]} remaining)`);
+    console.log(`Power-up used: ${type} (${this.inventory[type]} remaining)`);
     return true;
   }
 
@@ -246,7 +246,7 @@ class PowerUpSystem {
       const text = new Text(
         trueCanvas.width / 2,
         trueCanvas.height / 2,
-        `🔨 ${blocksDestroyed} Blocks! +${bonusScore}`,
+        `${blocksDestroyed} Blocks! +${bonusScore}`,
         '#f39c12',
         40
       );
@@ -268,7 +268,7 @@ class PowerUpSystem {
    * Handle perfect clear (all blocks destroyed)
    */
   handlePerfectClear() {
-    console.log('🌟 PERFECT CLEAR!');
+    console.log('PERFECT CLEAR!');
 
     // Award extra life
     if (window.lifeSystem) {
@@ -278,7 +278,7 @@ class PowerUpSystem {
     // Show message
     if (typeof swal !== 'undefined') {
       swal({
-        title: '🌟 PERFECT CLEAR! 🌟',
+        title: 'PERFECT CLEAR!',
         text: 'All blocks destroyed! +1 Life!',
         type: 'success',
         timer: 3000,
@@ -298,7 +298,7 @@ class PowerUpSystem {
     // Show notification
     if (typeof swal !== 'undefined') {
       swal({
-        title: '⏱️ Slow Motion!',
+        title: 'Slow Motion!',
         text: 'Time slowed for 15 seconds',
         type: 'info',
         timer: 2000,
@@ -309,7 +309,7 @@ class PowerUpSystem {
     // Restore after 15 seconds
     setTimeout(() => {
       settings.scale = originalSpeed;
-      console.log('⏱️ Slow motion ended');
+      console.log('Slow motion ended');
     }, 15000);
   }
 
@@ -324,7 +324,7 @@ class PowerUpSystem {
 
     if (typeof swal !== 'undefined') {
       swal({
-        title: '🛡️ Shield Active!',
+        title: 'Shield Active!',
         text: 'Protected for 10 seconds',
         type: 'success',
         timer: 2000,
@@ -348,9 +348,9 @@ class PowerUpSystem {
    */
   showInventoryNotification(type) {
     const icons = {
-      hammer: '🔨',
-      slowmo: '⏱️',
-      shield: '🛡️'
+      hammer: 'HAMMER',
+      slowmo: 'TIMER',
+      shield: 'SHIELD'
     };
     
     const messages = {
@@ -416,3 +416,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PowerUpSystem;
 }
+

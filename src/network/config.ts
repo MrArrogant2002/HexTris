@@ -1,4 +1,4 @@
-// Network Configuration
+﻿// Network Configuration
 // Auto-detects environment and uses appropriate backend URL
 
 const API_CONFIG = {
@@ -39,5 +39,6 @@ export const CONNECTION_STATUS = {
   ERROR: 'error'
 };
 
-console.log(`🌐 Network Config: ${isDevelopment ? 'Development' : 'Production'}`);
-console.log(`📡 Backend URL: ${API_URL}`);
+console.log(`Network Config: ${isDevelopment ? 'Development' : 'Production'}`);
+console.log(`Backend URL: ${API_URL}`);
+

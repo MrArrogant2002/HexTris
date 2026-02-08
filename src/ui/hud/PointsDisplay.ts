@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Special Points Display HUD Component
  * Shows diamond counter and shop button in top-right corner
  */
@@ -35,7 +35,7 @@ export class PointsDisplay {
     // Diamond icon
     const diamond = document.createElement('span');
     diamond.className = 'text-xl filter drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]';
-    diamond.textContent = '💎';
+    diamond.textContent = 'DIAMOND';
 
     // Points text
     this.pointsText = document.createElement('span');
@@ -137,3 +137,4 @@ export class PointsDisplay {
     return this.element;
   }
 }
+

@@ -1,4 +1,4 @@
-// Appwrite Configuration
+﻿// Appwrite Configuration
 (window as any).appwriteConfig = {
   endpoint: 'https://fra.cloud.appwrite.io/v1',
   projectId: '6984a3df0036d1431b6e',
@@ -10,3 +10,4 @@
 (window as any).serverConfig = {
   url: 'http://localhost:3000'  // Change to your production URL when deploying
 };
+

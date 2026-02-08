@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Theme configuration for Hextris
  * Defines visual themes with different color schemes
  * NO PURPLE THEME - replaced with modern alternatives
@@ -98,3 +98,4 @@ export const DEFAULT_THEME = ThemeName.CLASSIC;
  * All available theme names
  */
 export const availableThemes = Object.values(ThemeName);
+

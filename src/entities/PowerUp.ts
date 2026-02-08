@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 /**
  * PowerUp Base Class
  * Base entity for all power-up types in the game
@@ -28,13 +28,13 @@ class PowerUp {
    */
   getIcon() {
     const icons = {
-      hammer: '🔨',
-      slowmo: '⏱️',
-      shield: '🛡️',
-      star: '⭐',
-      lightning: '⚡'
+      hammer: 'HAMMER',
+      slowmo: 'TIMER',
+      shield: 'SHIELD',
+      star: 'STAR',
+      lightning: 'BOLT'
     };
-    return icons[this.type] || '❓';
+    return icons[this.type] || '?';
   }
 
   /**
@@ -196,3 +196,4 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PowerUp;
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GroupManager - Appwrite-backed group/room system
  */
 
@@ -249,3 +249,4 @@ export class GroupManager {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GamePage - Main game screen with canvas and HUD
  * Canvas rendering, game loop, controls, pause menu, game over
  */
@@ -56,6 +56,7 @@ export class GamePage extends BasePage {
   private dailyChallengeModal: DailyChallengeModal | null = null;
   private timerAttack: TimerAttackMode | null = null;
   private groupManager = new GroupManager();
+  private unsubscribeGameOver: (() => void) | null = null;
 
   private handleTimerModeTimeUp = (): void => {
     if (stateManager.getState().status !== GameStatus.PLAYING) return;
@@ -92,8 +93,8 @@ export class GamePage extends BasePage {
     controls.className = 'bg-white/80 backdrop-blur-sm border-t-2 border-gray-300 px-4 py-2 text-center';
     controls.innerHTML = `
       <div class="text-xs text-gray-600">
-        <span class="hidden md:inline">← → Arrow Keys to Rotate • ↓ Speed Up • P or Space to Pause</span>
-        <span class="md:hidden">Swipe to Move • Tap to Rotate</span>
+        <span class="hidden md:inline">Left/Right Arrow Keys to Rotate - Down Arrow to Speed Up - P or Space to Pause</span>
+        <span class="md:hidden">Swipe to Move - Tap to Rotate</span>
       </div>
     `;
     return controls;
@@ -146,7 +147,7 @@ export class GamePage extends BasePage {
       hover:scale-105 transition-all duration-200
       active:scale-95
     `;
-    pauseButton.textContent = '⏸ PAUSE (P)';
+    pauseButton.textContent = 'PAUSE (P)';
     pauseButton.onclick = () => this.pauseGame();
     hudContainer.appendChild(pauseButton);
 
@@ -189,7 +190,7 @@ export class GamePage extends BasePage {
     // Reset frame counter
     this.frameCount = 0;
     
-    console.log('✅ Canvas initialized', {
+    console.log('Canvas initialized', {
       canvasSize: `${this.canvas.element.width}x${this.canvas.element.height}`,
       hexCenter: `(${centerX}, ${centerY})`,
       hexRadius: hexRadius,
@@ -280,31 +281,18 @@ export class GamePage extends BasePage {
     // Check for matches on newly settled blocks (checked=1)
     // Original: for each block, if (block.checked == 1) consolidateBlocks(...)
     const matchResults = this.matchingSystem.checkAllMatches(this.hex, this.frameCount);
+    let runningScore = state.game.score;
+    let diamondsToAdd = 0;
     for (const result of matchResults) {
       // Add score
-      const newScore = state.game.score + result.score;
-      stateManager.setState('game', {
-        ...state.game,
-        score: newScore,
-      });
-
-      window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: newScore } }));
+      runningScore += result.score;
+      window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: runningScore } }));
 
       // Award diamonds based on streak (combo)
       const diamondsEarned = Math.max(0, result.combo - 1);
-      console.log(`🔥 Match found: ${result.blocksCleared} blocks, Combo: ${result.combo}, Diamonds earned: ${diamondsEarned}`);
-      
+      console.log(`Match found: ${result.blocksCleared} blocks, Combo: ${result.combo}, Diamonds earned: ${diamondsEarned}`);
       if (diamondsEarned > 0) {
-        const player = stateManager.getState().player;
-        console.log(`💎 Before: ${player.specialPoints}, After: ${player.specialPoints + diamondsEarned}`);
-        
-        stateManager.updatePlayer({
-          specialPoints: player.specialPoints + diamondsEarned,
-        });
-
-        if (player.id) {
-          void appwriteClient.addDiamonds(player.id, diamondsEarned);
-        }
+        diamondsToAdd += diamondsEarned;
       }
       
       // Create floating text for score
@@ -324,6 +312,20 @@ export class GamePage extends BasePage {
       
       // Speed up wave system
       this.waveSystem.onBlocksDestroyed();
+    }
+
+    if (matchResults.length > 0) {
+      stateManager.updateGame({ score: runningScore });
+    }
+
+    if (diamondsToAdd > 0) {
+      const player = stateManager.getState().player;
+      const newTotal = player.specialPoints + diamondsToAdd;
+      console.log(`Diamonds: ${player.specialPoints} -> ${newTotal}`);
+      stateManager.updatePlayer({ specialPoints: newTotal });
+      if (player.id) {
+        void appwriteClient.addDiamonds(player.id, diamondsToAdd);
+      }
     }
     
     // Remove fully deleted blocks (deleted=2) and reset settled flags
@@ -387,11 +389,12 @@ export class GamePage extends BasePage {
     }
 
     // Update HUD displays
-    this.scoreDisplay.setScore(state.game.score);
-    this.livesDisplay.setLives(state.game.lives);
+    const updatedState = stateManager.getState();
+    this.scoreDisplay.setScore(updatedState.game.score);
+    this.livesDisplay.setLives(updatedState.game.lives);
 
     // Update special points from player state
-    this.pointsDisplay.setPoints(state.player.specialPoints);
+    this.pointsDisplay.setPoints(updatedState.player.specialPoints);
   }
 
   /**
@@ -702,7 +705,7 @@ export class GamePage extends BasePage {
     scoreDisplay.innerHTML = `
       <div class="text-6xl font-bold mb-2">${state.game.score}</div>
       <div class="text-gray-600">Final Score</div>
-      ${state.game.score > state.player.highScore ? '<div class="text-sm text-green-600 font-bold mt-2">🎉 NEW HIGH SCORE!</div>' : ''}
+      ${state.game.score > state.player.highScore ? '<div class="text-sm text-green-600 font-bold mt-2">NEW HIGH SCORE!</div>' : ''}
     `;
     content.appendChild(scoreDisplay);
 
@@ -727,16 +730,15 @@ export class GamePage extends BasePage {
     this.gameOverModal.setContent(content);
     this.gameOverModal.open();
 
-    // Update high score
-    if (state.game.score > state.player.highScore) {
-      stateManager.updatePlayer({
-        highScore: state.game.score,
-        gamesPlayed: state.player.gamesPlayed + 1,
-      });
+    // Update high score and games played
+    const isNewHighScore = state.game.score > state.player.highScore;
+    stateManager.updatePlayer({
+      highScore: isNewHighScore ? state.game.score : state.player.highScore,
+      gamesPlayed: state.player.gamesPlayed + 1,
+    });
 
-      if (state.player.id) {
-        void appwriteClient.updateSinglePlayerScore(state.player.id, state.game.score);
-      }
+    if (isNewHighScore && state.player.id) {
+      void appwriteClient.updateSinglePlayerScore(state.player.id, state.game.score);
     }
 
     const groupId = state.ui.currentGroupId;
@@ -888,7 +890,7 @@ export class GamePage extends BasePage {
     window.addEventListener('keyup', this.handleKeyUp);
 
     // Listen for game over event
-    stateManager.subscribe('gameOver', () => this.showGameOver());
+    this.unsubscribeGameOver = stateManager.subscribe('gameOver', () => this.showGameOver());
     window.addEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
   }
 
@@ -933,5 +935,12 @@ export class GamePage extends BasePage {
       this.gameOverModal.destroy();
       this.gameOverModal = null;
     }
+
+    if (this.unsubscribeGameOver) {
+      this.unsubscribeGameOver();
+      this.unsubscribeGameOver = null;
+    }
   }
 }
+
+

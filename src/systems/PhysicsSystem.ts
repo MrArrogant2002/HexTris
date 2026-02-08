@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PhysicsSystem - Handles block movement, collision detection, and attachment
  */
 
@@ -162,3 +162,4 @@ export class PhysicsSystem {
     }
   }
 }
+

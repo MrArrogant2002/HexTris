@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Inventory UI HUD Component
  * Shows power-up slots at bottom-left
  */
@@ -75,13 +75,13 @@ export class InventoryUI {
    */
   private getPowerUpIcon(type: string): string {
     const icons: Record<string, string> = {
-      hammer: '🔨',
-      slowmo: '⏱️',
-      shield: '🛡️',
-      star: '⭐',
-      lightning: '⚡'
+      hammer: 'HAMMER',
+      slowmo: 'TIMER',
+      shield: 'SHIELD',
+      star: 'STAR',
+      lightning: 'BOLT'
     };
-    return icons[type] || '❓';
+    return icons[type] || '?';
   }
 
   /**
@@ -170,7 +170,7 @@ export class InventoryUI {
 
       const empty = document.createElement('div');
       empty.className = 'power-up-empty';
-      empty.textContent = '•';
+      empty.textContent = '-';
       empty.style.fontSize = '3rem';
       empty.style.color = '#d1d5db';
       empty.style.fontWeight = 'bold';
@@ -225,3 +225,4 @@ export class InventoryUI {
     return this.element;
   }
 }
+

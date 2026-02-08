@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Score Display HUD Component
  * Shows current score in large text at top-center
  */
@@ -150,3 +150,4 @@ export class ScoreDisplay {
     return this.element;
   }
 }
+

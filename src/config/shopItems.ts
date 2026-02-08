@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shop item configuration for Hextris
  * Defines purchasable items and their effects
  */
@@ -16,7 +16,7 @@ export interface ShopItem {
   name: string;
   description: string;
   cost: number; // Cost in special points
-  icon: string; // Unicode emoji or symbol
+  icon: string; // Short ASCII label
   category: 'consumable' | 'powerup';
   maxQuantity?: number; // Max in inventory (undefined = unlimited)
   effect: string; // Description of the effect
@@ -28,7 +28,7 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     name: 'Continue Game',
     description: 'Resume from game over',
     cost: 500,
-    icon: '🔄',
+    icon: 'RETRY',
     category: 'consumable',
     maxQuantity: 1,
     effect: 'Resurrect with 1 life after game over',
@@ -38,7 +38,7 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     name: 'Extra Life',
     description: 'Gain one additional life',
     cost: 300,
-    icon: '❤️',
+    icon: 'HEART',
     category: 'consumable',
     effect: 'Immediately adds 1 life (max 5)',
   },
@@ -47,7 +47,7 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     name: 'Hammer',
     description: 'Clear blocks in danger zone',
     cost: 200,
-    icon: '🔨',
+    icon: 'HAMMER',
     category: 'powerup',
     maxQuantity: 3,
     effect: 'Removes 3 blocks of the most common color',
@@ -57,7 +57,7 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     name: 'Slow Motion',
     description: 'Slow down time temporarily',
     cost: 150,
-    icon: '⏱️',
+    icon: 'TIMER',
     category: 'powerup',
     maxQuantity: 3,
     effect: 'Reduces game speed by 50% for 10 seconds',
@@ -67,7 +67,7 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     name: 'Shield',
     description: 'Temporary invulnerability',
     cost: 250,
-    icon: '🛡️',
+    icon: 'SHIELD',
     category: 'powerup',
     maxQuantity: 3,
     effect: 'Blocks cannot cause game over for 5 seconds',
@@ -101,3 +101,4 @@ export function getShopItemsByCategory(category: 'consumable' | 'powerup'): Shop
 export function canAfford(item: ShopItem, playerPoints: number): boolean {
   return playerPoints >= item.cost;
 }
+

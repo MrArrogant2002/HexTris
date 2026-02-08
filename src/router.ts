@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hash-based SPA router for Hextris
  * Manages page navigation and lifecycle
  */
@@ -157,3 +157,4 @@ export class Router {
 
 // Export singleton getter
 export const getRouter = () => Router.getInstance();
+

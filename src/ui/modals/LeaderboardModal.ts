@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LeaderboardModal - Displays global and timer attack leaderboards
  */
 
@@ -142,3 +142,4 @@ export class LeaderboardModal {
       : 'flex-1 py-2 px-3 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-300';
   }
 }
+

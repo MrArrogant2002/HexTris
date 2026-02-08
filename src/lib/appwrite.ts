@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Appwrite SDK Configuration
  * Initializes Appwrite client, account, and databases services
  */
@@ -19,3 +19,4 @@ const databases = new Databases(client);
 
 // Export for use throughout the app
 export { client, account, databases };
+

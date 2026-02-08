@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Color palette for Hextris
  * Black & White UI with game colors for blocks/hex only
  * NO PURPLE anywhere in the design
@@ -91,3 +91,4 @@ export const blockColors: HexColor[] = [
 export function getRandomBlockColor(): HexColor {
   return blockColors[Math.floor(Math.random() * blockColors.length)];
 }
+

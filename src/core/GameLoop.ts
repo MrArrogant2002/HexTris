@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Game loop for Hextris
  * Manages the render and update cycle using requestAnimationFrame
  */
@@ -117,3 +117,4 @@ export class GameLoop {
     }
   }
 }
+

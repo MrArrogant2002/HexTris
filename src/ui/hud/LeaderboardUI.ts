@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Leaderboard UI HUD Component
  * Shows real-time multiplayer leaderboard
  */
@@ -41,7 +41,7 @@ export class LeaderboardUI {
       flex items-center justify-between
     `;
     header.innerHTML = `
-      <span>🏆 Leaderboard</span>
+      <span>Leaderboard</span>
       <span class="text-xs opacity-70">Live</span>
     `;
 
@@ -207,3 +207,4 @@ export class LeaderboardUI {
     return this.element;
   }
 }
+

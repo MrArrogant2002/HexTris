@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Input component for Hextris
  * Reusable text input field with validation
  */
@@ -258,3 +258,4 @@ export class Input {
     this.container.remove();
   }
 }
+
