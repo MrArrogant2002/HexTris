@@ -26,7 +26,15 @@ export class ResetPasswordPage extends BasePage {
   }
 
   public render(): void {
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 flex items-center justify-center p-6 overflow-y-auto';
+  this.element.className = 'page theme-page min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden';
+
+  const aurora = document.createElement('div');
+  aurora.className = 'theme-aurora';
+  this.element.appendChild(aurora);
+
+  const grid = document.createElement('div');
+  grid.className = 'theme-grid-overlay';
+  this.element.appendChild(grid);
 
     // Create centered card
     const card = new Card({
@@ -39,12 +47,12 @@ export class ResetPasswordPage extends BasePage {
     header.className = 'text-center mb-8';
     
     const title = document.createElement('h1');
-    title.className = 'text-5xl font-black text-black mb-3';
+    title.className = 'text-4xl sm:text-5xl font-black theme-text mb-3';
     title.textContent = 'Reset Password';
     header.appendChild(title);
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-gray-600 text-base';
+    subtitle.className = 'theme-text-secondary text-base';
     subtitle.textContent = 'Enter your new password';
     header.appendChild(subtitle);
 
@@ -54,7 +62,7 @@ export class ResetPasswordPage extends BasePage {
     if (!this.userId || !this.secret) {
       this.renderError(card.element, 'Invalid or expired reset link');
       const wrapper = document.createElement('div');
-      wrapper.className = 'w-full max-w-md';
+      wrapper.className = 'w-full max-w-xl relative z-10';
       wrapper.appendChild(card.element);
       this.element.appendChild(wrapper);
       this.mount();
@@ -98,7 +106,8 @@ export class ResetPasswordPage extends BasePage {
     // Back to login link
     const backLink = document.createElement('button');
     backLink.textContent = '<- Back to Login';
-    backLink.className = 'w-full text-sm text-gray-600 hover:text-black transition-colors';
+    backLink.type = 'button';
+    backLink.className = 'w-full text-sm theme-text-secondary hover:opacity-80 transition-colors';
     backLink.onclick = () => Router.getInstance().navigate(ROUTES.ENTRY);
     buttonContainer.appendChild(backLink);
 
@@ -121,7 +130,8 @@ export class ResetPasswordPage extends BasePage {
 
   private renderError(card: HTMLElement, message: string): void {
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'p-4 bg-red-100 border-2 border-red-400 rounded-lg text-red-700 text-center mb-6';
+    errorDiv.className = 'p-4 theme-card-muted border border-red-300/70 rounded-lg text-red-600 text-center mb-6 font-semibold';
+    errorDiv.dataset.authAlert = 'true';
     errorDiv.textContent = message;
     card.appendChild(errorDiv);
 
@@ -176,34 +186,32 @@ export class ResetPasswordPage extends BasePage {
   }
 
   private showError(message: string): void {
-    // Create error message element
     const errorEl = document.createElement('div');
-    errorEl.className = 'mt-4 p-3 bg-red-100 border-2 border-red-400 rounded-lg text-red-700 text-sm';
+    errorEl.className = 'mt-4 p-3 theme-card-muted border border-red-400/60 rounded-lg text-red-600 text-sm font-semibold';
     errorEl.textContent = message;
     
     // Remove any existing messages
-    const existing = this.element.querySelector('.bg-red-100, .bg-green-100');
+    const existing = this.element.querySelector('[data-auth-alert="true"]');
     if (existing) existing.remove();
     
-    // Add error message
-    this.element.querySelector('.w-full.max-w-md')?.appendChild(errorEl);
+    errorEl.dataset.authAlert = 'true';
+    this.element.querySelector('.w-full.max-w-xl')?.appendChild(errorEl);
 
     // Auto-remove after 5 seconds
     setTimeout(() => errorEl.remove(), 5000);
   }
 
   private showSuccess(message: string): void {
-    // Create success message element
     const successEl = document.createElement('div');
-    successEl.className = 'mt-4 p-3 bg-green-100 border-2 border-green-400 rounded-lg text-green-700 text-sm font-semibold text-center';
+    successEl.className = 'mt-4 p-3 theme-card-muted border border-green-400/60 rounded-lg text-green-600 text-sm font-semibold text-center';
     successEl.textContent = message;
     
     // Remove any existing messages
-    const existing = this.element.querySelector('.bg-red-100, .bg-green-100');
+    const existing = this.element.querySelector('[data-auth-alert="true"]');
     if (existing) existing.remove();
     
-    // Add success message
-    this.element.querySelector('.w-full.max-w-md')?.appendChild(successEl);
+    successEl.dataset.authAlert = 'true';
+    this.element.querySelector('.w-full.max-w-xl')?.appendChild(successEl);
   }
 
   public onUnmount(): void {

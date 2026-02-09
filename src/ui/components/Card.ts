@@ -53,10 +53,10 @@ export class Card {
     // Variant classes
     switch (this.options.variant) {
       case 'default':
-        classes.push('bg-white', 'shadow-lg', 'border', 'border-gray-200');
+        classes.push('theme-card', 'shadow-lg');
         break;
       case 'glassmorphic':
-        classes.push('bg-white/80', 'backdrop-blur-md', 'shadow-xl', 'border', 'border-white/20');
+        classes.push('theme-card', 'theme-glass', 'shadow-xl');
         break;
       case 'dark':
         classes.push('bg-gray-900', 'text-white', 'shadow-xl', 'border', 'border-gray-800');
@@ -97,7 +97,7 @@ export class Card {
 
     if (this.options.title) {
       const title = document.createElement('h3');
-      title.className = 'text-xl font-bold text-black';
+      title.className = 'text-xl font-bold theme-text';
       if (this.options.variant === 'dark') {
         title.className = 'text-xl font-bold text-white';
       }
@@ -107,7 +107,7 @@ export class Card {
 
     if (this.options.subtitle) {
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 mt-1';
+      subtitle.className = 'text-sm theme-text-secondary mt-1';
       if (this.options.variant === 'dark') {
         subtitle.className = 'text-sm text-gray-400 mt-1';
       }

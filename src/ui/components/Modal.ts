@@ -76,7 +76,7 @@ export class Modal {
 
     content.className = `
       fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-      bg-white rounded-2xl shadow-2xl
+      theme-card theme-glass rounded-2xl shadow-2xl
       ${maxWidthClass} w-[calc(100%-2rem)] sm:w-full mx-2 sm:mx-4
       opacity-0 scale-95 transition-all duration-300
       z-50 max-h-[90vh] overflow-y-auto
@@ -90,11 +90,11 @@ export class Modal {
    */
   private createHeader(): HTMLDivElement {
     const header = document.createElement('div');
-    header.className = 'flex items-center justify-between p-4 sm:p-6 border-b border-gray-200';
+    header.className = 'flex items-center justify-between p-4 sm:p-6 border-b theme-border';
 
     // Title
     const title = document.createElement('h2');
-    title.className = 'text-lg sm:text-2xl font-bold text-black';
+    title.className = 'text-lg sm:text-2xl font-bold theme-text';
     title.textContent = this.options.title;
     header.appendChild(title);
 
@@ -102,7 +102,7 @@ export class Modal {
     if (this.options.showCloseButton) {
       const closeBtn = document.createElement('button');
       closeBtn.type = 'button';
-      closeBtn.className = 'text-gray-500 hover:text-black transition-colors';
+      closeBtn.className = 'theme-text-secondary theme-text-hover transition-colors';
       closeBtn.innerHTML = 'X';
       closeBtn.style.fontSize = '24px';
       closeBtn.addEventListener('click', () => this.close());

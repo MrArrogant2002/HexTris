@@ -15,7 +15,7 @@ Modern hexagonal falling block puzzle game built with TypeScript, Tailwind CSS, 
 - **Life System**: 3 lives with bonus lives at milestones
 - **Power-ups**: Hammer, Slowmo, Shield with inventory management
 - **Cloud Saves**: Appwrite integration for persistent data
-- **Multiplayer**: Real-time Socket.io rooms with live leaderboards
+- **Multiplayer**: Group-based leaderboards synced via Appwrite
 
 ## 🚀 Quick Start
 
@@ -125,7 +125,6 @@ hextris/
 - **Vite**: Fast build tool and dev server
 - **Tailwind CSS**: Utility-first CSS framework
 - **Appwrite**: Backend as a Service
-- **Socket.io**: Real-time multiplayer
 - **pnpm**: Fast, disk-efficient package manager
 
 ### Code Style
@@ -142,7 +141,6 @@ Create a `.env` file in the root:
 ```env
 VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
-VITE_MULTIPLAYER_URL=http://localhost:3000
 ```
 
 ## 🎯 Implementation Phases

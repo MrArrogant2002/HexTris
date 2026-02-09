@@ -72,7 +72,6 @@ export const ROUTES = {
 } as const;
 
 // Network
-export const MULTIPLAYER_SERVER_URL = import.meta.env.VITE_MULTIPLAYER_URL || 'http://localhost:3000';
 export const APPWRITE_ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 export const APPWRITE_PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 

@@ -71,7 +71,7 @@ export class Input {
    */
   private createLabel(): HTMLLabelElement {
     const label = document.createElement('label');
-    label.className = 'block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2';
+    label.className = 'block text-[0.7rem] sm:text-xs theme-label mb-1 sm:mb-2';
     label.textContent = this.options.label || '';
     return label;
   }
@@ -96,14 +96,7 @@ export class Input {
     }
 
     // Base classes
-    input.className = `
-      w-full px-3 sm:px-4 py-2 sm:py-3 
-      border-2 border-gray-300 rounded-lg
-      text-sm sm:text-base
-      focus:border-black focus:outline-none
-      transition-colors duration-200
-      disabled:bg-gray-100 disabled:cursor-not-allowed
-    `.trim().replace(/\s+/g, ' ');
+    input.className = 'theme-input text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed';
 
     // Event listeners
     input.addEventListener('input', () => {
@@ -184,8 +177,7 @@ export class Input {
    */
   private showError(message: string): void {
     this.isValid = false;
-    this.element.classList.remove('border-gray-300', 'focus:border-black');
-    this.element.classList.add('border-red-500', 'focus:border-red-500');
+    this.element.classList.add('theme-input-error');
     
     if (this.errorElement) {
       this.errorElement.textContent = message;
@@ -198,8 +190,7 @@ export class Input {
    */
   private hideError(): void {
     this.isValid = true;
-    this.element.classList.remove('border-red-500', 'focus:border-red-500');
-    this.element.classList.add('border-gray-300', 'focus:border-black');
+    this.element.classList.remove('theme-input-error');
     
     if (this.errorElement) {
       this.errorElement.classList.add('hidden');

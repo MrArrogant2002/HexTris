@@ -16,8 +16,9 @@ import { ROUTES } from './core/constants';
 import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
 import { stateManager } from '@core/StateManager';
-import { ThemeName } from '@config/themes';
+import { ThemeName, getThemeOrDefault, normalizeThemesUnlocked } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
+import { themeManager } from '@/managers/ThemeManager';
 
 /**
  * Restore user session if exists
@@ -32,6 +33,12 @@ async function restoreSession(): Promise<boolean> {
       
       if (user) {
         // Restore state
+        const resolvedThemes = normalizeThemesUnlocked(user.themesUnlocked);
+        const resolvedTheme = getThemeOrDefault(user.selectedTheme).id;
+        if (!resolvedThemes.includes(resolvedTheme)) {
+          resolvedThemes.push(resolvedTheme);
+        }
+
         stateManager.updatePlayer({
           id: user.userId,
           name: user.name,
@@ -39,10 +46,12 @@ async function restoreSession(): Promise<boolean> {
           specialPoints: user.totalDiamonds,
           gamesPlayed: user.gamesPlayed,
           totalPlayTime: user.totalPlayTime,
-          themesUnlocked: user.themesUnlocked as ThemeName[],
-          selectedTheme: user.selectedTheme as ThemeName,
+          themesUnlocked: resolvedThemes as ThemeName[],
+          selectedTheme: resolvedTheme as ThemeName,
           inventory: user.inventory ?? createEmptyInventory(),
         });
+
+        themeManager.applyTheme(resolvedTheme);
         
         console.log('Session restored for:', user.name);
         return true;
@@ -111,6 +120,12 @@ async function init(): Promise<void> {
 
   // Restore session and navigate appropriately
   const sessionRestored = await restoreSession();
+
+  if (!sessionRestored) {
+    const cachedTheme = themeManager.getCurrentTheme();
+    stateManager.updatePlayer({ selectedTheme: cachedTheme });
+    themeManager.applyTheme(cachedTheme);
+  }
 
   // Navigate to current route or appropriate default page
   const currentPath = window.location.hash.slice(1) || '/';

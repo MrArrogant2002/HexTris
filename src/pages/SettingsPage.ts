@@ -9,27 +9,40 @@ import { Button } from '@ui/components/Button';
 import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
-import { ThemeName, themes, availableThemes } from '@config/themes';
+import { ThemeName, themes, availableThemes, themePrices } from '@config/themes';
 import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
 import { audioManager } from '@/managers/AudioManager';
+import { themeManager } from '@/managers/ThemeManager';
 
 export class SettingsPage extends BasePage {
   private buttons: Button[] = [];
 
   public render(): void {
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 p-4 sm:p-6 md:p-8 overflow-y-auto';
+    this.element.className = 'page theme-page min-h-screen w-full flex items-start justify-center p-4 sm:p-6 md:p-8 overflow-y-auto';
+    this.element.innerHTML = '';
+
+    const aurora = document.createElement('div');
+    aurora.className = 'theme-aurora';
+    this.element.appendChild(aurora);
+
+    const grid = document.createElement('div');
+    grid.className = 'theme-grid-overlay';
+    this.element.appendChild(grid);
+
+    const contentWrapper = document.createElement('div');
+    contentWrapper.className = 'relative z-10 w-full';
 
     // Back button
     const backBtn = this.createBackButton('<- Back', () => {
       Router.getInstance().navigate(ROUTES.MENU);
     });
     backBtn.style.marginBottom = '1.5rem';
-    this.element.appendChild(backBtn);
+    contentWrapper.appendChild(backBtn);
 
     // Content container
     const container = document.createElement('div');
-    container.className = 'max-w-3xl mx-auto py-4 sm:py-8 space-y-8 sm:space-y-12';
+    container.className = 'max-w-4xl mx-auto py-4 sm:py-8 space-y-8 sm:space-y-12';
 
     // Header
     const header = this.createHeader('SETTINGS', 'Customize your experience');
@@ -52,7 +65,8 @@ export class SettingsPage extends BasePage {
     sections.appendChild(this.createAccountSection());
 
     container.appendChild(sections);
-    this.element.appendChild(container);
+    contentWrapper.appendChild(container);
+    this.element.appendChild(contentWrapper);
     this.mount();
   }
 
@@ -69,11 +83,17 @@ export class SettingsPage extends BasePage {
     const themesGrid = document.createElement('div');
     themesGrid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4';
 
-    const currentTheme = stateManager.getState().player.selectedTheme;
+    const player = stateManager.getState().player;
+    const currentTheme = player.selectedTheme;
+    const unlockedThemes = new Set(player.themesUnlocked);
 
     availableThemes.forEach((themeName) => {
       const theme = themes[themeName];
-      const themeCard = this.createThemeCard(theme, currentTheme === themeName);
+      const themeCard = this.createThemeCard(theme, {
+        isSelected: currentTheme === themeName,
+        isUnlocked: unlockedThemes.has(themeName),
+        cost: themePrices[themeName] ?? 0,
+      });
       themesGrid.appendChild(themeCard);
     });
 
@@ -84,18 +104,23 @@ export class SettingsPage extends BasePage {
   /**
    * Create theme card
    */
-  private createThemeCard(theme: typeof themes[ThemeName], isSelected: boolean): HTMLElement {
+  private createThemeCard(
+    theme: typeof themes[ThemeName],
+    options: { isSelected: boolean; isUnlocked: boolean; cost: number }
+  ): HTMLElement {
     const card = document.createElement('div');
     card.className = `
-      p-4 rounded-lg border-2 cursor-pointer
+      relative p-4 rounded-lg border-2 cursor-pointer
       transition-all duration-200
       hover:scale-105 hover:shadow-lg
-      ${isSelected ? 'border-black ring-2 ring-black scale-105' : 'border-gray-300'}
+      theme-card
+      ${options.isSelected ? 'scale-105' : ''}
+      ${options.isUnlocked ? '' : 'opacity-60'}
     `.trim().replace(/\s+/g, ' ');
 
     // Theme name
     const name = document.createElement('div');
-    name.className = 'font-bold text-center mb-3';
+    name.className = 'font-bold text-center mb-3 theme-text';
     name.textContent = theme.name;
     card.appendChild(name);
 
@@ -105,7 +130,7 @@ export class SettingsPage extends BasePage {
     
     theme.colors.blocks.forEach((color) => {
       const colorDot = document.createElement('div');
-      colorDot.className = 'w-6 h-6 rounded-full border border-gray-300';
+      colorDot.className = 'w-6 h-6 rounded-full border theme-border';
       colorDot.style.backgroundColor = color;
       colorPreview.appendChild(colorDot);
     });
@@ -114,30 +139,67 @@ export class SettingsPage extends BasePage {
 
     // Description
     const description = document.createElement('div');
-    description.className = 'text-xs text-gray-600 text-center';
+    description.className = 'text-xs theme-text-secondary text-center';
     description.textContent = theme.description;
     card.appendChild(description);
 
+    const price = document.createElement('div');
+    price.className = 'mt-2 text-center text-xs font-semibold theme-text-secondary';
+    price.textContent = options.cost > 0 ? `💎 ${options.cost}` : 'Free';
+    card.appendChild(price);
+
     // Selected indicator
-    if (isSelected) {
+    if (options.isSelected) {
       const indicator = document.createElement('div');
-      indicator.className = 'mt-2 text-center text-sm font-bold';
-      indicator.textContent = 'OK';
+      indicator.className = 'mt-2 text-center text-sm font-bold theme-text';
+      indicator.textContent = 'EQUIPPED';
+      card.appendChild(indicator);
+    } else if (options.isUnlocked) {
+      const indicator = document.createElement('div');
+      indicator.className = 'mt-2 text-center text-xs font-semibold theme-text-secondary';
+      indicator.textContent = 'UNLOCKED';
+      card.appendChild(indicator);
+    } else {
+      const indicator = document.createElement('div');
+      indicator.className = 'mt-2 text-center text-xs font-semibold theme-text-secondary';
+      indicator.textContent = 'LOCKED';
       card.appendChild(indicator);
     }
 
     // Click handler
-    card.addEventListener('click', () => this.selectTheme(theme.id));
+    card.addEventListener('click', () => {
+      if (!options.isUnlocked) {
+        this.showLockedThemeMessage(theme.name, options.cost);
+        return;
+      }
+      this.selectTheme(theme.id);
+    });
 
     return card;
+  }
+
+  private showLockedThemeMessage(themeName: string, cost: number): void {
+    const costLabel = cost > 0 ? `for ${cost} diamonds` : 'in the shop';
+    alert(`${themeName} is locked. Unlock it ${costLabel}.`);
   }
 
   /**
    * Select theme
    */
   private selectTheme(themeName: ThemeName): void {
+    const state = stateManager.getState();
+    if (state.player.selectedTheme === themeName) {
+      return;
+    }
+
     stateManager.updatePlayer({ selectedTheme: themeName });
-    this.render(); // Re-render to show selection
+    themeManager.applyTheme(themeName);
+
+    if (state.player.id) {
+      void appwriteClient.updateSelectedTheme(state.player.id, themeName);
+    }
+
+    this.render();
     console.log(`Theme changed to: ${themeName}`);
   }
 
@@ -245,10 +307,10 @@ export class SettingsPage extends BasePage {
 
     // Player name display
     const nameDisplay = document.createElement('div');
-    nameDisplay.className = 'p-3 bg-gray-100 rounded-lg';
+    nameDisplay.className = 'p-3 theme-card-muted rounded-lg';
     nameDisplay.innerHTML = `
-      <div class="text-sm text-gray-600">Player Name</div>
-      <div class="text-lg font-bold">${state.player.name}</div>
+      <div class="text-sm theme-text-secondary">Player Name</div>
+      <div class="text-lg font-bold theme-text">${state.player.name}</div>
     `;
     accountControls.appendChild(nameDisplay);
 
@@ -281,59 +343,67 @@ export class SettingsPage extends BasePage {
    */
   private createToggle(label: string, initialValue: boolean, onChange: (value: boolean) => void): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+    container.className = 'flex items-center justify-between p-3 theme-card-muted rounded-lg';
 
     const labelElement = document.createElement('span');
-    labelElement.className = 'font-medium';
+    labelElement.className = 'font-medium theme-text';
     labelElement.textContent = label;
     container.appendChild(labelElement);
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = `
-      relative inline-flex h-6 w-11 items-center rounded-full
-      transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
-      ${initialValue ? 'bg-black' : 'bg-gray-300'}
-    `.trim().replace(/\s+/g, ' ');
+    toggle.className = 'relative inline-flex h-7 w-14 items-center rounded-full transition-transform duration-200 focus-visible:outline-none';
+    toggle.setAttribute('role', 'switch');
+    toggle.setAttribute('aria-checked', String(initialValue));
 
     const toggleCircle = document.createElement('span');
-    toggleCircle.className = `
-      inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200
-      ${initialValue ? 'translate-x-6' : 'translate-x-1'}
-    `.trim().replace(/\s+/g, ' ');
+    toggleCircle.className = 'inline-block h-5 w-5 transform rounded-full shadow-md transition-transform duration-200 ease-out';
     toggle.appendChild(toggleCircle);
 
     let isEnabled = initialValue;
-    toggle.addEventListener('click', () => {
+    const updateVisual = (enabled: boolean): void => {
+      toggle.setAttribute('aria-checked', String(enabled));
+      toggle.dataset.enabled = enabled ? 'true' : 'false';
+      toggle.style.background = enabled
+        ? 'linear-gradient(120deg, var(--theme-accent-soft), var(--theme-accent))'
+        : 'var(--theme-border-glass)';
+      toggle.style.boxShadow = enabled ? '0 20px 35px var(--theme-glow)' : 'inset 0 0 0 1px var(--theme-border-glass)';
+      toggleCircle.style.background = enabled ? 'var(--theme-surface)' : 'var(--theme-surface-muted)';
+      toggleCircle.style.transform = enabled ? 'translateX(28px)' : 'translateX(2px)';
+    };
+
+    const handleToggle = (): void => {
       isEnabled = !isEnabled;
-      toggle.className = toggle.className.replace(
-        isEnabled ? 'bg-gray-300' : 'bg-black',
-        isEnabled ? 'bg-black' : 'bg-gray-300'
-      );
-      toggleCircle.className = toggleCircle.className.replace(
-        isEnabled ? 'translate-x-1' : 'translate-x-6',
-        isEnabled ? 'translate-x-6' : 'translate-x-1'
-      );
+      updateVisual(isEnabled);
       onChange(isEnabled);
+    };
+
+    toggle.addEventListener('click', handleToggle);
+    toggle.addEventListener('keydown', (event) => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        handleToggle();
+      }
     });
 
+    updateVisual(isEnabled);
     container.appendChild(toggle);
     return container;
   }
 
   private createSlider(label: string, initialValue: number, onChange: (value: number) => void): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'space-y-2 p-3 bg-gray-50 rounded-lg';
+    container.className = 'space-y-2 p-3 theme-card-muted rounded-lg';
 
     const header = document.createElement('div');
     header.className = 'flex items-center justify-between';
 
     const labelElement = document.createElement('span');
-    labelElement.className = 'font-medium';
+    labelElement.className = 'font-medium theme-text';
     labelElement.textContent = label;
 
     const valueElement = document.createElement('span');
-    valueElement.className = 'text-sm text-gray-600';
+    valueElement.className = 'text-sm theme-text-secondary';
     valueElement.textContent = `${Math.round(initialValue * 100)}%`;
 
     header.appendChild(labelElement);
@@ -345,7 +415,8 @@ export class SettingsPage extends BasePage {
     slider.min = '0';
     slider.max = '100';
     slider.value = `${Math.round(initialValue * 100)}`;
-    slider.className = 'w-full accent-black';
+    slider.className = 'w-full';
+    slider.style.accentColor = 'var(--theme-accent)';
     slider.addEventListener('input', () => {
       const value = Number(slider.value) / 100;
       valueElement.textContent = `${Math.round(value * 100)}%`;

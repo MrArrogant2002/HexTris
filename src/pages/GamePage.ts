@@ -105,7 +105,7 @@ export class GamePage extends BasePage {
   };
 
   public render(): void {
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-br from-gray-100 to-gray-200 relative overflow-hidden';
+    this.element.className = 'page min-h-screen w-full theme-page relative overflow-hidden';
 
     // Create game container
     const gameContainer = document.createElement('div');
@@ -130,9 +130,9 @@ export class GamePage extends BasePage {
    */
   private createControls(): HTMLElement {
     const controls = document.createElement('div');
-    controls.className = 'bg-white/80 backdrop-blur-sm border-t-2 border-gray-300 px-4 py-2 text-center';
+    controls.className = 'theme-card-muted backdrop-blur-sm border-t-2 px-4 py-2 text-center';
     controls.innerHTML = `
-      <div class="text-xs text-gray-600">
+      <div class="text-xs theme-text-secondary">
         <span class="hidden md:inline">Left/Right Arrow Keys to Rotate - Down Arrow to Speed Up - P or Space to Pause</span>
         <span class="md:hidden">Swipe to Move - Tap to Rotate</span>
       </div>
@@ -188,9 +188,9 @@ export class GamePage extends BasePage {
     const pauseButton = document.createElement('button');
     pauseButton.className = `
       fixed top-4 left-1/2 transform -translate-x-1/2 translate-y-16 z-20
-      px-4 py-2 bg-white/90 backdrop-blur-md
-      border-2 border-gray-900 rounded-lg shadow-lg
-      text-sm font-bold text-gray-900
+      px-4 py-2 theme-card backdrop-blur-md
+      rounded-lg shadow-lg
+      text-sm font-bold theme-text
       hover:scale-105 transition-all duration-200
       active:scale-95
     `;
@@ -467,9 +467,10 @@ export class GamePage extends BasePage {
     ctx.save();
     
     // Draw background gradient
+    const themeConfig = themes[state.player.selectedTheme] || themes[ThemeName.CLASSIC];
     const gradient = ctx.createLinearGradient(0, 0, 0, this.canvas.element.height);
-    gradient.addColorStop(0, '#f9fafb');
-    gradient.addColorStop(1, '#e5e7eb');
+    gradient.addColorStop(0, themeConfig.ui.surfaceMuted);
+    gradient.addColorStop(1, themeConfig.colors.background);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.canvas.element.width, this.canvas.element.height);
     

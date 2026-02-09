@@ -12,6 +12,7 @@ import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import type { InventoryUI } from '@ui/hud/InventoryUI';
 import { appwriteClient } from '@network/AppwriteClient';
 import { ThemeName, themes, themePrices } from '@config/themes';
+import { themeManager } from '@/managers/ThemeManager';
 
 export interface ShopModalOptions {
   mode: 'menu' | 'game';
@@ -46,17 +47,17 @@ export class ShopModal {
     header.className = 'flex items-center justify-between';
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-sm text-gray-600';
+    subtitle.className = 'text-sm theme-text-secondary';
     subtitle.textContent = this.options.mode === 'game'
       ? 'Buy power-ups and boosts during the run.'
       : 'Stock up before you start a run.';
 
     const pointsWrap = document.createElement('div');
-    pointsWrap.className = 'text-sm font-semibold text-gray-900';
+    pointsWrap.className = 'text-sm font-semibold theme-text';
     pointsWrap.innerHTML = '💎 Diamonds: ';
 
     this.pointsLabel = document.createElement('span');
-    this.pointsLabel.className = 'font-bold text-black';
+    this.pointsLabel.className = 'font-bold theme-text';
     this.pointsLabel.textContent = this.getPoints().toString();
     pointsWrap.appendChild(this.pointsLabel);
 
@@ -64,7 +65,7 @@ export class ShopModal {
     header.appendChild(pointsWrap);
 
     this.messageLabel = document.createElement('p');
-    this.messageLabel.className = 'text-xs text-gray-600 min-h-[1rem]';
+    this.messageLabel.className = 'text-xs theme-text-secondary min-h-[1rem]';
 
     this.itemsContainer = document.createElement('div');
     this.itemsContainer.className = 'grid gap-3 sm:grid-cols-2';
@@ -75,10 +76,10 @@ export class ShopModal {
 
     if (this.options.mode === 'menu') {
       const themesHeader = document.createElement('div');
-      themesHeader.className = 'pt-2 border-t border-gray-200';
+      themesHeader.className = 'pt-2 border-t theme-border';
 
       const themesTitle = document.createElement('h3');
-      themesTitle.className = 'text-sm font-semibold text-gray-900';
+      themesTitle.className = 'text-sm font-semibold theme-text';
       themesTitle.textContent = 'Themes';
       themesHeader.appendChild(themesTitle);
 
@@ -108,13 +109,13 @@ export class ShopModal {
     const items = getAllShopItems();
     items.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'border border-gray-200 rounded-xl p-4 space-y-3 bg-white';
+      card.className = 'theme-card rounded-xl p-4 space-y-3';
 
       const titleRow = document.createElement('div');
       titleRow.className = 'flex items-center justify-between';
 
       const title = document.createElement('div');
-      title.className = 'text-base font-bold text-gray-900';
+      title.className = 'text-base font-bold theme-text';
       title.textContent = item.name;
 
       const icon = this.createItemIcon(item.id);
@@ -123,18 +124,18 @@ export class ShopModal {
       titleRow.appendChild(icon);
 
       const description = document.createElement('p');
-      description.className = 'text-xs text-gray-600';
+      description.className = 'text-xs theme-text-secondary';
       description.textContent = item.description;
 
       const effect = document.createElement('p');
-      effect.className = 'text-xs text-gray-500';
+      effect.className = 'text-xs theme-text-secondary';
       effect.textContent = item.effect;
 
       const footer = document.createElement('div');
       footer.className = 'flex items-center justify-between gap-2';
 
       const cost = document.createElement('span');
-      cost.className = 'text-sm font-semibold text-gray-900';
+      cost.className = 'text-sm font-semibold theme-text';
       cost.textContent = `💎 ${item.cost}`;
 
       const availability = this.getAvailability(item.id);
@@ -150,7 +151,7 @@ export class ShopModal {
 
       if (availability.reason) {
         const reason = document.createElement('p');
-        reason.className = 'text-[11px] text-gray-500';
+        reason.className = 'text-[11px] theme-text-secondary';
         reason.textContent = availability.reason;
         card.appendChild(reason);
       }
@@ -252,7 +253,7 @@ export class ShopModal {
 
   private createItemIcon(itemId: ShopItemId): HTMLElement {
     const wrapper = document.createElement('div');
-    wrapper.className = 'flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg';
+    wrapper.className = 'flex items-center justify-center w-10 h-10 theme-card-muted rounded-lg';
 
     const iconMap: Record<ShopItemId, { src?: string; emoji: string; label: string }> = {
       [ShopItemId.CONTINUE]: { src: '/images/icons/replay.svg', emoji: '🔁', label: 'Continue' },
@@ -286,20 +287,20 @@ export class ShopModal {
 
     Object.values(themes).forEach((theme) => {
       const card = document.createElement('div');
-      card.className = 'border border-gray-200 rounded-xl p-4 space-y-3 bg-white';
+      card.className = 'theme-card rounded-xl p-4 space-y-3';
 
       const titleRow = document.createElement('div');
       titleRow.className = 'flex items-center justify-between';
 
       const title = document.createElement('div');
-      title.className = 'text-base font-bold text-gray-900';
+      title.className = 'text-base font-bold theme-text';
       title.textContent = theme.name;
 
       const swatch = document.createElement('div');
       swatch.className = 'flex gap-1';
       theme.colors.blocks.slice(0, 4).forEach((color) => {
         const dot = document.createElement('span');
-        dot.className = 'w-3 h-3 rounded-full border border-gray-200';
+        dot.className = 'w-3 h-3 rounded-full border theme-border';
         dot.style.backgroundColor = color;
         swatch.appendChild(dot);
       });
@@ -308,14 +309,14 @@ export class ShopModal {
       titleRow.appendChild(swatch);
 
       const description = document.createElement('p');
-      description.className = 'text-xs text-gray-600';
+      description.className = 'text-xs theme-text-secondary';
       description.textContent = theme.description;
 
       const footer = document.createElement('div');
       footer.className = 'flex items-center justify-between gap-2';
 
       const cost = document.createElement('span');
-      cost.className = 'text-sm font-semibold text-gray-900';
+      cost.className = 'text-sm font-semibold theme-text';
       cost.textContent = `💎 ${this.getThemeCost(theme.id)}`;
 
       const action = this.getThemeAction(theme.id);
@@ -335,7 +336,7 @@ export class ShopModal {
 
       if (action.reason) {
         const reason = document.createElement('p');
-        reason.className = 'text-[11px] text-gray-500';
+        reason.className = 'text-[11px] theme-text-secondary';
         reason.textContent = action.reason;
         card.appendChild(reason);
       }
@@ -388,6 +389,7 @@ export class ShopModal {
 
       const updatedThemes = [...player.themesUnlocked, themeId];
       stateManager.updatePlayer({ themesUnlocked: updatedThemes, selectedTheme: themeId });
+      themeManager.applyTheme(themeId);
 
       if (player.id) {
         void appwriteClient.updateThemes(player.id, updatedThemes, themeId);
@@ -399,6 +401,7 @@ export class ShopModal {
     }
 
     stateManager.updatePlayer({ selectedTheme: themeId });
+    themeManager.applyTheme(themeId);
     if (player.id) {
       void appwriteClient.updateSelectedTheme(player.id, themeId);
     }

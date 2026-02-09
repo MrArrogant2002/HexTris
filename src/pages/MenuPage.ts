@@ -26,7 +26,7 @@ export class MenuPage extends BasePage {
 
   public render(): void {
     // Modern black and white background with scroll
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 md:p-8 relative overflow-y-auto';
+    this.element.className = 'page min-h-screen w-full theme-page flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 md:p-8 relative overflow-y-auto';
 
     // Add subtle background elements (grayscale only)
     const bgDecor1 = document.createElement('div');
@@ -46,17 +46,17 @@ export class MenuPage extends BasePage {
 
     const state = stateManager.getState();
     const greeting = document.createElement('p');
-    greeting.className = 'text-gray-600 text-xs font-semibold tracking-widest uppercase mb-2 sm:mb-4 letter-spacing-wide';
+    greeting.className = 'theme-text-secondary text-xs font-semibold tracking-widest uppercase mb-2 sm:mb-4 letter-spacing-wide';
     greeting.textContent = `Welcome Back, ${state.player.name}!`;
     topSection.appendChild(greeting);
 
     const title = document.createElement('h1');
-    title.className = 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-black mb-2 sm:mb-3 tracking-tighter drop-shadow-lg';
+    title.className = 'text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black theme-text mb-2 sm:mb-3 tracking-tighter drop-shadow-lg';
     title.textContent = 'HEXTRIS';
     topSection.appendChild(title);
 
     const subtitle = document.createElement('p');
-    subtitle.className = 'text-gray-500 text-sm sm:text-base font-medium';
+    subtitle.className = 'theme-text-secondary text-sm sm:text-base font-medium';
     subtitle.textContent = 'Master the hexagon. Beat your high score.';
     topSection.appendChild(subtitle);
 
@@ -68,31 +68,31 @@ export class MenuPage extends BasePage {
 
     // High Score Card
     const scoreCard = document.createElement('div');
-    scoreCard.className = 'bg-white border-2 border-gray-300 rounded-lg p-3 sm:p-4 text-center hover:border-gray-500 transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
+    scoreCard.className = 'theme-card rounded-lg p-3 sm:p-4 text-center transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
     scoreCard.innerHTML = `
-      <div class="text-3xl sm:text-4xl font-bold text-black mb-1">${state.player.highScore.toLocaleString()}</div>
-      <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide">High Score</div>
-      <div class="text-xs text-gray-500 mt-2">Keep pushing</div>
+      <div class="text-3xl sm:text-4xl font-bold theme-text mb-1">${state.player.highScore.toLocaleString()}</div>
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide">High Score</div>
+      <div class="text-xs theme-text-secondary mt-2">Keep pushing</div>
     `;
     statsSection.appendChild(scoreCard);
 
     // Diamonds Card
     const diamondsCard = document.createElement('div');
-    diamondsCard.className = 'bg-white border-2 border-gray-300 rounded-lg p-3 sm:p-4 text-center hover:border-gray-500 transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
+    diamondsCard.className = 'theme-card rounded-lg p-3 sm:p-4 text-center transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
     const diamondsIcon = document.createElement('div');
     diamondsIcon.className = 'text-2xl sm:text-3xl mb-1';
     diamondsIcon.textContent = '💎';
 
     this.diamondCountEl = document.createElement('div');
-    this.diamondCountEl.className = 'text-3xl sm:text-4xl font-bold text-black mb-1';
+    this.diamondCountEl.className = 'text-3xl sm:text-4xl font-bold theme-text mb-1';
     this.diamondCountEl.textContent = state.player.specialPoints.toString();
 
     const diamondsLabel = document.createElement('div');
-    diamondsLabel.className = 'text-xs font-semibold text-gray-700 uppercase tracking-wide';
+    diamondsLabel.className = 'text-xs font-semibold theme-text-secondary uppercase tracking-wide';
     diamondsLabel.textContent = 'Diamonds';
 
     const diamondsHint = document.createElement('div');
-    diamondsHint.className = 'text-xs text-gray-500 mt-2';
+    diamondsHint.className = 'text-xs theme-text-secondary mt-2';
     diamondsHint.textContent = 'Earn by playing';
 
     diamondsCard.appendChild(diamondsIcon);
@@ -103,11 +103,11 @@ export class MenuPage extends BasePage {
 
     // Games Played Card
     const gamesCard = document.createElement('div');
-    gamesCard.className = 'bg-white border-2 border-gray-300 rounded-lg p-3 sm:p-4 text-center hover:border-gray-500 transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
+    gamesCard.className = 'theme-card rounded-lg p-3 sm:p-4 text-center transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-sm';
     gamesCard.innerHTML = `
-      <div class="text-3xl sm:text-4xl font-bold text-black mb-1">${state.player.gamesPlayed}</div>
-      <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Games Played</div>
-      <div class="text-xs text-gray-500 mt-2">On the grind</div>
+      <div class="text-3xl sm:text-4xl font-bold theme-text mb-1">${state.player.gamesPlayed}</div>
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wide">Games Played</div>
+      <div class="text-xs theme-text-secondary mt-2">On the grind</div>
     `;
     statsSection.appendChild(gamesCard);
 
@@ -118,7 +118,7 @@ export class MenuPage extends BasePage {
     modesSection.className = 'mb-6 sm:mb-8';
 
     const modesTitle = document.createElement('h2');
-    modesTitle.className = 'text-lg sm:text-xl font-bold text-black mb-3 sm:mb-4 text-center';
+    modesTitle.className = 'text-lg sm:text-xl font-bold theme-text mb-3 sm:mb-4 text-center';
     modesTitle.textContent = 'Choose Your Mode';
     modesSection.appendChild(modesTitle);
 
@@ -280,7 +280,7 @@ export class MenuPage extends BasePage {
       content.className = 'space-y-3 py-2';
 
       const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm text-gray-600 text-center';
+      subtitle.className = 'text-sm theme-text-secondary text-center';
       subtitle.textContent = 'Choose your duration';
       content.appendChild(subtitle);
 
@@ -383,7 +383,7 @@ export class MenuPage extends BasePage {
     content.className = 'space-y-4';
 
     const text = document.createElement('p');
-    text.className = 'text-sm text-gray-700';
+    text.className = 'text-sm theme-text-secondary';
     text.textContent = `Leave ${group.groupName}?`;
     content.appendChild(text);
 

@@ -27,7 +27,15 @@ export class LoginPage extends BasePage {
 	private formContainer!: HTMLDivElement;
 
 	public render(): void {
-		this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 flex items-center justify-center p-6 overflow-y-auto';
+		this.element.className = 'page theme-page min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden';
+
+		const aurora = document.createElement('div');
+		aurora.className = 'theme-aurora';
+		this.element.appendChild(aurora);
+
+		const grid = document.createElement('div');
+		grid.className = 'theme-grid-overlay';
+		this.element.appendChild(grid);
 
 		const card = new Card({
 			variant: 'glassmorphic',
@@ -39,12 +47,12 @@ export class LoginPage extends BasePage {
 		header.className = 'text-center mb-8';
 
 		const title = document.createElement('h1');
-		title.className = 'text-6xl font-black text-black mb-3 tracking-tight';
+		title.className = 'text-5xl sm:text-6xl font-black theme-text mb-3 tracking-tight drop-shadow';
 		title.textContent = 'HEXTRIS';
 		header.appendChild(title);
 
 		const subtitle = document.createElement('p');
-		subtitle.className = 'text-gray-600 text-base font-medium';
+		subtitle.className = 'theme-text-secondary text-base font-semibold uppercase tracking-[0.25em]';
 		subtitle.textContent = 'Sign in to play';
 		header.appendChild(subtitle);
 
@@ -55,12 +63,14 @@ export class LoginPage extends BasePage {
 
 		const loginTab = document.createElement('button');
 		loginTab.textContent = 'Login';
-		loginTab.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-colors text-sm';
+		loginTab.className = 'flex-1 theme-tab';
+		loginTab.type = 'button';
 		loginTab.onclick = () => this.switchTab('login');
 
 		const signupTab = document.createElement('button');
 		signupTab.textContent = 'Sign Up';
-		signupTab.className = 'flex-1 py-3 px-4 rounded-lg font-semibold transition-colors text-sm';
+		signupTab.className = 'flex-1 theme-tab';
+		signupTab.type = 'button';
 		signupTab.onclick = () => this.switchTab('signup');
 
 		tabContainer.appendChild(loginTab);
@@ -77,7 +87,7 @@ export class LoginPage extends BasePage {
 		this.renderForm();
 
 		const wrapper = document.createElement('div');
-		wrapper.className = 'w-full max-w-md';
+		wrapper.className = 'w-full max-w-xl relative z-10';
 		wrapper.appendChild(card.element);
 
 		this.element.appendChild(wrapper);
@@ -117,7 +127,8 @@ export class LoginPage extends BasePage {
 		forgotLink.className = 'text-right mb-4';
 		const link = document.createElement('button');
 		link.textContent = 'Forgot password?';
-		link.className = 'text-sm text-gray-600 hover:text-black transition-colors';
+		link.type = 'button';
+		link.className = 'text-sm theme-text-secondary hover:opacity-80 transition-colors';
 		link.onclick = () => this.handleForgotPassword();
 		forgotLink.appendChild(link);
 		this.formContainer.appendChild(forgotLink);
@@ -201,15 +212,14 @@ export class LoginPage extends BasePage {
 	private updateTabStyles(tabContainer: any): void {
 		if (!tabContainer || !tabContainer._loginTab || !tabContainer._signupTab) return;
 
-		const activeClass = 'bg-black text-white';
-		const inactiveClass = 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+		const baseClass = 'flex-1 theme-tab';
 
 		if (this.currentTab === 'login') {
-			tabContainer._loginTab.className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${activeClass}`;
-			tabContainer._signupTab.className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${inactiveClass}`;
+			tabContainer._loginTab.className = `${baseClass} theme-tab-active`;
+			tabContainer._signupTab.className = baseClass;
 		} else {
-			tabContainer._loginTab.className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${inactiveClass}`;
-			tabContainer._signupTab.className = `flex-1 py-2 px-4 rounded-lg font-semibold transition-colors ${activeClass}`;
+			tabContainer._loginTab.className = baseClass;
+			tabContainer._signupTab.className = `${baseClass} theme-tab-active`;
 		}
 	}
 

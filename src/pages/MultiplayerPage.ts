@@ -23,11 +23,19 @@ export class MultiplayerPage extends BasePage {
   private buttons: Button[] = [];
 
   public render(): void {
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 p-6 overflow-y-auto';
+    this.element.className = 'page theme-page min-h-screen w-full p-4 sm:p-6 overflow-y-auto';
     this.element.innerHTML = '';
 
+    const aurora = document.createElement('div');
+    aurora.className = 'theme-aurora';
+    this.element.appendChild(aurora);
+
+    const grid = document.createElement('div');
+    grid.className = 'theme-grid-overlay';
+    this.element.appendChild(grid);
+
     const container = document.createElement('div');
-    container.className = 'w-full max-w-3xl mx-auto space-y-6';
+    container.className = 'w-full max-w-4xl mx-auto space-y-6 relative z-10';
 
     const header = this.createHeader('MULTIPLAYER GROUPS', 'Create or join groups to compare scores');
     container.appendChild(header);
@@ -71,9 +79,8 @@ export class MultiplayerPage extends BasePage {
   }
 
   private getTabClass(isActive: boolean): string {
-    return isActive
-      ? 'py-2 px-3 rounded-lg bg-black text-white text-sm font-semibold'
-      : 'py-2 px-3 rounded-lg bg-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-300';
+    const baseClass = 'theme-tab text-sm font-semibold';
+    return isActive ? `${baseClass} theme-tab-active` : baseClass;
   }
 
   private renderView(): void {
@@ -98,7 +105,7 @@ export class MultiplayerPage extends BasePage {
     }
 
     const loading = document.createElement('div');
-    loading.className = 'text-sm text-gray-500';
+    loading.className = 'text-sm theme-inline-message';
     loading.textContent = 'Loading groups...';
     this.contentContainer.appendChild(loading);
 
@@ -119,25 +126,25 @@ export class MultiplayerPage extends BasePage {
 
     this.groups.forEach((group) => {
       const card = document.createElement('div');
-      card.className = 'border-2 border-gray-200 rounded-xl p-4 bg-white space-y-3';
+      card.className = 'theme-card rounded-2xl p-4 space-y-3';
 
       const header = document.createElement('div');
       header.className = 'flex items-center justify-between';
 
       const title = document.createElement('div');
-      title.className = 'text-lg font-bold text-black';
+      title.className = 'text-lg font-bold theme-text';
       title.textContent = group.groupName;
       header.appendChild(title);
 
       const code = document.createElement('div');
-      code.className = 'text-xs font-semibold text-gray-500 tracking-widest';
+      code.className = 'text-xs font-semibold theme-text-secondary tracking-[0.6em] uppercase';
       code.textContent = group.roomCode;
       header.appendChild(code);
 
       card.appendChild(header);
 
       const meta = document.createElement('div');
-      meta.className = 'text-xs text-gray-600';
+      meta.className = 'text-xs theme-text-secondary';
       meta.textContent = `Members: ${group.memberCount}`;
       card.appendChild(meta);
 
@@ -284,7 +291,7 @@ export class MultiplayerPage extends BasePage {
     content.className = 'space-y-4';
 
     const text = document.createElement('p');
-    text.className = 'text-sm text-gray-700';
+    text.className = 'text-sm theme-text-secondary';
     text.textContent = `Leave ${group.groupName}?`;
     content.appendChild(text);
 
@@ -319,7 +326,7 @@ export class MultiplayerPage extends BasePage {
 
   private showInlineMessage(message: string): void {
     const text = document.createElement('div');
-    text.className = 'text-sm text-gray-500';
+    text.className = 'text-sm theme-inline-message';
     text.textContent = message;
     this.contentContainer.appendChild(text);
   }
@@ -335,7 +342,7 @@ export class MultiplayerPage extends BasePage {
     content.className = 'space-y-4';
 
     const text = document.createElement('p');
-    text.className = 'text-sm text-gray-700';
+    text.className = 'text-sm theme-text-secondary';
     text.textContent = message;
     content.appendChild(text);
 

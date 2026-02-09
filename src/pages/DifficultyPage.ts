@@ -8,13 +8,23 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
 import { DifficultyLevel, difficultyConfigs } from '@config/difficulty';
+import { Button } from '@ui/components/Button';
 
 export class DifficultyPage extends BasePage {
   private selectedDifficulty: DifficultyLevel = DifficultyLevel.MEDIUM;
   private difficultyCards: HTMLElement[] = [];
+  private buttons: Button[] = [];
 
   public render(): void {
-    this.element.className = 'page min-h-screen w-full bg-gradient-to-b from-white to-gray-50 p-3 sm:p-4 md:p-6 overflow-y-auto';
+  this.element.className = 'page theme-page min-h-screen w-full p-3 sm:p-4 md:p-6 overflow-y-auto';
+
+  const aurora = document.createElement('div');
+  aurora.className = 'theme-aurora';
+  this.element.appendChild(aurora);
+
+  const grid = document.createElement('div');
+  grid.className = 'theme-grid-overlay';
+  this.element.appendChild(grid);
 
     // Clear previous content
     this.element.innerHTML = '';
@@ -28,7 +38,7 @@ export class DifficultyPage extends BasePage {
 
     // Content container
     const container = document.createElement('div');
-    container.className = 'flex flex-col items-center justify-start min-h-screen max-w-3xl mx-auto space-y-6 sm:space-y-8';
+    container.className = 'flex flex-col items-center justify-start min-h-screen max-w-4xl mx-auto space-y-6 sm:space-y-8 relative z-10';
 
   // Reset cards array
   this.difficultyCards = [];
@@ -39,7 +49,7 @@ export class DifficultyPage extends BasePage {
 
     // Difficulty cards grid with better spacing
     const cardsGrid = document.createElement('div');
-    cardsGrid.className = 'grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full px-0 sm:px-2';
+    cardsGrid.className = 'grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 w-full px-0 sm:px-2';
 
     // Create cards for each difficulty
     const difficulties = [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD];
@@ -55,22 +65,16 @@ export class DifficultyPage extends BasePage {
 
     // Start button with more spacing
     const startButtonContainer = document.createElement('div');
-    startButtonContainer.className = 'mt-4 sm:mt-6 w-full max-w-xs px-0 sm:px-2 mb-2 sm:mb-4';
+    startButtonContainer.className = 'mt-4 sm:mt-6 w-full max-w-sm px-0 sm:px-2 mb-6';
 
-    const startButton = document.createElement('button');
-    startButton.type = 'button';
-    startButton.className = `
-      w-full py-2 sm:py-3 px-4 sm:px-6
-      bg-black text-white text-sm sm:text-base
-      rounded-lg font-bold
-      hover:bg-gray-800 hover:scale-105
-      transition-all duration-200
-      focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2
-    `.trim().replace(/\s+/g, ' ');
-    startButton.textContent = 'START GAME';
-    startButton.addEventListener('click', () => this.startGame());
-
-    startButtonContainer.appendChild(startButton);
+    const startButton = new Button('START GAME', {
+      variant: 'primary',
+      size: 'large',
+      fullWidth: true,
+      onClick: () => this.startGame(),
+    });
+    this.buttons.push(startButton);
+    startButtonContainer.appendChild(startButton.element);
     container.appendChild(startButtonContainer);
 
     this.element.appendChild(container);
@@ -82,65 +86,32 @@ export class DifficultyPage extends BasePage {
    */
   private createDifficultyCard(level: DifficultyLevel, config: typeof difficultyConfigs[DifficultyLevel]): HTMLElement {
     const isSelected = level === this.selectedDifficulty;
-    
     const card = document.createElement('div');
-    
-    // Base styling
-    const baseStyles = {
-      easy: {
-        bg: 'bg-white',
-        text: 'text-black',
-        border: 'border-gray-300',
-        hover: 'hover:bg-gray-50',
-        emoji: 'EASY'
-      },
-      medium: {
-        bg: 'bg-white',
-        text: 'text-black',
-        border: 'border-gray-300',
-        hover: 'hover:bg-gray-50',
-        emoji: 'NORMAL'
-      },
-      hard: {
-        bg: 'bg-gray-900',
-        text: 'text-white',
-        border: 'border-gray-600',
-        hover: 'hover:bg-black',
-        emoji: 'HARD'
-      }
-    };
-
-    const style = baseStyles[level];
-
     card.className = `
-      ${style.bg} ${style.text}
-      rounded-xl p-5 border-2 ${style.border}
-      cursor-pointer transition-all duration-300
-      ${style.hover}
+      difficulty-card theme-card rounded-2xl p-5 border border-transparent
+      cursor-pointer transition-all duration-300 hover:-translate-y-1
     `.trim().replace(/\s+/g, ' ');
     card.dataset.level = level;
 
-    // Icon
-    const icon = document.createElement('div');
-    icon.className = 'text-4xl mb-3 text-center';
-    icon.textContent = style.emoji;
-    card.appendChild(icon);
+    const badge = document.createElement('div');
+    badge.className = 'text-[10px] font-bold uppercase tracking-[0.4em] theme-text-secondary text-center mb-3';
+    badge.textContent = level;
+    card.appendChild(badge);
 
     // Title
     const title = document.createElement('h3');
-    title.className = 'text-2xl font-black mb-1 text-center tracking-tight';
+    title.className = 'text-2xl font-black mb-1 text-center tracking-tight theme-text';
     title.textContent = config.name.toUpperCase();
     card.appendChild(title);
 
     // Description
     const description = document.createElement('p');
-    description.className = `text-xs mb-3 text-center font-medium ${level === DifficultyLevel.HARD ? 'text-gray-400' : 'text-gray-700'}`;
+    description.className = 'text-xs mb-3 text-center font-medium theme-text-secondary';
     description.textContent = config.description;
     card.appendChild(description);
 
-    // Stats section with better styling
     const statsContainer = document.createElement('div');
-    statsContainer.className = `rounded-lg p-3 mb-3 ${level === DifficultyLevel.HARD ? 'bg-gray-800 bg-opacity-50' : 'bg-gray-100'}`;
+    statsContainer.className = 'rounded-xl p-3 mb-3 theme-card-muted';
     
     const stats = document.createElement('div');
     stats.className = 'space-y-2 text-xs';
@@ -154,10 +125,17 @@ export class DifficultyPage extends BasePage {
     statItems.forEach(({ label, value }) => {
       const statDiv = document.createElement('div');
       statDiv.className = 'flex justify-between font-semibold';
-      statDiv.innerHTML = `
-        <span>${label}</span>
-        <span class="font-bold">${value}</span>
-      `;
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'theme-text-secondary';
+      labelSpan.textContent = label;
+
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'font-bold theme-text';
+      valueSpan.textContent = value;
+
+      statDiv.appendChild(labelSpan);
+      statDiv.appendChild(valueSpan);
       stats.appendChild(statDiv);
     });
 
@@ -198,20 +176,7 @@ export class DifficultyPage extends BasePage {
     level: DifficultyLevel,
     isSelected: boolean
   ): void {
-    const selectedClasses = ['ring-4', 'ring-black', 'scale-105', 'shadow-2xl'];
-    const unselectedClasses = ['shadow-md', 'hover:shadow-lg'];
-    const lightBg = level !== DifficultyLevel.HARD;
-
-    [...selectedClasses, ...unselectedClasses, 'bg-gray-100', 'bg-gray-800'].forEach((cls) => {
-      card.classList.remove(cls);
-    });
-
-    if (isSelected) {
-      selectedClasses.forEach((cls) => card.classList.add(cls));
-      card.classList.add(lightBg ? 'bg-gray-100' : 'bg-gray-800');
-    } else {
-      unselectedClasses.forEach((cls) => card.classList.add(cls));
-    }
+    card.classList.toggle('selected', isSelected);
 
     const footer = card.querySelector('.difficulty-card-footer');
     if (!footer) return;
@@ -220,13 +185,13 @@ export class DifficultyPage extends BasePage {
 
     if (isSelected) {
       const indicator = document.createElement('div');
-      indicator.className = 'text-center mt-3 font-bold text-sm flex items-center justify-center gap-2';
-      indicator.innerHTML = `<span class="text-2xl">OK</span> SELECTED`;
+      indicator.className = 'text-center mt-3 font-bold text-sm flex items-center justify-center gap-2 theme-text';
+      indicator.innerHTML = `<span class="text-xl">★</span> EQUIPPED`;
       footer.appendChild(indicator);
     } else {
       const hint = document.createElement('div');
-      hint.className = `text-center mt-3 text-xs font-semibold opacity-60 ${level === DifficultyLevel.HARD ? 'text-gray-400' : 'text-gray-500'}`;
-      hint.textContent = 'Click to select';
+      hint.className = 'text-center mt-3 text-xs font-semibold opacity-80 theme-text-secondary';
+      hint.textContent = 'Tap to compare stats';
       footer.appendChild(hint);
     }
   }
@@ -248,6 +213,8 @@ export class DifficultyPage extends BasePage {
 
   public onUnmount(): void {
     this.difficultyCards = [];
+    this.buttons.forEach((btn) => btn.destroy());
+    this.buttons = [];
   }
 }
 

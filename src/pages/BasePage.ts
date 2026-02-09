@@ -19,7 +19,7 @@ export abstract class BasePage {
    */
   protected createPageElement(): HTMLDivElement {
     const page = document.createElement('div');
-    page.className = 'page min-h-screen w-full';
+    page.className = 'page theme-page min-h-screen w-full';
     return page;
   }
 
@@ -67,13 +67,13 @@ export abstract class BasePage {
     header.className = 'text-center mb-8';
 
     const titleElement = document.createElement('h1');
-    titleElement.className = 'text-6xl font-bold text-black mb-2';
+    titleElement.className = 'text-5xl sm:text-6xl font-bold theme-text mb-2 drop-shadow';
     titleElement.textContent = title;
     header.appendChild(titleElement);
 
     if (subtitle) {
       const subtitleElement = document.createElement('p');
-      subtitleElement.className = 'text-gray-700 text-lg';
+      subtitleElement.className = 'theme-text-secondary text-base sm:text-lg';
       subtitleElement.textContent = subtitle;
       header.appendChild(subtitleElement);
     }
@@ -89,10 +89,9 @@ export abstract class BasePage {
     button.type = 'button';
     button.className = `
       fixed top-4 left-4 z-10
-      px-4 py-2 rounded-lg
-      text-gray-700 hover:bg-gray-100
-      transition-colors duration-200
-      font-medium
+      px-4 py-2 rounded-xl
+      theme-btn theme-btn-outline
+      transition-transform duration-200
     `.trim().replace(/\s+/g, ' ');
     button.textContent = text;
     button.addEventListener('click', onClick);
