@@ -30,6 +30,16 @@ export interface GamePlayState {
   gameTime: number;
   isInvulnerable: boolean;
   speedMultiplier: number;
+  comboHeat?: number;
+  comboTier?: number;
+  surgeActive?: boolean;
+  strategyPhase?: string;
+  tempoLevel?: number;
+  timeOrbCount?: number;
+  timeOrbGoal?: number;
+  momentumValue?: number;
+  ghostDelta?: number;
+  activeMutators?: string[];
 }
 
 export interface UIState {
@@ -42,9 +52,18 @@ export interface UIState {
   musicVolume: number;
   sfxVolume: number;
   preGamePowerUps?: string[];
-  currentGameMode?: 'standard' | 'dailyChallenge' | 'timerAttack';
+  currentGameMode?:
+    | 'standard'
+    | 'dailyChallenge'
+    | 'weeklyGauntlet'
+    | 'timerAttack'
+    | 'multiplayerRace'
+    | 'multiplayerSabotage'
+    | 'multiplayerSync';
   timerDuration?: number;
   currentGroupId?: string;
+  multiplayerMode?: 'race' | 'sabotage' | 'sync';
+  prestigeMutators?: string[];
 }
 
 export interface Group {

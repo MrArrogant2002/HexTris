@@ -400,6 +400,36 @@
     mix-blend-mode: screen;
   }
 
+  .game-effect-surge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    letter-spacing: 0.5em;
+    color: var(--theme-accent-contrast);
+    background: radial-gradient(circle, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.45) 85%);
+    backdrop-filter: blur(2px);
+    animation: surgePulse 1.1s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 6;
+  }
+
+  .game-effect-surge span {
+    font-size: clamp(1rem, 2vw, 1.75rem);
+    letter-spacing: 0.8em;
+  }
+
+  .game-effect-surge p {
+    font-size: clamp(0.6rem, 1.3vw, 0.9rem);
+    letter-spacing: 0.4em;
+    opacity: 0.85;
+  }
+
   .theme-input {
     width: 100%;
     border-radius: 0.9rem;
@@ -582,6 +612,21 @@
   }
   100% {
     opacity: 0.6;
+  }
+}
+
+@keyframes surgePulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(0.96);
   }
 }
 

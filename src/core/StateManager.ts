@@ -55,6 +55,16 @@ export class StateManager {
         gameTime: 0,
         isInvulnerable: false,
         speedMultiplier: 1.0,
+        comboHeat: 0,
+        comboTier: 0,
+        surgeActive: false,
+        strategyPhase: undefined,
+        tempoLevel: 0,
+        timeOrbCount: 0,
+        timeOrbGoal: 3,
+        momentumValue: 0,
+        ghostDelta: 0,
+        activeMutators: [],
       },
       ui: {
         currentRoute: '/',
@@ -69,6 +79,8 @@ export class StateManager {
         currentGameMode: 'standard',
         timerDuration: 90,
         currentGroupId: undefined,
+        multiplayerMode: 'race',
+        prestigeMutators: [],
       },
     };
   }

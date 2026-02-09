@@ -4,6 +4,7 @@
  */
 
 import { randInt } from '@utils/math';
+import type { SurgeConfig } from '@config/difficulty';
 
 type GenerationFunction = () => void;
 
@@ -11,6 +12,12 @@ interface WaveConfig {
   colors: string[];
   speedModifier: number;
   creationSpeedModifier: number;
+  surge?: SurgeConfig;
+  onSurgeChange?: (state: {
+    active: boolean;
+    durationMs?: number;
+    remainingMs?: number;
+  }) => void;
 }
 
 export class WaveSystem {
@@ -20,6 +27,14 @@ export class WaveSystem {
   private difficulty: number = 1;
   private dt: number = 0; // Total elapsed time
   private lastDifficultyTime: number = 0;
+  private elapsedMs: number = 0;
+  private surgeConfig?: SurgeConfig;
+  private onSurgeChange?: (state: { active: boolean; durationMs?: number; remainingMs?: number }) => void;
+  private surgeActive: boolean = false;
+  private surgeEndMs: number = 0;
+  private surgeNextMs: number = Number.POSITIVE_INFINITY;
+  private baseSpeedModifier: number;
+  private baseCreationSpeedModifier: number;
   
   private colors: string[];
   private speedModifier: number;
@@ -39,6 +54,13 @@ export class WaveSystem {
     this.colors = config.colors;
     this.speedModifier = config.speedModifier;
     this.creationSpeedModifier = config.creationSpeedModifier;
+    this.baseSpeedModifier = config.speedModifier;
+    this.baseCreationSpeedModifier = config.creationSpeedModifier;
+    this.surgeConfig = config.surge;
+    this.onSurgeChange = config.onSurgeChange;
+    if (this.surgeConfig) {
+      this.surgeNextMs = this.surgeConfig.firstAt * 1000;
+    }
     this.hexSides = hexSides;
     this.onSpawnBlock = onSpawnBlock;
     
@@ -50,10 +72,13 @@ export class WaveSystem {
    * Update wave generation
    * Original: this.dt = (mobile ? 14 : 16.6667) * MainHex.ct
    */
-  public update(_deltaTime: number, frameCount: number): void {
+  public update(deltaTime: number, frameCount: number): void {
     // Original Hextris timing formula
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     this.dt = (isMobile ? 14 : 16.6667) * frameCount;
+    const deltaMs = deltaTime * 16.6667;
+    this.elapsedMs += deltaMs;
+    this.updateSurgeState();
     
     // Run current generation pattern
     this.currentFunction();
@@ -113,6 +138,39 @@ export class WaveSystem {
    */
   private getBlockSpeed(): number {
     return 1.6 + (this.difficulty / 15) * 3;
+  }
+
+  private updateSurgeState(): void {
+    if (!this.surgeConfig) return;
+
+    if (!this.surgeActive && this.elapsedMs >= this.surgeNextMs) {
+      this.startSurge();
+    }
+
+    if (this.surgeActive && this.elapsedMs >= this.surgeEndMs) {
+      this.endSurge();
+    }
+  }
+
+  private startSurge(): void {
+    if (!this.surgeConfig) return;
+    this.surgeActive = true;
+    const durationMs = this.surgeConfig.duration * 1000;
+    this.surgeEndMs = this.elapsedMs + durationMs;
+    this.creationSpeedModifier = this.baseCreationSpeedModifier * (1 + this.surgeConfig.spawnScalar);
+    const speedScalar = this.surgeConfig.speedScalar ?? this.surgeConfig.spawnScalar;
+    this.speedModifier = this.baseSpeedModifier * (1 + speedScalar);
+    this.onSurgeChange?.({ active: true, durationMs, remainingMs: durationMs });
+  }
+
+  private endSurge(): void {
+    this.surgeActive = false;
+    this.creationSpeedModifier = this.baseCreationSpeedModifier;
+    this.speedModifier = this.baseSpeedModifier;
+    if (this.surgeConfig) {
+      this.surgeNextMs = this.elapsedMs + this.surgeConfig.cadence * 1000;
+    }
+    this.onSurgeChange?.({ active: false, remainingMs: 0 });
   }
 
   /**
@@ -296,6 +354,17 @@ export class WaveSystem {
     this.difficulty = 1;
     this.dt = 0;
     this.lastDifficultyTime = 0;
+    this.elapsedMs = 0;
+    this.surgeActive = false;
+    this.surgeEndMs = 0;
+    this.creationSpeedModifier = this.baseCreationSpeedModifier;
+    this.speedModifier = this.baseSpeedModifier;
+    if (this.surgeConfig) {
+      this.surgeNextMs = this.surgeConfig.firstAt * 1000;
+      this.onSurgeChange?.({ active: false, remainingMs: 0 });
+    } else {
+      this.surgeNextMs = Number.POSITIVE_INFINITY;
+    }
     this.currentFunction = this.randomGeneration.bind(this);
   }
 
@@ -306,6 +375,19 @@ export class WaveSystem {
 
   public getNextGen(): number {
     return this.nextGen;
+  }
+
+  public isSurgeActive(): boolean {
+    return this.surgeActive;
+  }
+
+  public getSurgeTimeRemaining(): number {
+    if (!this.surgeActive) return 0;
+    return Math.max(0, this.surgeEndMs - this.elapsedMs);
+  }
+
+  public getElapsedMs(): number {
+    return this.elapsedMs;
   }
 }
 

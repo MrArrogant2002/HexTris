@@ -22,6 +22,7 @@ import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import { getInputManager } from '@utils/input';
 import { themes, ThemeName } from '@config/themes';
 import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
+import type { DifficultyConfig, AdaptiveAssistConfig } from '@config/difficulty';
 import { appwriteClient } from '@network/AppwriteClient';
 import { GroupManager } from '@network/GroupManager';
 import { DailyChallengeSystem } from '@modes/DailyChallengeMode';
@@ -82,6 +83,13 @@ export class GamePage extends BasePage {
   private slowMoTimerEl: HTMLDivElement | null = null;
   private shieldOverlay: HTMLDivElement | null = null;
   private hammerOverlay: HTMLDivElement | null = null;
+  private surgeOverlay: HTMLDivElement | null = null;
+  private surgeTimeoutId: number | null = null;
+  private activeDifficultyConfig: DifficultyConfig | null = null;
+  private currentPhaseName: string | null = null;
+  private lifeLossTimestamps: number[] = [];
+  private adaptiveAssistActive: boolean = false;
+  private adaptiveAssistResetId: number | null = null;
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
   };
@@ -104,6 +112,16 @@ export class GamePage extends BasePage {
     if (type === 'hammer') {
       this.triggerHammerEffect();
     }
+  };
+
+  private handleSurgeChange = (state: { active: boolean; durationMs?: number; remainingMs?: number }): void => {
+    stateManager.updateGame({ surgeActive: state.active });
+    if (state.active) {
+      this.showSurgeEffect(state.durationMs ?? 0);
+    } else {
+      this.hideSurgeEffect();
+    }
+    this.syncTempoLevel();
   };
 
   private handleTimerModeTimeUp = (event: Event): void => {
@@ -239,16 +257,33 @@ export class GamePage extends BasePage {
     const blockColors = theme.colors.blocks;
     
     // Initialize game systems
-    const difficultyLevel = state.game.difficulty ?? DifficultyLevel.MEDIUM;
+    const difficultyLevel = state.game.difficulty ?? DifficultyLevel.STANDARD;
     const difficultyConfig = getDifficultyConfig(difficultyLevel);
+    this.activeDifficultyConfig = difficultyConfig;
+    this.currentPhaseName = null;
+    this.lifeLossTimestamps = [];
+    this.adaptiveAssistActive = false;
+    if (this.adaptiveAssistResetId) {
+      window.clearTimeout(this.adaptiveAssistResetId);
+      this.adaptiveAssistResetId = null;
+    }
+    stateManager.updateGame({ surgeActive: false, strategyPhase: undefined, tempoLevel: 0 });
+
     const speedModifier = difficultyConfig.speedMultiplier;
     const creationSpeedModifier = difficultyConfig.spawnRateModifier;
     
     this.waveSystem = new WaveSystem(
-      { colors: blockColors, speedModifier, creationSpeedModifier },
+      {
+        colors: blockColors,
+        speedModifier,
+        creationSpeedModifier,
+        surge: difficultyConfig.surge,
+        onSurgeChange: this.handleSurgeChange,
+      },
       6,
       (lane: number, color: string, speed: number) => this.spawnBlock(lane, color, speed)
     );
+    this.syncTempoLevel();
     
     // Use hexRadius directly (already calculated above)
     this.physicsSystem = new PhysicsSystem(hexRadius);
@@ -349,6 +384,7 @@ export class GamePage extends BasePage {
     
     // Update wave generation (spawn new blocks)
     this.waveSystem.update(dt, this.frameCount);
+    this.updateDifficultyPhase();
     
     // Update physics (falling blocks move toward center and check collision)
     // Pass scale=1 for now (can be adjusted for screen scaling later)
@@ -735,6 +771,7 @@ export class GamePage extends BasePage {
     }
     this.clearSlowMoEffect();
     this.hideShieldEffect();
+    this.hideSurgeEffect();
     if (this.hammerOverlay) {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
@@ -908,6 +945,96 @@ export class GamePage extends BasePage {
     }, 1100);
   }
 
+  private showSurgeEffect(durationMs: number): void {
+    if (!this.effectLayer) return;
+    this.hideSurgeEffect();
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-surge';
+    overlay.innerHTML = '<span>Surge</span><p>Brace for rapid waves</p>';
+    this.effectLayer.appendChild(overlay);
+    this.surgeOverlay = overlay;
+    if (this.surgeTimeoutId) {
+      window.clearTimeout(this.surgeTimeoutId);
+      this.surgeTimeoutId = null;
+    }
+    if (durationMs > 0) {
+      this.surgeTimeoutId = window.setTimeout(() => {
+        this.hideSurgeEffect();
+      }, durationMs + 100);
+    }
+  }
+
+  private hideSurgeEffect(): void {
+    if (this.surgeOverlay) {
+      this.surgeOverlay.remove();
+      this.surgeOverlay = null;
+    }
+    if (this.surgeTimeoutId) {
+      window.clearTimeout(this.surgeTimeoutId);
+      this.surgeTimeoutId = null;
+    }
+  }
+
+  private updateDifficultyPhase(): void {
+    if (!this.waveSystem || !this.activeDifficultyConfig || !this.activeDifficultyConfig.phases?.length) {
+      return;
+    }
+    const elapsedSeconds = this.waveSystem.getElapsedMs() / 1000;
+    let activePhase = this.activeDifficultyConfig.phases[0];
+    for (const phase of this.activeDifficultyConfig.phases) {
+      if (elapsedSeconds + 0.001 >= phase.startsAt) {
+        activePhase = phase;
+      } else {
+        break;
+      }
+    }
+    if (!activePhase || this.currentPhaseName === activePhase.name) {
+      return;
+    }
+    this.currentPhaseName = activePhase.name;
+    stateManager.updateGame({ strategyPhase: activePhase.name });
+    window.dispatchEvent(new CustomEvent('difficultyPhaseChanged', { detail: activePhase }));
+  }
+
+  private registerLifeLossAssist(): void {
+    const assist = this.activeDifficultyConfig?.adaptiveAssist;
+    if (!assist?.enabled) return;
+    const now = performance.now();
+    const cutoff = now - assist.windowMs;
+    this.lifeLossTimestamps = this.lifeLossTimestamps.filter((ts) => ts >= cutoff);
+    this.lifeLossTimestamps.push(now);
+    if (this.adaptiveAssistActive) return;
+    if (this.lifeLossTimestamps.length >= assist.lossThreshold) {
+      this.triggerAdaptiveAssist(assist);
+    }
+  }
+
+  private triggerAdaptiveAssist(config: AdaptiveAssistConfig): void {
+    if (this.adaptiveAssistActive) return;
+    this.adaptiveAssistActive = true;
+    this.applySlowMo(config.slowScalar, config.durationMs);
+    this.syncTempoLevel();
+    if (this.adaptiveAssistResetId) {
+      window.clearTimeout(this.adaptiveAssistResetId);
+    }
+    this.adaptiveAssistResetId = window.setTimeout(() => {
+      this.adaptiveAssistActive = false;
+      this.lifeLossTimestamps = [];
+      this.syncTempoLevel();
+      this.adaptiveAssistResetId = null;
+    }, config.durationMs + 200);
+  }
+
+  private syncTempoLevel(): void {
+    let tempo = 0;
+    if (this.adaptiveAssistActive) {
+      tempo = -1;
+    } else if (this.waveSystem?.isSurgeActive()) {
+      tempo = 2;
+    }
+    stateManager.updateGame({ tempoLevel: tempo });
+  }
+
   private applyLifeBonus(score: number): void {
     const state = stateManager.getState();
     if (state.game.lives >= MAX_LIVES) {
@@ -944,6 +1071,7 @@ export class GamePage extends BasePage {
       return;
     }
 
+    this.registerLifeLossAssist();
     stateManager.updateGame({ lives: nextLives, isInvulnerable: true });
     this.floatingTexts.push(FloatingText.createLifeLost(centerX, centerY - 120));
     this.clearBlocksAndRestart();
@@ -1394,6 +1522,16 @@ export class GamePage extends BasePage {
       window.clearTimeout(this.invulnerabilityTimeoutId);
       this.invulnerabilityTimeoutId = null;
     }
+
+    if (this.adaptiveAssistResetId) {
+      window.clearTimeout(this.adaptiveAssistResetId);
+      this.adaptiveAssistResetId = null;
+    }
+    this.adaptiveAssistActive = false;
+    this.lifeLossTimestamps = [];
+    this.activeDifficultyConfig = null;
+    this.currentPhaseName = null;
+    stateManager.updateGame({ surgeActive: false, tempoLevel: 0, strategyPhase: undefined });
 
     if (this.powerUpSystem) {
       this.powerUpSystem.destroy();

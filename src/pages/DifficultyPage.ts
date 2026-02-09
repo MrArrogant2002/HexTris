@@ -7,11 +7,11 @@ import { BasePage } from './BasePage';
 import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
-import { DifficultyLevel, difficultyConfigs } from '@config/difficulty';
+import { DifficultyLevel, difficultyConfigs, difficultyOrder } from '@config/difficulty';
 import { Button } from '@ui/components/Button';
 
 export class DifficultyPage extends BasePage {
-  private selectedDifficulty: DifficultyLevel = DifficultyLevel.MEDIUM;
+  private selectedDifficulty: DifficultyLevel = DifficultyLevel.STANDARD;
   private difficultyCards: HTMLElement[] = [];
   private buttons: Button[] = [];
 
@@ -40,8 +40,7 @@ export class DifficultyPage extends BasePage {
     cardsGrid.className = 'grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 w-full px-0 sm:px-2';
 
     // Create cards for each difficulty
-    const difficulties = [DifficultyLevel.EASY, DifficultyLevel.MEDIUM, DifficultyLevel.HARD];
-    
+    const difficulties = difficultyOrder;
     difficulties.forEach((level) => {
       const config = difficultyConfigs[level];
       const cardElement = this.createDifficultyCard(level, config);
@@ -102,11 +101,13 @@ export class DifficultyPage extends BasePage {
     
     const stats = document.createElement('div');
     stats.className = 'space-y-2 text-xs';
-    
+
     const statItems = [
       { label: 'Block Speed', value: `${config.blockSpeed}px/s` },
       { label: 'Spawn Delay', value: `${config.spawnDelay}ms` },
       { label: 'Score Bonus', value: `x${config.scoreMultiplier}` },
+      { label: 'Hazards', value: config.hazardProfile.toUpperCase() },
+      { label: 'Power-Ups', value: `${Math.round(config.powerUpRate * 100)}%` },
     ];
 
     statItems.forEach(({ label, value }) => {
@@ -128,6 +129,44 @@ export class DifficultyPage extends BasePage {
 
     statsContainer.appendChild(stats);
     card.appendChild(statsContainer);
+
+    const surgeInfo = document.createElement('div');
+    surgeInfo.className = 'mt-3 text-[11px] uppercase tracking-[0.2em] theme-text-secondary text-center';
+    surgeInfo.textContent = `Surge every ${config.surge.cadence}s (+${Math.round(config.surge.spawnScalar * 100)}% spawn)`;
+    card.appendChild(surgeInfo);
+
+    if (config.adaptiveAssist?.enabled) {
+      const assist = document.createElement('div');
+      assist.className = 'mt-1 text-[11px] text-center text-emerald-400 font-semibold';
+      assist.textContent = 'Adaptive Assist active';
+      card.appendChild(assist);
+    }
+
+    if (config.prestige?.available) {
+      const prestige = document.createElement('div');
+      prestige.className = 'mt-1 text-[11px] text-center text-amber-300 font-semibold';
+      prestige.textContent = `Prestige +${Math.round(config.prestige.scoreMultiplier * 100)}%`;
+      card.appendChild(prestige);
+    }
+
+    if (config.unlockRequirement) {
+      const unlock = document.createElement('div');
+      unlock.className = 'mt-2 text-xs text-center theme-text-secondary';
+      unlock.textContent = config.unlockRequirement;
+      card.appendChild(unlock);
+    }
+
+    if (config.phases.length) {
+      const phases = document.createElement('ul');
+      phases.className = 'mt-3 text-[11px] space-y-1 theme-text-secondary';
+      config.phases.forEach((phase) => {
+        const li = document.createElement('li');
+        const timeLabel = `${phase.startsAt}s`;
+        li.textContent = `${timeLabel}: ${phase.name}`;
+        phases.appendChild(li);
+      });
+      card.appendChild(phases);
+    }
 
     const footer = document.createElement('div');
     footer.className = 'difficulty-card-footer';

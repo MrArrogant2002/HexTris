@@ -252,7 +252,7 @@ export class MenuPage extends BasePage {
    * Start daily challenge mode
    */
   private startDailyChallenge(): void {
-    stateManager.updateGame({ difficulty: DifficultyLevel.HARD });
+    stateManager.updateGame({ difficulty: DifficultyLevel.FIERCE });
     stateManager.updateUI({ currentGameMode: 'dailyChallenge', timerDuration: undefined });
     Router.getInstance().navigate(ROUTES.GAME, { mode: 'daily' });
   }
@@ -318,18 +318,18 @@ export class MenuPage extends BasePage {
   }
 
   private mapDurationToDifficulty(duration: number): DifficultyLevel {
-    if (duration <= 30) return DifficultyLevel.HARD;
-    if (duration <= 60) return DifficultyLevel.MEDIUM;
+    if (duration <= 30) return DifficultyLevel.FIERCE;
+    if (duration <= 60) return DifficultyLevel.STANDARD;
     return DifficultyLevel.EASY;
   }
 
   private describeTimerDifficulty(duration: number): string {
     const difficulty = this.mapDurationToDifficulty(duration);
     switch (difficulty) {
-      case DifficultyLevel.HARD:
-        return 'Hard Pace';
-      case DifficultyLevel.MEDIUM:
-        return 'Medium Pace';
+      case DifficultyLevel.FIERCE:
+        return 'Fierce Pace';
+      case DifficultyLevel.STANDARD:
+        return 'Standard Pace';
       default:
         return 'Easy Pace';
     }
