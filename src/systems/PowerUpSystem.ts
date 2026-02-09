@@ -159,7 +159,7 @@ export class PowerUpSystem {
         break;
       case 'slowmo':
         if (this.onSlowMo) {
-          this.onSlowMo(0.6, 12000);
+          this.onSlowMo(0.55, 6000);
         }
         break;
       case 'shield':
@@ -216,6 +216,8 @@ export class PowerUpSystem {
       stateManager.updateGame({ score: newScore });
       window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: newScore } }));
     }
+
+    window.dispatchEvent(new CustomEvent('powerUpEffect', { detail: { type: 'hammer' } }));
   }
 
   private getSpawnSettings(): { startDist: number; scale: number } {

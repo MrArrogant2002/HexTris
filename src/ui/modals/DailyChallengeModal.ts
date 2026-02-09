@@ -28,17 +28,17 @@ export class DailyChallengeModal {
     header.className = 'text-center mb-4';
     header.innerHTML = `
       <div class="text-6xl mb-3">${challenge.icon}</div>
-      <h2 class="text-3xl font-bold text-black mb-2">${challenge.name}</h2>
-      <p class="text-gray-600 text-sm font-medium">${challenge.description}</p>
+      <h2 class="text-3xl font-bold theme-text mb-2">${challenge.name}</h2>
+      <p class="theme-text-secondary text-sm font-medium">${challenge.description}</p>
     `;
     content.appendChild(header);
 
     // Difficulty indicator (based on reward)
     const difficulty = document.createElement('div');
-    difficulty.className = 'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-300 rounded-lg p-3 text-center';
+    difficulty.className = 'theme-card rounded-lg p-3 text-center border border-transparent';
     difficulty.innerHTML = `
-      <div class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Difficulty</div>
-      <div class="text-lg font-bold text-blue-900 mt-1">
+      <div class="text-xs font-semibold theme-text-secondary uppercase tracking-wider">Difficulty</div>
+      <div class="text-lg font-bold theme-text mt-1">
         ${challenge.baseReward <= 250 ? 'Easy' : challenge.baseReward <= 500 ? 'Medium' : 'Hard'}
       </div>
     `;
@@ -50,30 +50,32 @@ export class DailyChallengeModal {
 
     // Base reward
     const baseReward = document.createElement('div');
-    baseReward.className = 'flex justify-between items-center bg-gray-50 rounded-lg p-3 border border-gray-200';
+    baseReward.className = 'flex justify-between items-center theme-card-muted rounded-lg p-3 border border-transparent';
     baseReward.innerHTML = `
-      <span class="text-sm font-semibold text-gray-700">Base Reward</span>
-      <span class="text-lg font-bold text-gray-900">${challenge.baseReward} DIAMOND</span>
+      <span class="text-sm font-semibold theme-text-secondary">Base Reward</span>
+      <span class="text-lg font-bold theme-text">${challenge.baseReward} DIAMOND</span>
     `;
     rewardsSection.appendChild(baseReward);
 
     // Streak bonus (if applicable)
     if (streak >= 7) {
       const bonusReward = document.createElement('div');
-      bonusReward.className = 'flex justify-between items-center bg-yellow-50 rounded-lg p-3 border-2 border-yellow-300 animate-pulse';
+      bonusReward.className = 'flex justify-between items-center theme-card rounded-lg p-3 border-2';
+      bonusReward.style.borderColor = 'var(--theme-accent)';
       bonusReward.innerHTML = `
-        <span class="text-sm font-semibold text-yellow-700">Streak Bonus (${streak} days)</span>
-        <span class="text-lg font-bold text-yellow-900">+${challenge.streakBonus} DIAMOND</span>
+        <span class="text-sm font-semibold theme-text">Streak Bonus (${streak} days)</span>
+        <span class="text-lg font-bold theme-text">+${challenge.streakBonus} DIAMOND</span>
       `;
       rewardsSection.appendChild(bonusReward);
     }
 
     // Total reward
     const totalReward = document.createElement('div');
-    totalReward.className = 'flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-400';
+    totalReward.className = 'flex justify-between items-center theme-card rounded-lg p-4 border-2';
+    totalReward.style.borderColor = 'var(--theme-accent-soft)';
     totalReward.innerHTML = `
-      <span class="text-sm font-bold text-green-700 uppercase tracking-wide">Total Reward</span>
-      <span class="text-2xl font-black text-green-900">${challenge.totalReward} DIAMOND</span>
+      <span class="text-sm font-bold theme-text uppercase tracking-wide">Total Reward</span>
+      <span class="text-2xl font-black theme-text">${challenge.totalReward} DIAMOND</span>
     `;
     rewardsSection.appendChild(totalReward);
 
@@ -82,11 +84,11 @@ export class DailyChallengeModal {
     // Current streak display
     if (streak > 0) {
       const streakDisplay = document.createElement('div');
-      streakDisplay.className = 'text-center bg-orange-50 rounded-lg p-3 border border-orange-200';
+      streakDisplay.className = 'text-center theme-card rounded-lg p-3 border border-transparent';
       streakDisplay.innerHTML = `
-        <div class="text-xs font-semibold text-orange-700 uppercase">Current Streak</div>
-        <div class="text-3xl font-black text-orange-600 mt-1">STREAK ${streak}</div>
-        <div class="text-xs text-orange-600 mt-1">Keep it going!</div>
+        <div class="text-xs font-semibold theme-text-secondary uppercase">Current Streak</div>
+        <div class="text-3xl font-black theme-text mt-1">STREAK ${streak}</div>
+        <div class="text-xs theme-text-secondary mt-1">Keep it going!</div>
       `;
       content.appendChild(streakDisplay);
     }
@@ -102,7 +104,7 @@ export class DailyChallengeModal {
     const randomMessage = motivationMessages[Math.floor(Math.random() * motivationMessages.length)];
 
     const motivation = document.createElement('div');
-    motivation.className = 'text-center italic text-gray-500 text-sm pt-2';
+    motivation.className = 'text-center italic theme-text-secondary text-sm pt-2';
     motivation.textContent = randomMessage;
     content.appendChild(motivation);
 
@@ -135,23 +137,23 @@ export class DailyChallengeModal {
 
     // Celebration animation
     const celebration = document.createElement('div');
-    celebration.className = 'text-7xl mb-4 animate-bounce';
+    celebration.className = 'text-7xl mb-4 animate-bounce theme-text';
     celebration.textContent = 'SUCCESS';
     content.appendChild(celebration);
 
     // Title
     const title = document.createElement('h2');
-    title.className = 'text-3xl font-black text-black mb-2';
+    title.className = 'text-3xl font-black theme-text mb-2';
     title.textContent = 'CHALLENGE COMPLETE!';
     content.appendChild(title);
 
     // Challenge info
     const info = document.createElement('div');
-    info.className = 'bg-blue-50 rounded-lg p-4 border-2 border-blue-200 mb-2';
+    info.className = 'theme-card rounded-lg p-4 border-2 mb-2';
     info.innerHTML = `
       <div class="text-4xl mb-2">${challenge.icon}</div>
-      <div class="text-xl font-bold text-blue-900">${challenge.name}</div>
-      <div class="text-sm text-blue-700 mt-1">Score: ${score.toLocaleString()}</div>
+      <div class="text-xl font-bold theme-text">${challenge.name}</div>
+      <div class="text-sm theme-text-secondary mt-1">Score: ${score.toLocaleString()}</div>
     `;
     content.appendChild(info);
 
@@ -160,29 +162,31 @@ export class DailyChallengeModal {
     rewardBreakdown.className = 'space-y-2 mb-4';
 
     const baseRewardEl = document.createElement('div');
-    baseRewardEl.className = 'flex justify-between items-center bg-gray-50 rounded-lg p-3 border border-gray-200';
+    baseRewardEl.className = 'flex justify-between items-center theme-card-muted rounded-lg p-3 border border-transparent';
     baseRewardEl.innerHTML = `
-      <span class="font-semibold text-gray-700">Base Reward</span>
-      <span class="font-bold text-gray-900">+${challenge.baseReward} DIAMOND</span>
+      <span class="font-semibold theme-text-secondary">Base Reward</span>
+      <span class="font-bold theme-text">+${challenge.baseReward} DIAMOND</span>
     `;
     rewardBreakdown.appendChild(baseRewardEl);
 
     if (challenge.streakBonus > 0) {
       const bonusEl = document.createElement('div');
-      bonusEl.className = 'flex justify-between items-center bg-yellow-50 rounded-lg p-3 border-2 border-yellow-300 animate-pulse';
+      bonusEl.className = 'flex justify-between items-center theme-card rounded-lg p-3 border-2 animate-pulse';
+      bonusEl.style.borderColor = 'var(--theme-accent)';
       bonusEl.innerHTML = `
-        <span class="font-semibold text-yellow-700">Streak Bonus (${streak} days)</span>
-        <span class="font-bold text-yellow-900">+${challenge.streakBonus} DIAMOND</span>
+        <span class="font-semibold theme-text">Streak Bonus (${streak} days)</span>
+        <span class="font-bold theme-text">+${challenge.streakBonus} DIAMOND</span>
       `;
       rewardBreakdown.appendChild(bonusEl);
     }
 
     // Total reward (animated)
     const totalRewardEl = document.createElement('div');
-    totalRewardEl.className = 'flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border-2 border-green-400 scale-105';
+    totalRewardEl.className = 'flex justify-between items-center theme-card rounded-lg p-4 border-2 scale-105';
+    totalRewardEl.style.borderColor = 'var(--theme-accent-soft)';
     totalRewardEl.innerHTML = `
-      <span class="text-sm font-bold text-green-700 uppercase tracking-wide">Reward Earned</span>
-      <span class="text-3xl font-black text-green-900 animate-pulse">+${challenge.totalReward} DIAMOND</span>
+      <span class="text-sm font-bold theme-text uppercase tracking-wide">Reward Earned</span>
+      <span class="text-3xl font-black theme-text animate-pulse">+${challenge.totalReward} DIAMOND</span>
     `;
     rewardBreakdown.appendChild(totalRewardEl);
 
@@ -191,11 +195,12 @@ export class DailyChallengeModal {
     // New streak display if streak updated
     if (streak >= 7) {
       const streakAlert = document.createElement('div');
-      streakAlert.className = 'bg-orange-100 rounded-lg p-4 border-2 border-orange-400';
+      streakAlert.className = 'theme-card rounded-lg p-4 border-2';
+      streakAlert.style.borderColor = 'var(--theme-accent-soft)';
       streakAlert.innerHTML = `
-        <div class="text-2xl mb-2">AMAZING!</div>
-        <div class="text-lg font-bold text-orange-900 mb-1">${streak}-Day Streak!</div>
-        <div class="text-sm text-orange-700">You're on fire! Keep the streak alive!</div>
+        <div class="text-2xl mb-2 theme-text">AMAZING!</div>
+        <div class="text-lg font-bold theme-text mb-1">${streak}-Day Streak!</div>
+        <div class="text-sm theme-text-secondary">You're on fire! Keep the streak alive!</div>
       `;
       content.appendChild(streakAlert);
     }

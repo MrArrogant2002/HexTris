@@ -15,6 +15,8 @@ export enum ThemeName {
   FASHION_PINK = 'fashion-pink',
   ARENA_NEON = 'arena-neon',
   RETRO_ARCADE = 'retro-arcade',
+  STARBLOOM = 'starbloom',
+  TURBO_FORGE = 'turbo-forge',
 }
 
 export interface ThemeUI {
@@ -28,6 +30,7 @@ export interface Theme {
   id: ThemeName;
   name: string;
   description: string;
+  previewShape?: 'circle' | 'diamond' | 'pill' | 'hex' | 'spark';
   colors: {
     background: HexColor;
     hex: HexColor;
@@ -44,6 +47,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.CLASSIC,
     name: 'Classic',
     description: 'Original Hextris color scheme',
+    previewShape: 'circle',
     colors: {
       background: '#ecf0f1',
       hex: '#2c3e50',
@@ -63,6 +67,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.NEON,
     name: 'Neon',
     description: 'Vibrant neon colors on dark background',
+    previewShape: 'diamond',
     colors: {
       background: '#0a0a0a',
       hex: '#1a1a1a',
@@ -82,6 +87,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.DARK,
     name: 'Dark',
     description: 'Sleek dark mode with muted tones',
+    previewShape: 'hex',
     colors: {
       background: '#1a1a1a',
       hex: '#2d2d2d',
@@ -101,6 +107,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.LIGHT,
     name: 'Light',
     description: 'Clean light theme with soft pastels',
+    previewShape: 'pill',
     colors: {
       background: '#ffffff',
       hex: '#f0f0f0',
@@ -120,6 +127,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.WEB_HERO,
     name: 'Web Hero',
     description: 'Bold red and blue with heroic contrast',
+    previewShape: 'diamond',
     colors: {
       background: '#040916',
       hex: '#0f1b2f',
@@ -139,6 +147,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.FASHION_PINK,
     name: 'Fashion Pink',
     description: 'Playful pinks with a glossy finish',
+    previewShape: 'spark',
     colors: {
       background: '#fff0f7',
       hex: '#fde2ef',
@@ -158,6 +167,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.ARENA_NEON,
     name: 'Arena Neon',
     description: 'Esports-inspired neon on deep slate',
+    previewShape: 'hex',
     colors: {
       background: '#01030a',
       hex: '#07122b',
@@ -177,6 +187,7 @@ export const themes: Record<ThemeName, Theme> = {
     id: ThemeName.RETRO_ARCADE,
     name: 'Retro Arcade',
     description: 'Arcade glow with punchy contrast',
+    previewShape: 'diamond',
     colors: {
       background: '#040615',
       hex: '#0a1024',
@@ -192,6 +203,46 @@ export const themes: Record<ThemeName, Theme> = {
       accent: '#ff7a18',
     },
   },
+  [ThemeName.STARBLOOM]: {
+    id: ThemeName.STARBLOOM,
+    name: 'Starbloom',
+    description: 'Candy skies with celestial sparkles',
+    previewShape: 'spark',
+    colors: {
+      background: '#fff7fb',
+      hex: '#fde6f2',
+      hexStroke: '#ff7bbd',
+      blocks: ['#ff9ac8', '#ffd166', '#c1f6ff', '#ff7ab8'],
+      text: '#6d1b3f',
+      textSecondary: '#a64a6b',
+    },
+    ui: {
+      surface: '#ffffff',
+      surfaceMuted: '#ffeef7',
+      border: '#ffc0d9',
+      accent: '#ff7ab8',
+    },
+  },
+  [ThemeName.TURBO_FORGE]: {
+    id: ThemeName.TURBO_FORGE,
+    name: 'Turbo Forge',
+    description: 'Steel blues with molten energy for speed runners',
+    previewShape: 'hex',
+    colors: {
+      background: '#050b16',
+      hex: '#0f1c2b',
+      hexStroke: '#f97316',
+      blocks: ['#38bdf8', '#f97316', '#facc15', '#22d3ee'],
+      text: '#f5fafc',
+      textSecondary: '#95b8d6',
+    },
+    ui: {
+      surface: '#0d1726',
+      surfaceMuted: '#08101c',
+      border: '#1f2d3d',
+      accent: '#f97316',
+    },
+  },
 };
 
 export const themePrices: Record<ThemeName, number> = {
@@ -203,6 +254,8 @@ export const themePrices: Record<ThemeName, number> = {
   [ThemeName.FASHION_PINK]: 900,
   [ThemeName.ARENA_NEON]: 1500,
   [ThemeName.RETRO_ARCADE]: 1000,
+  [ThemeName.STARBLOOM]: 950,
+  [ThemeName.TURBO_FORGE]: 1300,
 };
 
 /**

@@ -26,21 +26,19 @@ export class ResetPasswordPage extends BasePage {
   }
 
   public render(): void {
-  this.element.className = 'page theme-page min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden';
-
-  const aurora = document.createElement('div');
-  aurora.className = 'theme-aurora';
-  this.element.appendChild(aurora);
-
-  const grid = document.createElement('div');
-  grid.className = 'theme-grid-overlay';
-  this.element.appendChild(grid);
+    const shell = this.initPageLayout({
+      align: 'center',
+      maxWidthClass: 'max-w-lg',
+      paddingClass: 'py-10 px-4 sm:px-6',
+      allowScroll: false,
+    });
 
     // Create centered card
     const card = new Card({
       variant: 'glassmorphic',
       padding: 'large',
     });
+    card.element.dataset.authCard = 'true';
 
     // Header
     const header = document.createElement('div');
@@ -61,10 +59,7 @@ export class ResetPasswordPage extends BasePage {
     // Check if we have required params
     if (!this.userId || !this.secret) {
       this.renderError(card.element, 'Invalid or expired reset link');
-      const wrapper = document.createElement('div');
-      wrapper.className = 'w-full max-w-xl relative z-10';
-      wrapper.appendChild(card.element);
-      this.element.appendChild(wrapper);
+      shell.appendChild(card.element);
       this.mount();
       return;
     }
@@ -114,11 +109,7 @@ export class ResetPasswordPage extends BasePage {
     card.appendChild(buttonContainer);
 
     // Add card to page
-    const wrapper = document.createElement('div');
-    wrapper.className = 'w-full max-w-md';
-    wrapper.appendChild(card.element);
-    
-    this.element.appendChild(wrapper);
+    shell.appendChild(card.element);
     this.mount();
   }
 
@@ -195,7 +186,7 @@ export class ResetPasswordPage extends BasePage {
     if (existing) existing.remove();
     
     errorEl.dataset.authAlert = 'true';
-    this.element.querySelector('.w-full.max-w-xl')?.appendChild(errorEl);
+    this.element.querySelector('[data-auth-card="true"]')?.appendChild(errorEl);
 
     // Auto-remove after 5 seconds
     setTimeout(() => errorEl.remove(), 5000);
@@ -211,7 +202,7 @@ export class ResetPasswordPage extends BasePage {
     if (existing) existing.remove();
     
     successEl.dataset.authAlert = 'true';
-    this.element.querySelector('.w-full.max-w-xl')?.appendChild(successEl);
+    this.element.querySelector('[data-auth-card="true"]')?.appendChild(successEl);
   }
 
   public onUnmount(): void {

@@ -21,6 +21,7 @@ import { PowerUpSystem } from '@systems/PowerUpSystem';
 import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import { getInputManager } from '@utils/input';
 import { themes, ThemeName } from '@config/themes';
+import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
 import { appwriteClient } from '@network/AppwriteClient';
 import { GroupManager } from '@network/GroupManager';
 import { DailyChallengeSystem } from '@modes/DailyChallengeMode';
@@ -65,8 +66,10 @@ export class GamePage extends BasePage {
   private rushMultiplier: number = 1;
   private powerUpSpeedMultiplier: number = 1;
   private slowMoTimeoutId: number | null = null;
+  private slowMoIntervalId: number | null = null;
   private shieldTimeoutId: number | null = null;
   private invulnerabilityTimeoutId: number | null = null;
+  private hammerEffectTimeoutId: number | null = null;
   private nextLifeBonusScore: number = LIFE_BONUS_INTERVAL;
   private blockSettings: any;
   private dailyChallenge: DailyChallengeSystem | null = null;
@@ -74,6 +77,11 @@ export class GamePage extends BasePage {
   private timerAttack: TimerAttackMode | null = null;
   private groupManager = new GroupManager();
   private unsubscribeGameOver: (() => void) | null = null;
+  private effectLayer: HTMLDivElement | null = null;
+  private slowMoOverlay: HTMLDivElement | null = null;
+  private slowMoTimerEl: HTMLDivElement | null = null;
+  private shieldOverlay: HTMLDivElement | null = null;
+  private hammerOverlay: HTMLDivElement | null = null;
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
   };
@@ -88,6 +96,14 @@ export class GamePage extends BasePage {
     const type = customEvent.detail?.type;
     if (!type) return;
     this.consumeInventoryItem(type);
+  };
+
+  private handlePowerUpEffect = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ type?: string }>;
+    const type = customEvent.detail?.type;
+    if (type === 'hammer') {
+      this.triggerHammerEffect();
+    }
   };
 
   private handleTimerModeTimeUp = (event: Event): void => {
@@ -164,6 +180,10 @@ export class GamePage extends BasePage {
     hudStyle.textContent = `#hud-overlay > * { pointer-events: auto; }`;
     document.head.appendChild(hudStyle);
 
+    this.effectLayer = document.createElement('div');
+    this.effectLayer.className = 'game-effect-layer';
+    hudContainer.appendChild(this.effectLayer);
+
     // Initialize HUD components
     const state = stateManager.getState();
     this.livesDisplay = new LivesDisplay(state.game.lives);
@@ -219,9 +239,10 @@ export class GamePage extends BasePage {
     const blockColors = theme.colors.blocks;
     
     // Initialize game systems
-    const difficulty = state.game.difficulty;
-    const speedModifier = difficulty === 'easy' ? 0.8 : difficulty === 'hard' ? 1.3 : 1.0;
-    const creationSpeedModifier = 1.0;
+    const difficultyLevel = state.game.difficulty ?? DifficultyLevel.MEDIUM;
+    const difficultyConfig = getDifficultyConfig(difficultyLevel);
+    const speedModifier = difficultyConfig.speedMultiplier;
+    const creationSpeedModifier = difficultyConfig.spawnRateModifier;
     
     this.waveSystem = new WaveSystem(
       { colors: blockColors, speedModifier, creationSpeedModifier },
@@ -712,6 +733,16 @@ export class GamePage extends BasePage {
       window.clearTimeout(this.shieldTimeoutId);
       this.shieldTimeoutId = null;
     }
+    this.clearSlowMoEffect();
+    this.hideShieldEffect();
+    if (this.hammerOverlay) {
+      this.hammerOverlay.remove();
+      this.hammerOverlay = null;
+    }
+    if (this.hammerEffectTimeoutId) {
+      window.clearTimeout(this.hammerEffectTimeoutId);
+      this.hammerEffectTimeoutId = null;
+    }
     
     this.resumeGame();
   }
@@ -732,9 +763,12 @@ export class GamePage extends BasePage {
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
     }
+    this.clearSlowMoEffect();
     this.powerUpSpeedMultiplier = multiplier;
+    this.showSlowMoEffect(durationMs);
     this.slowMoTimeoutId = window.setTimeout(() => {
       this.powerUpSpeedMultiplier = 1;
+      this.clearSlowMoEffect();
       this.slowMoTimeoutId = null;
     }, durationMs);
   }
@@ -744,10 +778,134 @@ export class GamePage extends BasePage {
       window.clearTimeout(this.shieldTimeoutId);
     }
     stateManager.updateGame({ isInvulnerable: true });
+    this.showShieldEffect();
     this.shieldTimeoutId = window.setTimeout(() => {
       stateManager.updateGame({ isInvulnerable: false });
+      this.hideShieldEffect();
       this.shieldTimeoutId = null;
     }, durationMs);
+  }
+
+  private showSlowMoEffect(durationMs: number): void {
+    if (!this.effectLayer) return;
+    this.clearSlowMoEffect();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-slowmo';
+
+    const label = document.createElement('div');
+    label.className = 'game-effect-label';
+    label.textContent = 'SLOW-MO';
+
+    const timer = document.createElement('div');
+    timer.className = 'game-effect-timer';
+
+    overlay.appendChild(label);
+    overlay.appendChild(timer);
+    this.effectLayer.appendChild(overlay);
+
+    this.slowMoOverlay = overlay;
+    this.slowMoTimerEl = timer;
+
+    const start = performance.now();
+    const updateTimer = (): void => {
+      if (!this.slowMoTimerEl) return;
+      const elapsed = performance.now() - start;
+      const remaining = Math.max(0, durationMs - elapsed);
+      this.slowMoTimerEl.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    };
+
+    updateTimer();
+    this.slowMoIntervalId = window.setInterval(updateTimer, 100);
+
+    if (this.canvas?.element) {
+      this.canvas.element.classList.add('game-canvas-slowmo');
+    }
+  }
+
+  private clearSlowMoEffect(): void {
+    if (this.slowMoIntervalId) {
+      window.clearInterval(this.slowMoIntervalId);
+      this.slowMoIntervalId = null;
+    }
+    if (this.slowMoOverlay) {
+      this.slowMoOverlay.remove();
+      this.slowMoOverlay = null;
+      this.slowMoTimerEl = null;
+    }
+    this.canvas?.element.classList.remove('game-canvas-slowmo');
+  }
+
+  private showShieldEffect(): void {
+    if (!this.effectLayer) return;
+    this.hideShieldEffect();
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-shield';
+    this.effectLayer.appendChild(overlay);
+    this.shieldOverlay = overlay;
+    this.canvas?.element.classList.add('game-canvas-shield');
+  }
+
+  private hideShieldEffect(): void {
+    if (this.shieldOverlay) {
+      this.shieldOverlay.remove();
+      this.shieldOverlay = null;
+    }
+    this.canvas?.element.classList.remove('game-canvas-shield');
+  }
+
+  private triggerHammerEffect(): void {
+    if (!this.effectLayer) return;
+    if (this.hammerOverlay) {
+      this.hammerOverlay.remove();
+      this.hammerOverlay = null;
+    }
+    if (this.hammerEffectTimeoutId) {
+      window.clearTimeout(this.hammerEffectTimeoutId);
+      this.hammerEffectTimeoutId = null;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-hammer';
+
+    const flash = document.createElement('div');
+    flash.className = 'game-effect-hammer-flash';
+    overlay.appendChild(flash);
+
+    const burst = document.createElement('div');
+    burst.className = 'game-effect-hammer-burst';
+
+    const impact = document.createElement('div');
+    impact.className = 'game-effect-hammer-impact';
+    burst.appendChild(impact);
+
+    const ringCount = 3;
+    for (let i = 0; i < ringCount; i++) {
+      const ring = document.createElement('div');
+      ring.className = 'game-effect-hammer-ring';
+      ring.style.animationDelay = `${i * 0.1}s`;
+      burst.appendChild(ring);
+    }
+
+    overlay.appendChild(burst);
+
+    const sparkCount = 12;
+    for (let i = 0; i < sparkCount; i++) {
+      const spark = document.createElement('span');
+      spark.className = 'game-effect-hammer-spark';
+      const rotation = (360 / sparkCount) * i + (Math.random() * 12 - 6);
+      spark.style.setProperty('--spark-angle', `${rotation}deg`);
+      spark.style.animationDelay = `${i * 0.02}s`;
+      overlay.appendChild(spark);
+    }
+
+    this.effectLayer.appendChild(overlay);
+    this.hammerOverlay = overlay;
+    this.hammerEffectTimeoutId = window.setTimeout(() => {
+      overlay.remove();
+      this.hammerOverlay = null;
+      this.hammerEffectTimeoutId = null;
+    }, 1100);
   }
 
   private applyLifeBonus(score: number): void {
@@ -1189,6 +1347,7 @@ export class GamePage extends BasePage {
     window.addEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
     window.addEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.addEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
+    window.addEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
     window.addEventListener('blockLand', this.handleBlockLandSfx as EventListener);
   }
 
@@ -1209,7 +1368,19 @@ export class GamePage extends BasePage {
     window.removeEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
     window.removeEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.removeEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
+    window.removeEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
     window.removeEventListener('blockLand', this.handleBlockLandSfx as EventListener);
+
+    this.clearSlowMoEffect();
+    this.hideShieldEffect();
+    if (this.hammerOverlay) {
+      this.hammerOverlay.remove();
+      this.hammerOverlay = null;
+    }
+    if (this.hammerEffectTimeoutId) {
+      window.clearTimeout(this.hammerEffectTimeoutId);
+      this.hammerEffectTimeoutId = null;
+    }
 
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);

@@ -23,19 +23,11 @@ export class MultiplayerPage extends BasePage {
   private buttons: Button[] = [];
 
   public render(): void {
-    this.element.className = 'page theme-page min-h-screen w-full p-4 sm:p-6 overflow-y-auto';
-    this.element.innerHTML = '';
-
-    const aurora = document.createElement('div');
-    aurora.className = 'theme-aurora';
-    this.element.appendChild(aurora);
-
-    const grid = document.createElement('div');
-    grid.className = 'theme-grid-overlay';
-    this.element.appendChild(grid);
-
-    const container = document.createElement('div');
-    container.className = 'w-full max-w-4xl mx-auto space-y-6 relative z-10';
+    const container = this.initPageLayout({
+      align: 'top',
+      maxWidthClass: 'max-w-4xl',
+      paddingClass: 'px-2 sm:px-4 py-8 sm:py-12',
+    });
 
     const header = this.createHeader('MULTIPLAYER GROUPS', 'Create or join groups to compare scores');
     container.appendChild(header);
@@ -59,7 +51,6 @@ export class MultiplayerPage extends BasePage {
     backButton.style.marginTop = '1rem';
     container.appendChild(backButton);
 
-    this.element.appendChild(container);
     this.renderView();
     this.mount();
   }

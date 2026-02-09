@@ -27,15 +27,12 @@ export class LoginPage extends BasePage {
 	private formContainer!: HTMLDivElement;
 
 	public render(): void {
-		this.element.className = 'page theme-page min-h-screen w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden';
-
-		const aurora = document.createElement('div');
-		aurora.className = 'theme-aurora';
-		this.element.appendChild(aurora);
-
-		const grid = document.createElement('div');
-		grid.className = 'theme-grid-overlay';
-		this.element.appendChild(grid);
+    const shell = this.initPageLayout({
+      align: 'center',
+      maxWidthClass: 'max-w-xl',
+      paddingClass: 'py-10 px-4 sm:px-6',
+      allowScroll: false,
+    });
 
 		const card = new Card({
 			variant: 'glassmorphic',
@@ -86,11 +83,7 @@ export class LoginPage extends BasePage {
 
 		this.renderForm();
 
-		const wrapper = document.createElement('div');
-		wrapper.className = 'w-full max-w-xl relative z-10';
-		wrapper.appendChild(card.element);
-
-		this.element.appendChild(wrapper);
+		shell.appendChild(card.element);
 		this.mount();
 	}
 

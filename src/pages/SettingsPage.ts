@@ -9,7 +9,7 @@ import { Button } from '@ui/components/Button';
 import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
-import { ThemeName, themes, availableThemes, themePrices } from '@config/themes';
+import { ThemeName, themes, availableThemes, themePrices, type Theme } from '@config/themes';
 import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
 import { audioManager } from '@/managers/AudioManager';
@@ -19,19 +19,11 @@ export class SettingsPage extends BasePage {
   private buttons: Button[] = [];
 
   public render(): void {
-    this.element.className = 'page theme-page min-h-screen w-full flex items-start justify-center p-4 sm:p-6 md:p-8 overflow-y-auto';
-    this.element.innerHTML = '';
-
-    const aurora = document.createElement('div');
-    aurora.className = 'theme-aurora';
-    this.element.appendChild(aurora);
-
-    const grid = document.createElement('div');
-    grid.className = 'theme-grid-overlay';
-    this.element.appendChild(grid);
-
-    const contentWrapper = document.createElement('div');
-    contentWrapper.className = 'relative z-10 w-full';
+    const contentWrapper = this.initPageLayout({
+      align: 'top',
+      maxWidthClass: 'max-w-5xl',
+      paddingClass: 'px-2 sm:px-4 py-8 sm:py-12',
+    });
 
     // Back button
     const backBtn = this.createBackButton('<- Back', () => {
@@ -41,8 +33,8 @@ export class SettingsPage extends BasePage {
     contentWrapper.appendChild(backBtn);
 
     // Content container
-    const container = document.createElement('div');
-    container.className = 'max-w-4xl mx-auto py-4 sm:py-8 space-y-8 sm:space-y-12';
+      const container = document.createElement('div');
+      container.className = 'max-w-4xl mx-auto py-4 sm:py-8 space-y-8 sm:space-y-12 pb-16';
 
     // Header
     const header = this.createHeader('SETTINGS', 'Customize your experience');
@@ -66,7 +58,6 @@ export class SettingsPage extends BasePage {
 
     container.appendChild(sections);
     contentWrapper.appendChild(container);
-    this.element.appendChild(contentWrapper);
     this.mount();
   }
 
@@ -105,7 +96,7 @@ export class SettingsPage extends BasePage {
    * Create theme card
    */
   private createThemeCard(
-    theme: typeof themes[ThemeName],
+    theme: Theme,
     options: { isSelected: boolean; isUnlocked: boolean; cost: number }
   ): HTMLElement {
     const card = document.createElement('div');
@@ -125,17 +116,7 @@ export class SettingsPage extends BasePage {
     card.appendChild(name);
 
     // Color preview
-    const colorPreview = document.createElement('div');
-    colorPreview.className = 'flex gap-1 justify-center mb-2';
-    
-    theme.colors.blocks.forEach((color) => {
-      const colorDot = document.createElement('div');
-      colorDot.className = 'w-6 h-6 rounded-full border theme-border';
-      colorDot.style.backgroundColor = color;
-      colorPreview.appendChild(colorDot);
-    });
-    
-    card.appendChild(colorPreview);
+    card.appendChild(this.createThemeSwatches(theme));
 
     // Description
     const description = document.createElement('div');
@@ -176,6 +157,33 @@ export class SettingsPage extends BasePage {
     });
 
     return card;
+  }
+
+  private createThemeSwatches(theme: Theme): HTMLElement {
+    const group = document.createElement('div');
+    group.className = 'flex flex-wrap items-center justify-center gap-1.5 mb-2';
+    theme.colors.blocks.forEach((color) => {
+      const swatch = document.createElement('span');
+      swatch.className = `theme-swatch ${this.getSwatchShapeClass(theme.previewShape)}`;
+      swatch.style.backgroundColor = color;
+      group.appendChild(swatch);
+    });
+    return group;
+  }
+
+  private getSwatchShapeClass(shape?: Theme['previewShape']): string {
+    switch (shape) {
+      case 'diamond':
+        return 'theme-swatch-diamond';
+      case 'pill':
+        return 'theme-swatch-pill';
+      case 'hex':
+        return 'theme-swatch-hex';
+      case 'spark':
+        return 'theme-swatch-spark';
+      default:
+        return 'theme-swatch-circle';
+    }
   }
 
   private showLockedThemeMessage(themeName: string, cost: number): void {

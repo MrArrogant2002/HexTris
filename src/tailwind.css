@@ -43,6 +43,18 @@
     color: var(--theme-text);
   }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   #app {
     @apply w-full min-h-screen relative;
   }
@@ -72,6 +84,39 @@
     box-shadow: var(--theme-glass-shadow);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+  }
+
+  .theme-swatch {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1px solid var(--theme-border);
+    background: var(--theme-surface);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+
+  .theme-swatch-circle {
+    border-radius: 9999px;
+  }
+
+  .theme-swatch-pill {
+    border-radius: 9999px;
+    width: 2rem;
+  }
+
+  .theme-swatch-diamond {
+    transform: rotate(45deg);
+    border-radius: 0.35rem;
+  }
+
+  .theme-swatch-hex {
+    clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0% 50%);
+  }
+
+  .theme-swatch-spark {
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
   }
 
   .theme-card-muted {
@@ -206,6 +251,153 @@
   .theme-btn-ghost:hover {
     color: var(--theme-text);
     background: var(--theme-surface-muted-glass);
+  }
+
+  .scroll-button {
+    position: fixed;
+    bottom: clamp(1rem, 3vh, 1.5rem);
+    right: clamp(1rem, 3vw, 1.5rem);
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    box-shadow: 0 10px 30px var(--theme-glow);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .scroll-button:hover {
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  .scroll-button svg {
+    pointer-events: none;
+  }
+
+  .game-effect-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .game-effect-slowmo {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, color-mix(in srgb, var(--theme-accent) 45%, transparent) 0%, transparent 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.35rem;
+    color: var(--theme-accent-contrast);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    animation: slowMoPulse 1.2s ease-in-out infinite;
+  }
+
+  .game-effect-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.5em;
+  }
+
+  .game-effect-timer {
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 18px rgba(0, 0, 0, 0.4);
+  }
+
+  .game-canvas-slowmo {
+    filter: saturate(0.85) brightness(1.05);
+    transition: filter 0.2s ease;
+  }
+
+  .game-canvas-shield {
+    filter: drop-shadow(0 0 18px var(--theme-glow));
+    transition: filter 0.2s ease;
+  }
+
+  .game-effect-hammer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .game-effect-hammer-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, color-mix(in srgb, var(--theme-accent) 35%, transparent) 0%, transparent 65%);
+    animation: hammerFlash 0.55s ease-out forwards;
+  }
+
+  .game-effect-hammer-burst {
+    position: relative;
+    width: min(38vh, 38vw);
+    aspect-ratio: 1 / 1;
+    filter: drop-shadow(0 18px 45px rgba(0, 0, 0, 0.35));
+  }
+
+  .game-effect-hammer-impact {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18%;
+    height: 18%;
+    border-radius: 9999px;
+    transform: translate(-50%, -50%) scale(0.4);
+    background: radial-gradient(circle, var(--theme-accent-contrast) 0%, var(--theme-accent) 70%);
+    box-shadow: 0 0 45px var(--theme-glow-strong), 0 0 18px var(--theme-accent);
+    animation: hammerImpactCore 0.55s ease-out forwards;
+  }
+
+  .game-effect-hammer-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32%;
+    height: 32%;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--theme-accent) 75%, var(--theme-accent-contrast));
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.25);
+    animation: hammerShockwave 0.95s ease-out forwards;
+  }
+
+  .game-effect-hammer-spark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 30px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, var(--theme-accent-contrast), color-mix(in srgb, var(--theme-accent) 75%, transparent));
+    box-shadow: 0 0 18px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transform-origin: center 110%;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle, 0deg));
+    animation: hammerSpark 0.8s ease-out forwards;
+  }
+
+  .game-effect-shield {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    width: min(45vh, 45vw);
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    border: 3px solid color-mix(in srgb, var(--theme-accent) 85%, var(--theme-accent-contrast));
+    box-shadow: 0 0 35px var(--theme-glow-strong);
+    animation: shieldPulse 1.6s ease-in-out infinite;
+    mix-blend-mode: screen;
   }
 
   .theme-input {
@@ -378,6 +570,94 @@
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+@keyframes slowMoPulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes hammerShockwave {
+  0% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(0.25);
+    border-width: 4px;
+  }
+  70% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.7);
+    border-width: 1px;
+  }
+}
+
+@keyframes hammerSpark {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle, 0deg)) scaleY(0.25);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle, 0deg)) translateY(-110px) scaleY(0.45);
+  }
+}
+
+@keyframes hammerImpactCore {
+  0% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(0.35);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+}
+
+@keyframes hammerFlash {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+  70% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes shieldPulse {
+  0% {
+    box-shadow: 0 0 20px var(--theme-glow);
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  70% {
+    box-shadow: 0 0 45px var(--theme-glow-strong);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(0.92);
   }
 }
 

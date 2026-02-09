@@ -20,6 +20,8 @@ export interface DifficultyConfig {
   spawnDelay: number; // Milliseconds between block spawns
   comboTimeWindow: number; // Milliseconds to maintain combo
   scoreMultiplier: number; // Score multiplier for this difficulty
+  speedMultiplier: number; // Global modifier applied to falling blocks & spawns
+  spawnRateModifier: number; // Controls how aggressively new blocks spawn
 }
 
 export const difficultyConfigs: Record<DifficultyLevel, DifficultyConfig> = {
@@ -27,37 +29,43 @@ export const difficultyConfigs: Record<DifficultyLevel, DifficultyConfig> = {
     level: DifficultyLevel.EASY,
     name: 'Easy',
     description: 'Relaxed pace for beginners',
-    blockSpeed: 45,
+    blockSpeed: 50,
     rotationSpeed: 7,
-    startingSpeed: 1.1,
-    speedIncrement: 0.04,
-    spawnDelay: 1700,
-    comboTimeWindow: 2600,
-    scoreMultiplier: 1.1,
+    startingSpeed: 1.15,
+    speedIncrement: 0.045,
+    spawnDelay: 1650,
+    comboTimeWindow: 2550,
+    scoreMultiplier: 1.15,
+    speedMultiplier: 1.6,
+    spawnRateModifier: 0.85,
   },
   [DifficultyLevel.MEDIUM]: {
     level: DifficultyLevel.MEDIUM,
     name: 'Medium',
     description: 'Balanced challenge',
-    blockSpeed: 80,
+    blockSpeed: 95,
     rotationSpeed: 9,
-    startingSpeed: 1.4,
-    speedIncrement: 0.07,
-    spawnDelay: 1200,
-    comboTimeWindow: 2200,
-    scoreMultiplier: 1.8,
+    startingSpeed: 1.5,
+    speedIncrement: 0.08,
+    spawnDelay: 1100,
+    comboTimeWindow: 2100,
+    scoreMultiplier: 2.0,
+    speedMultiplier: 2.0,
+    spawnRateModifier: 1.05,
   },
   [DifficultyLevel.HARD]: {
     level: DifficultyLevel.HARD,
     name: 'Hard',
     description: 'For expert players',
-    blockSpeed: 110,
+    blockSpeed: 135,
     rotationSpeed: 11,
-    startingSpeed: 1.8,
-    speedIncrement: 0.1,
-    spawnDelay: 800,
-    comboTimeWindow: 1800,
-    scoreMultiplier: 2.4,
+    startingSpeed: 1.9,
+    speedIncrement: 0.12,
+    spawnDelay: 850,
+    comboTimeWindow: 1700,
+    scoreMultiplier: 2.6,
+    speedMultiplier: 2.4,
+    spawnRateModifier: 1.25,
   },
 };
 

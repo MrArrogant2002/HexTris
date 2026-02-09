@@ -11,7 +11,7 @@ import { MAX_LIVES } from '@core/constants';
 import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import type { InventoryUI } from '@ui/hud/InventoryUI';
 import { appwriteClient } from '@network/AppwriteClient';
-import { ThemeName, themes, themePrices } from '@config/themes';
+import { ThemeName, themes, themePrices, type Theme } from '@config/themes';
 import { themeManager } from '@/managers/ThemeManager';
 
 export interface ShopModalOptions {
@@ -300,7 +300,7 @@ export class ShopModal {
       swatch.className = 'flex gap-1';
       theme.colors.blocks.slice(0, 4).forEach((color) => {
         const dot = document.createElement('span');
-        dot.className = 'w-3 h-3 rounded-full border theme-border';
+        dot.className = `theme-swatch ${this.getSwatchShapeClass(theme.previewShape)} scale-75`;
         dot.style.backgroundColor = color;
         swatch.appendChild(dot);
       });
@@ -347,6 +347,21 @@ export class ShopModal {
 
   private getThemeCost(themeId: ThemeName): number {
     return themePrices[themeId] ?? 0;
+  }
+
+  private getSwatchShapeClass(shape?: Theme['previewShape']): string {
+    switch (shape) {
+      case 'diamond':
+        return 'theme-swatch-diamond';
+      case 'pill':
+        return 'theme-swatch-pill';
+      case 'hex':
+        return 'theme-swatch-hex';
+      case 'spark':
+        return 'theme-swatch-spark';
+      default:
+        return 'theme-swatch-circle';
+    }
   }
 
   private getThemeAction(themeId: ThemeName): { label: string; disabled: boolean; reason?: string } {

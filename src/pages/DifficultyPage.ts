@@ -16,29 +16,17 @@ export class DifficultyPage extends BasePage {
   private buttons: Button[] = [];
 
   public render(): void {
-  this.element.className = 'page theme-page min-h-screen w-full p-3 sm:p-4 md:p-6 overflow-y-auto';
+    const container = this.initPageLayout({
+      align: 'top',
+      maxWidthClass: 'max-w-4xl',
+      paddingClass: 'px-2 sm:px-4 py-8 sm:py-12',
+    });
 
-  const aurora = document.createElement('div');
-  aurora.className = 'theme-aurora';
-  this.element.appendChild(aurora);
-
-  const grid = document.createElement('div');
-  grid.className = 'theme-grid-overlay';
-  this.element.appendChild(grid);
-
-    // Clear previous content
-    this.element.innerHTML = '';
-
-    // Back button
     const backBtn = this.createBackButton('<- Back', () => {
       Router.getInstance().navigate(ROUTES.MENU);
     });
     backBtn.style.marginBottom = '1rem';
-    this.element.appendChild(backBtn);
-
-    // Content container
-    const container = document.createElement('div');
-    container.className = 'flex flex-col items-center justify-start min-h-screen max-w-4xl mx-auto space-y-6 sm:space-y-8 relative z-10';
+    container.appendChild(backBtn);
 
   // Reset cards array
   this.difficultyCards = [];
@@ -77,7 +65,6 @@ export class DifficultyPage extends BasePage {
     startButtonContainer.appendChild(startButton.element);
     container.appendChild(startButtonContainer);
 
-    this.element.appendChild(container);
     this.mount();
   }
 
@@ -146,7 +133,7 @@ export class DifficultyPage extends BasePage {
     footer.className = 'difficulty-card-footer';
     card.appendChild(footer);
 
-    this.updateCardSelection(card, level, isSelected);
+    this.updateCardSelection(card, isSelected);
 
     // Click handler with logging
     card.addEventListener('click', (e) => {
@@ -166,14 +153,13 @@ export class DifficultyPage extends BasePage {
     this.difficultyCards.forEach((card) => {
       const cardLevel = card.dataset.level as DifficultyLevel | undefined;
       if (cardLevel) {
-        this.updateCardSelection(card, cardLevel, cardLevel === level);
+        this.updateCardSelection(card, cardLevel === level);
       }
     });
   }
 
   private updateCardSelection(
     card: HTMLElement,
-    level: DifficultyLevel,
     isSelected: boolean
   ): void {
     card.classList.toggle('selected', isSelected);

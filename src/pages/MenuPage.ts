@@ -16,6 +16,7 @@ import { ShopModal } from '@ui/modals/ShopModal';
 import { authService } from '@services/AuthService';
 import { GroupLeaderboardModal } from '@ui/modals/GroupLeaderboardModal';
 import type { Group } from '@/types/game';
+import { DifficultyLevel } from '@config/difficulty';
 
 export class MenuPage extends BasePage {
   private buttons: Button[] = [];
@@ -25,20 +26,18 @@ export class MenuPage extends BasePage {
   private groupManager = new GroupManager();
 
   public render(): void {
-    // Modern black and white background with scroll
-    this.element.className = 'page min-h-screen w-full theme-page flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 md:p-8 relative overflow-y-auto';
+    const container = this.initPageLayout({
+      align: 'top',
+      maxWidthClass: 'max-w-2xl',
+      paddingClass: 'px-2 sm:px-4 py-8 sm:py-12',
+    });
 
-    // Add subtle background elements (grayscale only)
     const bgDecor1 = document.createElement('div');
-    bgDecor1.className = 'absolute top-0 right-0 w-48 sm:w-96 h-48 sm:h-96 bg-gray-300/5 rounded-full blur-3xl';
-    this.element.appendChild(bgDecor1);
-
+    bgDecor1.className = 'absolute top-6 right-4 w-48 sm:w-72 h-48 sm:h-72 bg-white/5 rounded-full blur-3xl z-0';
     const bgDecor2 = document.createElement('div');
-    bgDecor2.className = 'absolute bottom-0 left-0 w-48 sm:w-96 h-48 sm:h-96 bg-gray-400/5 rounded-full blur-3xl';
-    this.element.appendChild(bgDecor2);
-
-    const container = document.createElement('div');
-    container.className = 'w-full max-w-2xl z-10 relative space-y-6 sm:space-y-8';
+    bgDecor2.className = 'absolute bottom-4 left-4 w-40 sm:w-64 h-40 sm:h-64 bg-black/5 rounded-full blur-3xl z-0';
+    this.element.insertBefore(bgDecor1, container);
+    this.element.insertBefore(bgDecor2, container);
 
     // Top section - greeting + title
     const topSection = document.createElement('div');
@@ -253,6 +252,7 @@ export class MenuPage extends BasePage {
    * Start daily challenge mode
    */
   private startDailyChallenge(): void {
+    stateManager.updateGame({ difficulty: DifficultyLevel.HARD });
     stateManager.updateUI({ currentGameMode: 'dailyChallenge', timerDuration: undefined });
     Router.getInstance().navigate(ROUTES.GAME, { mode: 'daily' });
   }
@@ -264,8 +264,10 @@ export class MenuPage extends BasePage {
     const duration = await this.showTimerDurationSelector();
     if (!duration) return;
 
+    const mappedDifficulty = this.mapDurationToDifficulty(duration);
+    stateManager.updateGame({ difficulty: mappedDifficulty });
     stateManager.updateUI({ currentGameMode: 'timerAttack', timerDuration: duration });
-    Router.getInstance().navigate(ROUTES.GAME, { mode: 'timer' });
+    Router.getInstance().navigate(ROUTES.GAME, { mode: 'timer', difficulty: mappedDifficulty });
   }
 
   private showTimerDurationSelector(): Promise<number | null> {
@@ -284,9 +286,10 @@ export class MenuPage extends BasePage {
       subtitle.textContent = 'Choose your duration';
       content.appendChild(subtitle);
 
-      const durations = [60, 120, 180];
+      const durations = [30, 60, 120];
       durations.forEach((seconds) => {
-        const button = new Button(`${seconds} SECONDS`, {
+        const label = `${seconds} SECONDS - ${this.describeTimerDifficulty(seconds)}`;
+        const button = new Button(label, {
           variant: 'primary',
           size: 'medium',
           fullWidth: true,
@@ -312,6 +315,24 @@ export class MenuPage extends BasePage {
       modal.setContent(content);
       modal.open();
     });
+  }
+
+  private mapDurationToDifficulty(duration: number): DifficultyLevel {
+    if (duration <= 30) return DifficultyLevel.HARD;
+    if (duration <= 60) return DifficultyLevel.MEDIUM;
+    return DifficultyLevel.EASY;
+  }
+
+  private describeTimerDifficulty(duration: number): string {
+    const difficulty = this.mapDurationToDifficulty(duration);
+    switch (difficulty) {
+      case DifficultyLevel.HARD:
+        return 'Hard Pace';
+      case DifficultyLevel.MEDIUM:
+        return 'Medium Pace';
+      default:
+        return 'Easy Pace';
+    }
   }
 
   public onUnmount(): void {
