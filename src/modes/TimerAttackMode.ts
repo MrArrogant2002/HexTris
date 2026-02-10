@@ -12,6 +12,7 @@ class TimerAttackMode {
   private isPaused: boolean = false;
   private bestTime: number | null;
   private bestScore: number;
+  private totalBonusSeconds = 0;
   
   constructor(timeLimit: number = 90) {
     this.timeLimit = timeLimit;
@@ -54,6 +55,7 @@ class TimerAttackMode {
   activate() {
     this.isActive = true;
     this.timeRemaining = this.timeLimit;
+    this.totalBonusSeconds = 0;
     console.log('Timer Attack Mode ACTIVATED');
     
     // Show mode indicator
@@ -72,6 +74,7 @@ class TimerAttackMode {
 
     this.startTime = Date.now();
     this.timeRemaining = this.timeLimit;
+    this.totalBonusSeconds = 0;
     this.isPaused = false;
 
     // Start countdown
@@ -107,7 +110,7 @@ class TimerAttackMode {
     if (this.startTime === null) return;
     
     const elapsed = (Date.now() - this.startTime) / 1000;
-    this.timeRemaining = Math.max(0, this.timeLimit - elapsed);
+    this.timeRemaining = Math.max(0, this.timeLimit + this.totalBonusSeconds - elapsed);
 
     // Update UI
     this.updateTimerDisplay();
@@ -158,7 +161,7 @@ class TimerAttackMode {
     let finalScore = currentScore;
     
     // Time bonus: +100 points per second survived
-    const timeElapsed = this.timeLimit - this.timeRemaining;
+    const timeElapsed = this.timeLimit + this.totalBonusSeconds - this.timeRemaining;
     const timeBonus = Math.floor(timeElapsed * 100);
     
     // Completion bonus if survived full time
@@ -238,6 +241,12 @@ class TimerAttackMode {
       (hud || document.body).appendChild(modeBadge);
     }
     modeBadge.style.display = 'block';
+  }
+
+  addBonusTime(seconds: number): void {
+    if (!this.isActive || seconds <= 0) return;
+    this.totalBonusSeconds += seconds;
+    this.updateTimerDisplay();
   }
 
   hideModeIndicator() {

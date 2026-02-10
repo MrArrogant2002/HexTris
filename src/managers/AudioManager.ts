@@ -16,12 +16,15 @@ export class AudioManager {
   private resumeHandler: ResumeHandler | null = null;
   private isSfxMuted = false;
   private sfxVolume = 0.6;
+  private baseMusicVolume = 0.35;
+  private musicTempoLevel = 0;
+  private musicIntensity = 0.4;
 
   private constructor() {
     this.music = new Audio();
     this.music.loop = true;
     this.music.preload = 'auto';
-    this.music.volume = 0.35;
+    this.music.volume = this.baseMusicVolume;
   }
 
   public static getInstance(): AudioManager {
@@ -57,11 +60,23 @@ export class AudioManager {
   }
 
   public setMusicVolume(volume: number): void {
-    this.music.volume = this.clampVolume(volume);
+    this.baseMusicVolume = this.clampVolume(volume);
+    this.applyMusicMix();
   }
 
   public setSfxVolume(volume: number): void {
     this.sfxVolume = this.clampVolume(volume);
+  }
+
+  public setMusicTempoLevel(level: number): void {
+    this.musicTempoLevel = level;
+    this.applyMusicMix();
+  }
+
+  public setMusicIntensity(intensity: number): void {
+    const clamped = Math.min(1, Math.max(0, intensity));
+    this.musicIntensity = clamped;
+    this.applyMusicMix();
   }
 
   public playSfx(key: SfxKey): void {
@@ -93,6 +108,7 @@ export class AudioManager {
     this.currentTrack = track;
     this.music.src = this.getTrackUrl(track);
     this.music.load();
+    this.applyMusicMix();
     this.tryPlay();
   }
 
@@ -120,6 +136,23 @@ export class AudioManager {
       return 0.5;
     }
     return Math.min(1, Math.max(0, value));
+  }
+
+  private applyMusicMix(): void {
+    const tempoRate = this.getTempoPlaybackRate(this.musicTempoLevel);
+    this.music.playbackRate = tempoRate;
+
+    const intensityBoost = 0.9 + this.musicIntensity * 0.2;
+    const tempoBoost = this.musicTempoLevel >= 2 ? 1.05 : 1;
+    const targetVolume = this.baseMusicVolume * intensityBoost * tempoBoost;
+    this.music.volume = this.clampVolume(targetVolume);
+  }
+
+  private getTempoPlaybackRate(level: number): number {
+    if (level <= -1) return 0.94;
+    if (level === 1) return 1.02;
+    if (level >= 2) return 1.08;
+    return 1.0;
   }
 
   private tryPlay(): void {

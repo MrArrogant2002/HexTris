@@ -33,10 +33,16 @@ import {
   LivesDisplay, 
   PointsDisplay, 
   ScoreDisplay, 
-  InventoryUI 
+  InventoryUI,
+  StrategyStatusHUD,
+  ComboHeatMeter,
+  MomentumBar,
+  TimeOrbDisplay
 } from '@ui/hud';
 import { audioManager } from '@/managers/AudioManager';
 import { createEmptyInventory, ShopItemId } from '@config/shopItems';
+import { TimeOrbSystem } from '@systems/TimeOrbSystem';
+import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
 
 export class GamePage extends BasePage {
   private canvas!: Canvas;
@@ -54,6 +60,10 @@ export class GamePage extends BasePage {
   private pointsDisplay!: PointsDisplay;
   private scoreDisplay!: ScoreDisplay;
   private inventoryUI!: InventoryUI;
+  private strategyStatusHUD!: StrategyStatusHUD;
+  private comboHeatMeter!: ComboHeatMeter;
+  private momentumBar!: MomentumBar;
+  private timeOrbDisplay!: TimeOrbDisplay;
   
   // Game entities and systems
   private hex!: Hex;
@@ -62,6 +72,7 @@ export class GamePage extends BasePage {
   private matchingSystem!: MatchingSystem;
   private powerUpSystem!: PowerUpSystem;
   private specialPointsSystem!: SpecialPointsSystem;
+  private timeOrbSystem: TimeOrbSystem | null = null;
   private floatingTexts: FloatingText[] = [];
   private frameCount: number = 0;
   private rushMultiplier: number = 1;
@@ -90,6 +101,25 @@ export class GamePage extends BasePage {
   private lifeLossTimestamps: number[] = [];
   private adaptiveAssistActive: boolean = false;
   private adaptiveAssistResetId: number | null = null;
+  private comboHeatValue = 0;
+  private comboTier = 0;
+  private lastComboFrame = 0;
+  private heatDecayRate = 6;
+  private challengeScript: ChallengeScript | null = null;
+  private challengePhaseIndex = 0;
+  private timerRampTimer = 0;
+  private nextTimerRamp = 15;
+  private timerRampStage = 0;
+  private timerRampSpeedMultiplier = 1;
+  private timerRampSpawnMultiplier = 1;
+  private challengeSpeedMultiplier = 1;
+  private challengeSpawnMultiplier = 1;
+  private catchupSpeedMultiplier = 1;
+  private catchupSpawnMultiplier = 1;
+  private momentumValue = 0;
+  private momentumDecayRate = 4;
+  private activeMutators = new Set<string>();
+  private noShieldActive = false;
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
   };
@@ -113,6 +143,32 @@ export class GamePage extends BasePage {
       this.triggerHammerEffect();
     }
   };
+
+  private handleTimeOrbCollected = (): void => {
+    const state = stateManager.getState();
+    const nextCount = (state.game.timeOrbCount ?? 0) + 1;
+    const goal = state.game.timeOrbGoal ?? 3;
+    if (nextCount >= goal) {
+      this.timerAttack?.addBonusTime(5);
+      stateManager.updateGame({ timeOrbCount: 0 });
+      this.floatingTexts.push(FloatingText.createMessage(
+        this.canvas.element.width / 2,
+        this.canvas.element.height / 2 - 140,
+        '+5s',
+        '#9ad8ff'
+      ));
+    } else {
+      stateManager.updateGame({ timeOrbCount: nextCount });
+    }
+  };
+
+  private applyMutators(mutators: string[]): void {
+    this.activeMutators = new Set(mutators);
+    this.noShieldActive = this.activeMutators.has('noShield');
+    const powerUpsAllowed = !this.activeMutators.has('noPowerUps');
+    this.powerUpSystem?.setEnabled(powerUpsAllowed);
+    stateManager.updateGame({ activeMutators: [...this.activeMutators] });
+  }
 
   private handleSurgeChange = (state: { active: boolean; durationMs?: number; remainingMs?: number }): void => {
     stateManager.updateGame({ surgeActive: state.active });
@@ -210,6 +266,14 @@ export class GamePage extends BasePage {
     });
     this.scoreDisplay = new ScoreDisplay(state.game.score);
     this.inventoryUI = new InventoryUI(3);
+    this.strategyStatusHUD = new StrategyStatusHUD({
+      phase: state.game.strategyPhase,
+      tempoLevel: state.game.tempoLevel,
+      surgeActive: state.game.surgeActive,
+    });
+    this.comboHeatMeter = new ComboHeatMeter();
+    this.momentumBar = new MomentumBar();
+    this.timeOrbDisplay = new TimeOrbDisplay();
     this.lastLives = state.game.lives;
     this.nextLifeBonusScore = LIFE_BONUS_INTERVAL;
 
@@ -221,6 +285,10 @@ export class GamePage extends BasePage {
     this.pointsDisplay.mount(hudContainer);
     this.scoreDisplay.mount(hudContainer);
     this.inventoryUI.mount(hudContainer);
+    this.strategyStatusHUD.mount(hudContainer);
+    this.comboHeatMeter.mount(hudContainer);
+    this.momentumBar.mount(hudContainer);
+    this.timeOrbDisplay.mount(hudContainer);
 
     // Add pause button
     const pauseButton = document.createElement('button');
@@ -263,11 +331,35 @@ export class GamePage extends BasePage {
     this.currentPhaseName = null;
     this.lifeLossTimestamps = [];
     this.adaptiveAssistActive = false;
+    this.comboHeatValue = 0;
+    this.comboTier = 0;
+    this.lastComboFrame = 0;
+    this.timerRampTimer = 0;
+    this.nextTimerRamp = 15;
+    this.timerRampStage = 0;
+    this.timerRampSpeedMultiplier = 1;
+    this.timerRampSpawnMultiplier = 1;
+    this.challengeSpeedMultiplier = 1;
+    this.challengeSpawnMultiplier = 1;
+    this.catchupSpeedMultiplier = 1;
+    this.catchupSpawnMultiplier = 1;
+    this.challengeScript = null;
+    this.challengePhaseIndex = 0;
+    this.momentumValue = 0;
+    this.activeMutators = new Set();
+    this.noShieldActive = false;
     if (this.adaptiveAssistResetId) {
       window.clearTimeout(this.adaptiveAssistResetId);
       this.adaptiveAssistResetId = null;
     }
-    stateManager.updateGame({ surgeActive: false, strategyPhase: undefined, tempoLevel: 0 });
+    stateManager.updateGame({
+      surgeActive: false,
+      strategyPhase: undefined,
+      tempoLevel: 0,
+      timeOrbCount: 0,
+      timeOrbGoal: 3,
+      activeMutators: [],
+    });
 
     const speedModifier = difficultyConfig.speedMultiplier;
     const creationSpeedModifier = difficultyConfig.spawnRateModifier;
@@ -297,6 +389,14 @@ export class GamePage extends BasePage {
       onSlowMo: (multiplier, durationMs) => this.applySlowMo(multiplier, durationMs),
       onShield: (durationMs) => this.applyShield(durationMs),
     });
+    this.timeOrbSystem = new TimeOrbSystem({
+      hex: this.hex,
+      canvas: this.canvas,
+      spawnChance: 0.55,
+      cooldownMs: 7500,
+      onCollect: this.handleTimeOrbCollected,
+    });
+    this.timeOrbSystem.setEnabled(state.ui.currentGameMode === 'timerAttack');
     
     // Reset frame counter
     this.frameCount = 0;
@@ -384,13 +484,17 @@ export class GamePage extends BasePage {
     
     // Update wave generation (spawn new blocks)
     this.waveSystem.update(dt, this.frameCount);
+    this.updateTimerRamp(dt);
+    this.updateChallengePhase();
     this.updateDifficultyPhase();
+    this.updateCatchupMultiplier();
     
     // Update physics (falling blocks move toward center and check collision)
     // Pass scale=1 for now (can be adjusted for screen scaling later)
     this.physicsSystem.update(this.hex, dt, 1);
 
     this.powerUpSystem.update(dt);
+    this.timeOrbSystem?.update(dt);
     
     // Check for matches on newly settled blocks (checked=1)
     // Original: for each block, if (block.checked == 1) consolidateBlocks(...)
@@ -422,10 +526,16 @@ export class GamePage extends BasePage {
           FloatingText.createCombo(centerX, centerY - 50, result.combo)
         );
         window.dispatchEvent(new CustomEvent('comboAchieved', { detail: { count: result.combo } }));
+        this.addComboHeat(result.combo);
+      }
+
+      if (state.ui.currentGameMode === 'timerAttack' && result.blocksCleared >= 4 && result.combo >= 2) {
+        this.timeOrbSystem?.trySpawn();
       }
       
       // Speed up wave system
       this.waveSystem.onBlocksDestroyed();
+      this.addMomentum(result.blocksCleared);
     }
 
     if (matchResults.length > 0) {
@@ -493,6 +603,9 @@ export class GamePage extends BasePage {
     
     // Increment hex frame counter
     this.hex.ct += dt;
+
+    this.decayComboHeat(dt);
+    this.decayMomentum(dt);
     
     // Check for game over (original: checks if blocks exceed rows setting)
     if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
@@ -508,6 +621,19 @@ export class GamePage extends BasePage {
 
     // Update special points from player state
     this.pointsDisplay.setPoints(updatedState.player.specialPoints);
+    this.comboHeatMeter.setHeat(updatedState.game.comboHeat ?? 0, updatedState.game.comboTier ?? 0);
+    this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? 3);
+    this.momentumBar.setValue(updatedState.game.momentumValue ?? 0);
+    this.strategyStatusHUD.setStatus({
+      phase: updatedState.game.strategyPhase,
+      tempoLevel: updatedState.game.tempoLevel,
+      surgeActive: updatedState.game.surgeActive,
+    });
+
+    const isTimer = updatedState.ui.currentGameMode === 'timerAttack';
+    const isMultiplayer = updatedState.ui.currentGameMode?.startsWith('multiplayer');
+    this.timeOrbDisplay.getElement().style.display = isTimer ? 'flex' : 'none';
+    this.momentumBar.setVisible(Boolean(isMultiplayer));
   }
 
   /**
@@ -561,6 +687,7 @@ export class GamePage extends BasePage {
     }
 
     this.powerUpSystem.render(ctx);
+    this.timeOrbSystem?.render(ctx);
     
     // Draw floating texts (score popups)
     for (const text of this.floatingTexts) {
@@ -756,10 +883,16 @@ export class GamePage extends BasePage {
     this.waveSystem.reset();
     this.matchingSystem.resetCombo();
     this.powerUpSystem.reset();
+    this.timeOrbSystem?.reset();
     this.floatingTexts = [];
     this.frameCount = 0;
     this.rushMultiplier = 1;
     this.powerUpSpeedMultiplier = 1;
+    this.comboHeatValue = 0;
+    this.comboTier = 0;
+    this.lastComboFrame = 0;
+    this.momentumValue = 0;
+    stateManager.updateGame({ comboHeat: 0, comboTier: 0, momentumValue: 0, timeOrbCount: 0 });
     this.nextLifeBonusScore = LIFE_BONUS_INTERVAL;
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
@@ -772,6 +905,8 @@ export class GamePage extends BasePage {
     this.clearSlowMoEffect();
     this.hideShieldEffect();
     this.hideSurgeEffect();
+    audioManager.setMusicIntensity(0.4);
+    audioManager.setMusicTempoLevel(0);
     if (this.hammerOverlay) {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
@@ -811,6 +946,9 @@ export class GamePage extends BasePage {
   }
 
   private applyShield(durationMs: number): void {
+    if (this.noShieldActive) {
+      return;
+    }
     if (this.shieldTimeoutId) {
       window.clearTimeout(this.shieldTimeoutId);
     }
@@ -993,7 +1131,50 @@ export class GamePage extends BasePage {
     }
     this.currentPhaseName = activePhase.name;
     stateManager.updateGame({ strategyPhase: activePhase.name });
+    if (typeof activePhase.musicIntensity === 'number') {
+      audioManager.setMusicIntensity(activePhase.musicIntensity);
+    }
     window.dispatchEvent(new CustomEvent('difficultyPhaseChanged', { detail: activePhase }));
+  }
+
+  private applyWaveTuning(): void {
+    if (!this.waveSystem) return;
+    const speedMultiplier = this.timerRampSpeedMultiplier * this.challengeSpeedMultiplier * this.catchupSpeedMultiplier;
+    const spawnMultiplier = this.timerRampSpawnMultiplier * this.challengeSpawnMultiplier * this.catchupSpawnMultiplier;
+    this.waveSystem.setExternalMultipliers({ speedMultiplier, spawnMultiplier });
+  }
+
+  private updateChallengePhase(): void {
+    if (!this.challengeScript || !this.waveSystem) return;
+    const elapsedSeconds = this.waveSystem.getElapsedMs() / 1000;
+    const phases = this.challengeScript.phases;
+    if (!phases.length) return;
+
+    let nextIndex = this.challengePhaseIndex;
+    while (nextIndex + 1 < phases.length && elapsedSeconds >= phases[nextIndex + 1].startsAt) {
+      nextIndex += 1;
+    }
+
+    if (nextIndex === this.challengePhaseIndex) return;
+    this.challengePhaseIndex = nextIndex;
+    const phase = phases[nextIndex];
+
+    this.challengeSpeedMultiplier = phase.speedMultiplier ?? 1;
+    this.challengeSpawnMultiplier = phase.spawnMultiplier ?? 1;
+    this.applyWaveTuning();
+
+    if (typeof phase.musicIntensity === 'number') {
+      audioManager.setMusicIntensity(phase.musicIntensity);
+    }
+
+    if (phase.message) {
+      this.floatingTexts.push(FloatingText.createMessage(
+        this.canvas.element.width / 2,
+        this.canvas.element.height / 2 - 150,
+        phase.message,
+        '#f9a826'
+      ));
+    }
   }
 
   private registerLifeLossAssist(): void {
@@ -1033,6 +1214,98 @@ export class GamePage extends BasePage {
       tempo = 2;
     }
     stateManager.updateGame({ tempoLevel: tempo });
+    audioManager.setMusicTempoLevel(tempo);
+  }
+
+  private updateTimerRamp(dt: number): void {
+    const state = stateManager.getState();
+    if (state.ui.currentGameMode !== 'timerAttack') return;
+    this.timerRampTimer += dt;
+    if (this.timerRampTimer < this.nextTimerRamp) return;
+
+    this.timerRampTimer = 0;
+    this.timerRampStage += 1;
+    this.timerRampSpeedMultiplier = 1 + this.timerRampStage * 0.02;
+    this.timerRampSpawnMultiplier = 1 + this.timerRampStage * 0.03;
+    this.applyWaveTuning();
+  }
+
+  private updateCatchupMultiplier(): void {
+    const state = stateManager.getState();
+    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
+    if (!isMultiplayer) {
+      this.catchupSpeedMultiplier = 1;
+      this.catchupSpawnMultiplier = 1;
+      this.applyWaveTuning();
+      return;
+    }
+
+    const delta = state.game.ghostDelta ?? 0;
+    if (delta <= -0.25) {
+      this.catchupSpeedMultiplier = 0.95;
+      this.catchupSpawnMultiplier = 0.9;
+    } else if (delta >= 0.25) {
+      this.catchupSpeedMultiplier = 1.05;
+      this.catchupSpawnMultiplier = 1.05;
+    } else {
+      this.catchupSpeedMultiplier = 1;
+      this.catchupSpawnMultiplier = 1;
+    }
+    this.applyWaveTuning();
+  }
+
+  private addComboHeat(combo: number): void {
+    const gain = Math.min(35, combo * 8);
+    this.comboHeatValue = Math.min(100, this.comboHeatValue + gain);
+    this.lastComboFrame = this.hex.ct;
+
+    const nextTier = this.getComboTier(this.comboHeatValue);
+    if (nextTier !== this.comboTier) {
+      this.comboTier = nextTier;
+      this.scoreDisplay.flashCombo();
+    }
+
+    stateManager.updateGame({ comboHeat: this.comboHeatValue, comboTier: this.comboTier });
+  }
+
+  private decayComboHeat(dt: number): void {
+    const sinceCombo = this.hex.ct - this.lastComboFrame;
+    if (sinceCombo < 30) return;
+    if (this.comboHeatValue <= 0) return;
+
+    this.comboHeatValue = Math.max(0, this.comboHeatValue - this.heatDecayRate * dt);
+    const nextTier = this.getComboTier(this.comboHeatValue);
+    if (nextTier !== this.comboTier) {
+      this.comboTier = nextTier;
+    }
+    stateManager.updateGame({ comboHeat: this.comboHeatValue, comboTier: this.comboTier });
+  }
+
+  private getComboTier(heat: number): number {
+    if (heat >= 80) return 3;
+    if (heat >= 50) return 2;
+    if (heat >= 20) return 1;
+    return 0;
+  }
+
+  private addMomentum(blocksCleared: number): void {
+    const state = stateManager.getState();
+    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
+    if (!isMultiplayer) return;
+
+    const gain = Math.min(12, blocksCleared * 2);
+    this.momentumValue = Math.min(100, this.momentumValue + gain);
+    stateManager.updateGame({ momentumValue: this.momentumValue });
+  }
+
+  private decayMomentum(dt: number): void {
+    const state = stateManager.getState();
+    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
+    if (!isMultiplayer) return;
+
+    if (this.momentumValue <= 0) return;
+    this.momentumValue = Math.max(0, this.momentumValue - this.momentumDecayRate * dt);
+    stateManager.updateGame({ momentumValue: this.momentumValue });
   }
 
   private applyLifeBonus(score: number): void {
@@ -1419,10 +1692,23 @@ export class GamePage extends BasePage {
       }
       
       window.dispatchEvent(new CustomEvent('activateDailyChallenge'));
+      const date = new Date().toISOString().slice(0, 10);
+      this.challengeScript = getChallengeScriptForDate(date);
+      if (this.challengeScript) {
+        this.challengePhaseIndex = 0;
+        this.challengeSpeedMultiplier = this.challengeScript.phases[0]?.speedMultiplier ?? 1;
+        this.challengeSpawnMultiplier = this.challengeScript.phases[0]?.spawnMultiplier ?? 1;
+        this.applyWaveTuning();
+        this.applyMutators(this.challengeScript.mutators);
+      }
     } else if (uiState.currentGameMode === 'timerAttack') {
       const duration = uiState.timerDuration || 90;
       this.timerAttack = new TimerAttackMode(duration);
       window.dispatchEvent(new CustomEvent('activateTimerMode'));
+      this.timeOrbSystem?.setEnabled(true);
+      this.applyMutators([]);
+    } else {
+      this.applyMutators([]);
     }
 
     window.dispatchEvent(new CustomEvent('gameStart'));
@@ -1532,6 +1818,8 @@ export class GamePage extends BasePage {
     this.activeDifficultyConfig = null;
     this.currentPhaseName = null;
     stateManager.updateGame({ surgeActive: false, tempoLevel: 0, strategyPhase: undefined });
+    audioManager.setMusicIntensity(0.4);
+    audioManager.setMusicTempoLevel(0);
 
     if (this.powerUpSystem) {
       this.powerUpSystem.destroy();
@@ -1540,6 +1828,11 @@ export class GamePage extends BasePage {
     if (this.timerAttack) {
       this.timerAttack.deactivate();
       this.timerAttack = null;
+    }
+
+    if (this.timeOrbSystem) {
+      this.timeOrbSystem.setEnabled(false);
+      this.timeOrbSystem = null;
     }
 
     if (this.dailyChallenge) {

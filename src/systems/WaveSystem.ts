@@ -35,6 +35,8 @@ export class WaveSystem {
   private surgeNextMs: number = Number.POSITIVE_INFINITY;
   private baseSpeedModifier: number;
   private baseCreationSpeedModifier: number;
+  private externalSpeedMultiplier: number = 1;
+  private externalSpawnMultiplier: number = 1;
   
   private colors: string[];
   private speedModifier: number;
@@ -66,6 +68,7 @@ export class WaveSystem {
     
     // Start with random generation
     this.currentFunction = this.randomGeneration.bind(this);
+    this.applyModifiers();
   }
 
   /**
@@ -157,20 +160,39 @@ export class WaveSystem {
     this.surgeActive = true;
     const durationMs = this.surgeConfig.duration * 1000;
     this.surgeEndMs = this.elapsedMs + durationMs;
-    this.creationSpeedModifier = this.baseCreationSpeedModifier * (1 + this.surgeConfig.spawnScalar);
-    const speedScalar = this.surgeConfig.speedScalar ?? this.surgeConfig.spawnScalar;
-    this.speedModifier = this.baseSpeedModifier * (1 + speedScalar);
+    this.applyModifiers(true);
     this.onSurgeChange?.({ active: true, durationMs, remainingMs: durationMs });
   }
 
   private endSurge(): void {
     this.surgeActive = false;
-    this.creationSpeedModifier = this.baseCreationSpeedModifier;
-    this.speedModifier = this.baseSpeedModifier;
+    this.applyModifiers(false);
     if (this.surgeConfig) {
       this.surgeNextMs = this.elapsedMs + this.surgeConfig.cadence * 1000;
     }
     this.onSurgeChange?.({ active: false, remainingMs: 0 });
+  }
+
+  public setExternalMultipliers(params: { speedMultiplier?: number; spawnMultiplier?: number }): void {
+    if (typeof params.speedMultiplier === 'number') {
+      this.externalSpeedMultiplier = Math.max(0.4, params.speedMultiplier);
+    }
+    if (typeof params.spawnMultiplier === 'number') {
+      this.externalSpawnMultiplier = Math.max(0.4, params.spawnMultiplier);
+    }
+    this.applyModifiers(this.surgeActive);
+  }
+
+  private applyModifiers(isSurge: boolean = this.surgeActive): void {
+    const surgeSpawnScalar = isSurge ? (this.surgeConfig?.spawnScalar ?? 0) : 0;
+    const surgeSpeedScalar = isSurge
+      ? (this.surgeConfig?.speedScalar ?? this.surgeConfig?.spawnScalar ?? 0)
+      : 0;
+
+    this.creationSpeedModifier =
+      this.baseCreationSpeedModifier * this.externalSpawnMultiplier * (1 + surgeSpawnScalar);
+    this.speedModifier =
+      this.baseSpeedModifier * this.externalSpeedMultiplier * (1 + surgeSpeedScalar);
   }
 
   /**
@@ -357,6 +379,8 @@ export class WaveSystem {
     this.elapsedMs = 0;
     this.surgeActive = false;
     this.surgeEndMs = 0;
+    this.externalSpeedMultiplier = 1;
+    this.externalSpawnMultiplier = 1;
     this.creationSpeedModifier = this.baseCreationSpeedModifier;
     this.speedModifier = this.baseSpeedModifier;
     if (this.surgeConfig) {

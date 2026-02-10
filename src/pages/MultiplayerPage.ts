@@ -267,7 +267,7 @@ export class MultiplayerPage extends BasePage {
 
 
   private playGroup(group: Group): void {
-    stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'standard' });
+    stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
     Router.getInstance().navigate(ROUTES.DIFFICULTY);
   }
 

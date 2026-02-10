@@ -77,6 +77,13 @@ export class PowerUpSystem {
     this.inventoryUI.clear();
   }
 
+  public setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled) {
+      this.activePowerUps = [];
+    }
+  }
+
   public forceSpawn(): void {
     if (!this.enabled) return;
     if (stateManager.getState().status !== GameStatus.PLAYING) return;
