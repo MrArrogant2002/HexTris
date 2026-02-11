@@ -7,13 +7,16 @@ export interface StrategyStatusState {
   phase?: string;
   tempoLevel?: number;
   surgeActive?: boolean;
+  modeLabel?: string;
 }
 
 export class StrategyStatusHUD {
   private element: HTMLDivElement;
+  private modeText!: HTMLDivElement;
   private phaseText!: HTMLDivElement;
   private tempoText!: HTMLDivElement;
   private surgeBadge!: HTMLSpanElement;
+  private lastMode?: string;
   private lastPhase?: string;
   private lastTempo?: number;
   private lastSurge?: boolean;
@@ -41,6 +44,11 @@ export class StrategyStatusHUD {
     this.phaseText.className = 'font-semibold';
     this.phaseText.textContent = 'Phase: --';
 
+    this.modeText = document.createElement('div');
+    this.modeText.className = 'font-semibold text-white/80';
+    this.modeText.textContent = 'Mode: --';
+    this.modeText.style.display = 'none';
+
     this.tempoText = document.createElement('div');
     this.tempoText.className = 'font-semibold text-white/80';
     this.tempoText.textContent = 'Tempo: steady';
@@ -50,6 +58,7 @@ export class StrategyStatusHUD {
     this.surgeBadge.textContent = 'SURGE';
 
     container.appendChild(this.phaseText);
+    container.appendChild(this.modeText);
     container.appendChild(this.tempoText);
     container.appendChild(this.surgeBadge);
 
@@ -60,6 +69,17 @@ export class StrategyStatusHUD {
     const phase = state.phase ?? '---';
     const tempo = state.tempoLevel ?? 0;
     const surge = Boolean(state.surgeActive);
+    const modeLabel = state.modeLabel;
+
+    if (modeLabel !== this.lastMode) {
+      if (modeLabel) {
+        this.modeText.textContent = `Mode: ${modeLabel}`;
+        this.modeText.style.display = 'inline-flex';
+      } else {
+        this.modeText.style.display = 'none';
+      }
+      this.lastMode = modeLabel;
+    }
 
     if (phase !== this.lastPhase) {
       this.phaseText.textContent = `Phase: ${phase}`;

@@ -5,6 +5,7 @@
 import type { DifficultyLevel } from '@config/difficulty';
 import type { ThemeName } from '@config/themes';
 import type { ShopItemId } from '@config/shopItems';
+import type { MultiplayerRoleId, MultiplayerStrategyId } from '@config/multiplayerStrategies';
 import type { GameStatus } from '@core/constants';
 
 export type PlayerInventory = Record<ShopItemId, number>;
@@ -63,6 +64,8 @@ export interface UIState {
   timerDuration?: number;
   currentGroupId?: string;
   multiplayerMode?: 'race' | 'sabotage' | 'sync';
+  multiplayerStrategy?: MultiplayerStrategyId;
+  multiplayerRole?: MultiplayerRoleId;
   prestigeMutators?: string[];
 }
 
@@ -111,4 +114,3 @@ export type StateEvent =
   | 'powerUpUsed';
 
 export type StateListener = (data?: any) => void;
-

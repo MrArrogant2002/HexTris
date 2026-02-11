@@ -49,17 +49,19 @@ Additional knobs:
 - **Dynamic Music Layering**: tie soundtrack layers to tier so pressure feels audible.
 - **Milestone Loot**: at 2, 5, 10 minutes award themed cosmetics/inventory boosts.
 
-### 3.2 Multiplayer (Co-op Competitive Hybrid)
-*Status: Pending — no multiplayer momentum/catch-up systems have been implemented yet.*
-**Modes**
-1. **Race**: first to reach target score/time survives hazard spikes. Shared surge timer so both fields heat simultaneously.
-2. **Sabotage** (unlocked at Standard tier): clearing perfect rings sends glitch blocks to rivals.
-3. **Sync Survival**: duo shares life pool; periodic team challenges (e.g., clear 4 reds in 10s) grant shields.
+### 3.2 Multiplayer (Ultimate Competition + Role Play)
+*Status: Implemented — strategy selection, role modifiers, and momentum/tempo tuning now affect gameplay.*
+**Strategies**
+1. **Ultimate Competition**: high-stakes rivalry with accelerated spawn/speed and boosted scoring. Momentum gain spikes to emphasize aggressive clears.
+2. **Role Play Clash**: pick a role that changes how you score and stabilize tempo.
+   - **Vanguard**: offensive scorer who turns combos into momentum surges.
+   - **Guardian**: defensive stabilizer who slows pace and extends momentum.
+   - **Tactician**: precision planner who amplifies combo heat and points.
 
 **Systems**
-- **Group Momentum Bar**: performing objectives fills bar unlocking temporary buffs (global slow-mo, double diamonds).
-- **Catch-Up Rubber Band**: trailing player gets +0.1× power-up odds, but only if difference >25% score.
-- **Live Events**: server can broadcast weekend modifiers (e.g., "Twin Hammers" event gives unique effect + leaderboard badge).
+- **Strategic Modifiers**: speed, spawn, combo-heat, and momentum tuning scale by strategy + role to create distinct play styles.
+- **Momentum Bar**: continues to reward multiplayer clears, with role-based decay/gain adjustments.
+- **Catch-Up Rubber Band**: trailing player still benefits from speed/spawn easing; roles stack on top of this baseline.
 
 ### 3.3 Daily / Weekly Challenges
 *Status: Pending — challenge seeds, scripted timelines, and reward tracks still need engineering support.*

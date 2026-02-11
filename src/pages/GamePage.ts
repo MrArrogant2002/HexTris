@@ -23,6 +23,7 @@ import { getInputManager } from '@utils/input';
 import { themes, ThemeName } from '@config/themes';
 import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
 import type { DifficultyConfig, AdaptiveAssistConfig } from '@config/difficulty';
+import { formatMultiplayerLabel, resolveMultiplayerModifiers } from '@config/multiplayerStrategies';
 import { appwriteClient } from '@network/AppwriteClient';
 import { GroupManager } from '@network/GroupManager';
 import { DailyChallengeSystem } from '@modes/DailyChallengeMode';
@@ -116,6 +117,8 @@ export class GamePage extends BasePage {
   private challengeSpawnMultiplier = 1;
   private catchupSpeedMultiplier = 1;
   private catchupSpawnMultiplier = 1;
+  private multiplayerModifiers = resolveMultiplayerModifiers();
+  private multiplayerLabel?: string;
   private momentumValue = 0;
   private momentumDecayRate = 4;
   private activeMutators = new Set<string>();
@@ -260,6 +263,10 @@ export class GamePage extends BasePage {
 
     // Initialize HUD components
     const state = stateManager.getState();
+    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
+    this.multiplayerLabel = isMultiplayer
+      ? formatMultiplayerLabel(state.ui.multiplayerStrategy, state.ui.multiplayerRole)
+      : undefined;
     this.livesDisplay = new LivesDisplay(state.game.lives);
     this.pointsDisplay = new PointsDisplay(state.player.specialPoints, {
       onShopClick: () => this.openShopModal(),
@@ -270,6 +277,7 @@ export class GamePage extends BasePage {
       phase: state.game.strategyPhase,
       tempoLevel: state.game.tempoLevel,
       surgeActive: state.game.surgeActive,
+      modeLabel: this.multiplayerLabel,
     });
     this.comboHeatMeter = new ComboHeatMeter();
     this.momentumBar = new MomentumBar();
@@ -500,10 +508,12 @@ export class GamePage extends BasePage {
     // Original: for each block, if (block.checked == 1) consolidateBlocks(...)
     const matchResults = this.matchingSystem.checkAllMatches(this.hex, this.frameCount);
     let runningScore = state.game.score;
+    const scoreMultiplier = this.multiplayerModifiers.scoreMultiplier;
     let diamondsToAdd = 0;
     for (const result of matchResults) {
       // Add score
-      runningScore += result.score;
+      const adjustedScore = Math.round(result.score * scoreMultiplier);
+      runningScore += adjustedScore;
       window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: runningScore } }));
 
       // Award diamonds based on streak (combo)
@@ -517,7 +527,7 @@ export class GamePage extends BasePage {
       const centerX = this.canvas.element.width / 2;
       const centerY = this.canvas.element.height / 2;
       this.floatingTexts.push(
-        FloatingText.createScore(centerX + result.centerX, centerY + result.centerY, result.score, result.color)
+        FloatingText.createScore(centerX + result.centerX, centerY + result.centerY, adjustedScore, result.color)
       );
       
       // Show combo text if combo > 1
@@ -628,6 +638,7 @@ export class GamePage extends BasePage {
       phase: updatedState.game.strategyPhase,
       tempoLevel: updatedState.game.tempoLevel,
       surgeActive: updatedState.game.surgeActive,
+      modeLabel: this.multiplayerLabel,
     });
 
     const isTimer = updatedState.ui.currentGameMode === 'timerAttack';
@@ -1139,9 +1150,36 @@ export class GamePage extends BasePage {
 
   private applyWaveTuning(): void {
     if (!this.waveSystem) return;
-    const speedMultiplier = this.timerRampSpeedMultiplier * this.challengeSpeedMultiplier * this.catchupSpeedMultiplier;
-    const spawnMultiplier = this.timerRampSpawnMultiplier * this.challengeSpawnMultiplier * this.catchupSpawnMultiplier;
+    const speedMultiplier = this.timerRampSpeedMultiplier
+      * this.challengeSpeedMultiplier
+      * this.catchupSpeedMultiplier
+      * this.multiplayerModifiers.speedMultiplier;
+    const spawnMultiplier = this.timerRampSpawnMultiplier
+      * this.challengeSpawnMultiplier
+      * this.catchupSpawnMultiplier
+      * this.multiplayerModifiers.spawnMultiplier;
     this.waveSystem.setExternalMultipliers({ speedMultiplier, spawnMultiplier });
+  }
+
+  private applyMultiplayerStrategy(): void {
+    const uiState = stateManager.getState().ui;
+    const isMultiplayer = uiState.currentGameMode?.startsWith('multiplayer');
+    if (!isMultiplayer) {
+      this.multiplayerModifiers = resolveMultiplayerModifiers();
+      this.multiplayerLabel = undefined;
+      this.applyWaveTuning();
+      return;
+    }
+
+    this.multiplayerModifiers = resolveMultiplayerModifiers(
+      uiState.multiplayerStrategy,
+      uiState.multiplayerRole
+    );
+    this.multiplayerLabel = formatMultiplayerLabel(
+      uiState.multiplayerStrategy,
+      uiState.multiplayerRole
+    );
+    this.applyWaveTuning();
   }
 
   private updateChallengePhase(): void {
@@ -1255,7 +1293,7 @@ export class GamePage extends BasePage {
   }
 
   private addComboHeat(combo: number): void {
-    const gain = Math.min(35, combo * 8);
+    const gain = Math.min(35, combo * 8) * this.multiplayerModifiers.comboHeatGainMultiplier;
     this.comboHeatValue = Math.min(100, this.comboHeatValue + gain);
     this.lastComboFrame = this.hex.ct;
 
@@ -1293,7 +1331,7 @@ export class GamePage extends BasePage {
     const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
     if (!isMultiplayer) return;
 
-    const gain = Math.min(12, blocksCleared * 2);
+    const gain = Math.min(12, blocksCleared * 2) * this.multiplayerModifiers.momentumGainMultiplier;
     this.momentumValue = Math.min(100, this.momentumValue + gain);
     stateManager.updateGame({ momentumValue: this.momentumValue });
   }
@@ -1304,7 +1342,8 @@ export class GamePage extends BasePage {
     if (!isMultiplayer) return;
 
     if (this.momentumValue <= 0) return;
-    this.momentumValue = Math.max(0, this.momentumValue - this.momentumDecayRate * dt);
+    const decayRate = this.momentumDecayRate * this.multiplayerModifiers.momentumDecayMultiplier;
+    this.momentumValue = Math.max(0, this.momentumValue - decayRate * dt);
     stateManager.updateGame({ momentumValue: this.momentumValue });
   }
 
@@ -1676,6 +1715,7 @@ export class GamePage extends BasePage {
     stateManager.setState('status', GameStatus.PLAYING);
     
     this.initCanvas();
+    this.applyMultiplayerStrategy();
     this.startGameLoop();
 
     if (uiState.currentGameMode === 'dailyChallenge') {
@@ -1901,5 +1941,3 @@ export class GamePage extends BasePage {
     return inventory[itemId] ?? 0;
   }
 }
-
-

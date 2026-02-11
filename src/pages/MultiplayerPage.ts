@@ -11,6 +11,11 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
 import { GroupManager } from '@network/GroupManager';
+import {
+  multiplayerStrategies,
+  type MultiplayerRoleId,
+  type MultiplayerStrategyId,
+} from '@config/multiplayerStrategies';
 import type { Group } from '../types/game';
 
 type View = 'list' | 'create' | 'join';
@@ -265,10 +270,216 @@ export class MultiplayerPage extends BasePage {
     modal.open();
   }
 
-
+  
   private playGroup(group: Group): void {
-    stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
-    Router.getInstance().navigate(ROUTES.DIFFICULTY);
+    this.showStrategySelection(group);
+  }
+
+  private showStrategySelection(group: Group): void {
+    const modal = new Modal({
+      title: 'Multiplayer Strategy',
+      closeOnBackdrop: true,
+      closeOnEscape: true,
+    });
+
+    const content = document.createElement('div');
+    content.className = 'space-y-4';
+
+    const intro = document.createElement('p');
+    intro.className = 'text-sm theme-text-secondary';
+    intro.textContent = 'Choose a competitive plan before jumping into the lobby.';
+    content.appendChild(intro);
+
+    const strategyGrid = document.createElement('div');
+    strategyGrid.className = 'grid grid-cols-1 gap-3';
+    content.appendChild(strategyGrid);
+
+    const roleSection = document.createElement('div');
+    roleSection.className = 'space-y-2';
+
+    const roleHeader = document.createElement('div');
+    roleHeader.className = 'text-xs font-semibold uppercase tracking-[0.3em] theme-text-secondary';
+    roleHeader.textContent = 'Select Role';
+    roleSection.appendChild(roleHeader);
+
+    const roleGrid = document.createElement('div');
+    roleGrid.className = 'grid grid-cols-1 sm:grid-cols-3 gap-2';
+    roleSection.appendChild(roleGrid);
+
+    const summary = document.createElement('div');
+    summary.className = 'text-xs theme-text-secondary';
+
+    let selectedStrategyId = stateManager.getState().ui.multiplayerStrategy ?? 'ultimateCompetition';
+    if (!multiplayerStrategies[selectedStrategyId]) {
+      selectedStrategyId = 'ultimateCompetition';
+    }
+    let selectedRoleId = stateManager.getState().ui.multiplayerRole;
+
+    const getRoleDefault = (strategyId: MultiplayerStrategyId): MultiplayerRoleId | undefined => {
+      const strategy = multiplayerStrategies[strategyId];
+      return strategy.defaultRoleId ?? strategy.roles?.[0]?.id;
+    };
+
+    const strategyButtons = new Map<MultiplayerStrategyId, HTMLButtonElement>();
+
+    const getStrategyClass = (selected: boolean): string => [
+      'theme-card',
+      'rounded-xl',
+      'p-4',
+      'text-left',
+      'border-2',
+      'transition-all',
+      'duration-200',
+      'hover:-translate-y-0.5',
+      selected ? 'border-black shadow-lg' : 'border-transparent',
+    ].join(' ');
+
+    const getRoleClass = (selected: boolean): string => [
+      'theme-card-muted',
+      'rounded-xl',
+      'p-3',
+      'text-left',
+      'border-2',
+      'transition-all',
+      'duration-200',
+      'hover:-translate-y-0.5',
+      selected ? 'border-black shadow-md' : 'border-transparent',
+    ].join(' ');
+
+    const updateStrategySelection = (): void => {
+      strategyButtons.forEach((button, id) => {
+        button.className = getStrategyClass(id === selectedStrategyId);
+      });
+    };
+
+    const updateSummary = (): void => {
+      const strategy = multiplayerStrategies[selectedStrategyId];
+      const role = strategy.roles?.find((option) => option.id === selectedRoleId);
+      summary.textContent = role
+        ? `Locked in: ${strategy.name} · ${role.name}`
+        : `Locked in: ${strategy.name}`;
+    };
+
+    const renderRoles = (): void => {
+      roleGrid.innerHTML = '';
+      const strategy = multiplayerStrategies[selectedStrategyId];
+      if (!strategy.roles?.length) {
+        roleSection.style.display = 'none';
+        selectedRoleId = undefined;
+        updateSummary();
+        return;
+      }
+
+      roleSection.style.display = 'block';
+      if (!selectedRoleId) {
+        selectedRoleId = getRoleDefault(selectedStrategyId);
+      }
+
+      strategy.roles.forEach((role) => {
+        const roleCard = document.createElement('button');
+        roleCard.type = 'button';
+        roleCard.className = getRoleClass(role.id === selectedRoleId);
+
+        const title = document.createElement('div');
+        title.className = 'text-sm font-bold theme-text';
+        title.textContent = role.name;
+
+        const description = document.createElement('div');
+        description.className = 'text-xs theme-text-secondary mt-1';
+        description.textContent = role.description;
+
+        roleCard.appendChild(title);
+        roleCard.appendChild(description);
+
+        roleCard.addEventListener('click', () => {
+          selectedRoleId = role.id;
+          Array.from(roleGrid.children).forEach((child) => {
+            if (child instanceof HTMLButtonElement) {
+              child.className = getRoleClass(child === roleCard);
+            }
+          });
+          updateSummary();
+        });
+
+        roleGrid.appendChild(roleCard);
+      });
+
+      updateSummary();
+    };
+
+    Object.values(multiplayerStrategies).forEach((strategy) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = getStrategyClass(strategy.id === selectedStrategyId);
+
+      const title = document.createElement('div');
+      title.className = 'text-sm font-bold theme-text';
+      title.textContent = strategy.name;
+
+      const description = document.createElement('div');
+      description.className = 'text-xs theme-text-secondary mt-1';
+      description.textContent = strategy.description;
+
+      const objective = document.createElement('div');
+      objective.className = 'text-[11px] mt-2 font-semibold uppercase tracking-[0.2em] theme-text-secondary';
+      objective.textContent = strategy.objective;
+
+      card.appendChild(title);
+      card.appendChild(description);
+      card.appendChild(objective);
+      card.addEventListener('click', () => {
+        selectedStrategyId = strategy.id;
+        selectedRoleId = getRoleDefault(strategy.id);
+        updateStrategySelection();
+        renderRoles();
+      });
+
+      strategyButtons.set(strategy.id, card);
+      strategyGrid.appendChild(card);
+    });
+
+    updateStrategySelection();
+    renderRoles();
+    content.appendChild(roleSection);
+    content.appendChild(summary);
+
+    const actionRow = document.createElement('div');
+    actionRow.className = 'flex flex-col sm:flex-row gap-2 pt-2';
+
+    const startButton = new Button('Continue to Difficulty', {
+      variant: 'primary',
+      size: 'small',
+      fullWidth: true,
+      onClick: () => {
+        const multiplayerMode = selectedStrategyId === 'rolePlay' ? 'sync' : 'race';
+        const currentGameMode = multiplayerMode === 'sync' ? 'multiplayerSync' : 'multiplayerRace';
+        stateManager.updateUI({
+          currentGroupId: group.$id,
+          currentGameMode,
+          multiplayerMode,
+          multiplayerStrategy: selectedStrategyId,
+          multiplayerRole: selectedRoleId,
+        });
+        modal.close();
+        Router.getInstance().navigate(ROUTES.DIFFICULTY);
+      },
+    });
+    this.buttons.push(startButton);
+    actionRow.appendChild(startButton.element);
+
+    const cancelButton = new Button('Cancel', {
+      variant: 'outline',
+      size: 'small',
+      fullWidth: true,
+      onClick: () => modal.close(),
+    });
+    this.buttons.push(cancelButton);
+    actionRow.appendChild(cancelButton.element);
+
+    content.appendChild(actionRow);
+
+    modal.setContent(content);
+    modal.open();
   }
 
   private confirmLeaveGroup(group: Group): void {
@@ -355,4 +566,3 @@ export class MultiplayerPage extends BasePage {
     this.buttons = [];
   }
 }
-

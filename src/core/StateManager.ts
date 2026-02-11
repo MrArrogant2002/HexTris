@@ -80,6 +80,8 @@ export class StateManager {
         timerDuration: 90,
         currentGroupId: undefined,
         multiplayerMode: 'race',
+        multiplayerStrategy: 'ultimateCompetition',
+        multiplayerRole: undefined,
         prestigeMutators: [],
       },
     };
@@ -226,4 +228,3 @@ export class StateManager {
 
 // Export singleton instance
 export const stateManager = StateManager.getInstance();
-
