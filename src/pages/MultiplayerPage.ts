@@ -270,7 +270,6 @@ export class MultiplayerPage extends BasePage {
     modal.open();
   }
 
-  
   private playGroup(group: Group): void {
     this.showStrategySelection(group);
   }

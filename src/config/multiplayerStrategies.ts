@@ -36,6 +36,18 @@ export const DEFAULT_MULTIPLAYER_MODIFIERS: MultiplayerStrategyModifiers = {
   comboHeatGainMultiplier: 1,
 };
 
+const applyModifiers = (
+  base: MultiplayerStrategyModifiers,
+  modifiers?: Partial<MultiplayerStrategyModifiers>
+): MultiplayerStrategyModifiers => ({
+  scoreMultiplier: base.scoreMultiplier * (modifiers?.scoreMultiplier ?? 1),
+  speedMultiplier: base.speedMultiplier * (modifiers?.speedMultiplier ?? 1),
+  spawnMultiplier: base.spawnMultiplier * (modifiers?.spawnMultiplier ?? 1),
+  momentumGainMultiplier: base.momentumGainMultiplier * (modifiers?.momentumGainMultiplier ?? 1),
+  momentumDecayMultiplier: base.momentumDecayMultiplier * (modifiers?.momentumDecayMultiplier ?? 1),
+  comboHeatGainMultiplier: base.comboHeatGainMultiplier * (modifiers?.comboHeatGainMultiplier ?? 1),
+});
+
 export const multiplayerStrategies: Record<MultiplayerStrategyId, MultiplayerStrategy> = {
   ultimateCompetition: {
     id: 'ultimateCompetition',
@@ -93,18 +105,6 @@ export const multiplayerStrategies: Record<MultiplayerStrategyId, MultiplayerStr
     ],
   },
 };
-
-const applyModifiers = (
-  base: MultiplayerStrategyModifiers,
-  modifiers?: Partial<MultiplayerStrategyModifiers>
-): MultiplayerStrategyModifiers => ({
-  scoreMultiplier: base.scoreMultiplier * (modifiers?.scoreMultiplier ?? 1),
-  speedMultiplier: base.speedMultiplier * (modifiers?.speedMultiplier ?? 1),
-  spawnMultiplier: base.spawnMultiplier * (modifiers?.spawnMultiplier ?? 1),
-  momentumGainMultiplier: base.momentumGainMultiplier * (modifiers?.momentumGainMultiplier ?? 1),
-  momentumDecayMultiplier: base.momentumDecayMultiplier * (modifiers?.momentumDecayMultiplier ?? 1),
-  comboHeatGainMultiplier: base.comboHeatGainMultiplier * (modifiers?.comboHeatGainMultiplier ?? 1),
-});
 
 export const getMultiplayerStrategy = (
   id?: MultiplayerStrategyId
