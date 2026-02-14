@@ -201,13 +201,7 @@ class TimerAttackMode {
     const timerElement = document.getElementById('timer-attack-display');
     if (!timerElement) return;
 
-    const seconds = Math.floor(this.timeRemaining);
-    const milliseconds = Math.floor((this.timeRemaining % 1) * 10);
-
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    const timeString = `${minutes}:${secs.toString().padStart(2, '0')}.${milliseconds}`;
-    timerElement.textContent = `${timeString} · R${this.relayStage + 1}`;
+    timerElement.textContent = this.formatTimerDisplay(this.timeRemaining, this.relayStage);
 
     if (this.timeRemaining <= 10) {
       timerElement.className = 'timer-attack-display critical';
@@ -224,9 +218,7 @@ class TimerAttackMode {
       timerDisplay = document.createElement('div');
       timerDisplay.id = 'timer-attack-display';
       timerDisplay.className = 'timer-attack-display normal';
-      timerDisplay.textContent = `${Math.floor(this.timeLimit / 60)}:${Math.floor(this.timeLimit % 60)
-        .toString()
-        .padStart(2, '0')}.0 · R1`;
+      timerDisplay.textContent = this.formatTimerDisplay(this.timeLimit, 0);
       const hud = document.getElementById('hud-overlay');
       (hud || document.body).appendChild(timerDisplay);
     }
@@ -316,6 +308,16 @@ class TimerAttackMode {
 
   getPhaseLabel(): string {
     return `Relay ${this.relayStage + 1}`;
+  }
+
+  private formatTimerDisplay(timeRemaining: number, stage: number): string {
+    const seconds = Math.floor(timeRemaining);
+    const milliseconds = Math.floor((timeRemaining % 1) * 10);
+
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    const timeString = `${minutes}:${secs.toString().padStart(2, '0')}.${milliseconds}`;
+    return `${timeString} · R${stage + 1}`;
   }
 }
 

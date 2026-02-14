@@ -1223,6 +1223,7 @@ export class GamePage extends BasePage {
   private applyOrbitShift(): void {
     const sides = this.hex.sides;
     if (!sides) return;
+    const angleStep = 360 / sides;
     const shifted: Block[][] = Array.from({ length: sides }, () => []);
     for (let i = 0; i < sides; i++) {
       const target = (i + 1) % sides;
@@ -1230,7 +1231,7 @@ export class GamePage extends BasePage {
       shifted[target] = lane;
       lane.forEach((block) => {
         block.attachedLane = target;
-        block.targetAngle -= 60;
+        block.targetAngle -= angleStep;
       });
     }
     this.hex.blocks = shifted;

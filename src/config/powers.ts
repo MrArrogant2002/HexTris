@@ -71,14 +71,6 @@ export const POWER_SPAWN_POOL: PowerUpType[] = [
   'tempo',
 ];
 
-export const POWER_LABELS: Record<PowerUpType, string> = Object.values(POWER_DEFINITIONS).reduce(
-  (acc, power) => {
-    acc[power.id] = power.name;
-    return acc;
-  },
-  {} as Record<PowerUpType, string>
-);
-
 export function getPowerDefinition(type: PowerUpType): PowerDefinition {
   return POWER_DEFINITIONS[type];
 }

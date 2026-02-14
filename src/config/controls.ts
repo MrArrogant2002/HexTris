@@ -39,14 +39,14 @@ export const CONTROL_DEFINITIONS: ControlDefinition[] = [
   {
     command: 'rotateLeft',
     label: 'Rotate Left',
-    description: 'Turn the hexagon counter-clockwise.',
+    description: 'Turn the hexagon counter-clockwise (arrow keys stay fixed).',
     remappable: true,
     fixedKeys: ['arrowleft', 'arrowup'],
   },
   {
     command: 'rotateRight',
     label: 'Rotate Right',
-    description: 'Turn the hexagon clockwise.',
+    description: 'Turn the hexagon clockwise (arrow keys stay fixed).',
     remappable: true,
     fixedKeys: ['arrowright', 'arrowdown'],
   },
