@@ -3,6 +3,12 @@
  * Pulse Relay: build relay nodes to extend the clock and raise intensity.
  */
 
+const BASE_RELAY_BONUS_SECONDS = 6;
+const RELAY_STAGE_BONUS_SECONDS = 2;
+const RELAY_STAGE_SCORE_BONUS = 750;
+const ENDURANCE_SCORE_RATE = 60;
+const COMPLETION_SCORE_BONUS = 4000;
+
 class TimerAttackMode {
   private isActive = false;
   private timeLimit: number;
@@ -146,9 +152,11 @@ class TimerAttackMode {
   }
 
   calculateFinalScore(currentScore: number = 0): number {
-    const relayBonus = this.relayStage * 750;
-    const enduranceBonus = Math.floor((this.timeLimit + this.relayBonusSeconds - this.timeRemaining) * 60);
-    const completionBonus = this.timeRemaining <= 0 ? 4000 : 0;
+    const relayBonus = this.relayStage * RELAY_STAGE_SCORE_BONUS;
+    const enduranceBonus = Math.floor(
+      (this.timeLimit + this.relayBonusSeconds - this.timeRemaining) * ENDURANCE_SCORE_RATE
+    );
+    const completionBonus = this.timeRemaining <= 0 ? COMPLETION_SCORE_BONUS : 0;
 
     return currentScore + relayBonus + enduranceBonus + completionBonus;
   }
@@ -166,7 +174,7 @@ class TimerAttackMode {
   private completeRelay(): void {
     this.relayCount = 0;
     this.relayStage += 1;
-    const bonusSeconds = 6 + this.relayStage * 2;
+    const bonusSeconds = BASE_RELAY_BONUS_SECONDS + this.relayStage * RELAY_STAGE_BONUS_SECONDS;
     this.relayBonusSeconds += bonusSeconds;
     this.updateTimerDisplay();
     window.dispatchEvent(new CustomEvent('timerRelayComplete', {

@@ -149,7 +149,9 @@ export function updateControlMapping(
   key: string
 ): ControlMapping {
   const normalizedKey = normalizeKey(key);
-  const next: ControlMapping = { ...mapping, [command]: [normalizedKey] };
+  const existing = mapping[command] ?? [];
+  const nextKeys = Array.from(new Set([...existing, normalizedKey]));
+  const next: ControlMapping = { ...mapping, [command]: nextKeys };
   return ensureArrowKeys(next);
 }
 

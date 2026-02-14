@@ -309,7 +309,10 @@ class DailyChallengeSystem {
   }
 
   dateToSeed(date: string): number {
-    return Array.from(date).reduce((total, char) => total + char.charCodeAt(0), 0);
+    return Array.from(date).reduce((total, char) => {
+      const next = (total * 31 + char.charCodeAt(0)) >>> 0;
+      return next;
+    }, 0);
   }
 
   getTodayString(): string {

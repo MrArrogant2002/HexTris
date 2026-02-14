@@ -42,6 +42,8 @@ import {
 import { audioManager } from '@/managers/AudioManager';
 import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 import { type PowerUpType, getPowerDefinition } from '@config/powers';
+
+const RESONANCE_SCORE_MULTIPLIER = 1.2;
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
 
@@ -538,7 +540,8 @@ export class GamePage extends BasePage {
     let runningScore = state.game.score;
     let diamondsToAdd = 0;
     for (const result of matchResults) {
-      const scoreMultiplier = this.scoreBoostMultiplier * (this.resonanceActive ? 1.2 : 1);
+      const scoreMultiplier = this.scoreBoostMultiplier
+        * (this.resonanceActive ? RESONANCE_SCORE_MULTIPLIER : 1);
       const adjustedScore = Math.round(result.score * scoreMultiplier);
       runningScore += adjustedScore;
       window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: runningScore } }));
@@ -996,18 +999,36 @@ export class GamePage extends BasePage {
       case 'pulse':
         this.triggerPulseWave();
         break;
-      case 'tempo':
-        this.applySlowMo(0.7, definition.durationMs ?? 6000);
+      case 'tempo': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Tempo power missing duration.');
+          return;
+        }
+        this.applySlowMo(0.7, durationMs);
         break;
-      case 'aegis':
-        this.applyShield(definition.durationMs ?? 8000);
+      }
+      case 'aegis': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Aegis power missing duration.');
+          return;
+        }
+        this.applyShield(durationMs);
         break;
+      }
       case 'shift':
         this.applyOrbitShift();
         break;
-      case 'nova':
-        this.applyNovaBoost(definition.durationMs ?? 10000);
+      case 'nova': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Nova power missing duration.');
+          return;
+        }
+        this.applyNovaBoost(durationMs);
         break;
+      }
       default:
         break;
     }

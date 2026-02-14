@@ -332,7 +332,7 @@ export class SettingsPage extends BasePage {
 
     const hint = document.createElement('p');
     hint.className = 'text-xs theme-text-secondary';
-    hint.textContent = 'Arrow keys always rotate the hexagon. Remap secondary keys below.';
+    hint.textContent = 'Arrow keys (all directions) always rotate the hexagon. Remap secondary keys below.';
     wrapper.appendChild(hint);
 
     let mapping: ControlMapping = loadControlMapping();
