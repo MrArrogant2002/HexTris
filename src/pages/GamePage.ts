@@ -449,11 +449,12 @@ export class GamePage extends BasePage {
     // Scale proportionally to canvas size
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseHexWidth = isMobile ? 87 : 65;
-    const hexRadius = baseHexWidth * Math.min(centerX / 400, centerY / 400);
+    const scale = Math.min(centerX / 400, centerY / 400);
+    const hexRadius = baseHexWidth * scale;
     
     // Create hex with correct parameters (radius, canvasWidth, canvasHeight)
     this.hex = new Hex(hexRadius, this.canvas.element.width, this.canvas.element.height, {
-      scale: 1,
+      scale,
       comboTime: 240
     });
     
@@ -624,8 +625,7 @@ export class GamePage extends BasePage {
     this.updateCatchupMultiplier();
     
     // Update physics (falling blocks move toward center and check collision)
-    // Pass scale=1 for now (can be adjusted for screen scaling later)
-    this.physicsSystem.update(this.hex, dt, 1);
+    this.physicsSystem.update(this.hex, dt, this.blockSettings?.scale ?? 1);
 
     this.powerUpSystem.update(dt);
     this.timeOrbSystem?.update(dt);
