@@ -26,27 +26,25 @@ export class StrategyStatusHUD {
   private createElements(): HTMLDivElement {
     const container = document.createElement('div');
     container.className = `
-      fixed top-20 left-1/2 -translate-x-1/2 z-20
+      fixed top-24 sm:top-20 left-1/2 -translate-x-1/2 z-20
       flex items-center gap-3
       px-4 py-2
-      bg-black/70 text-white
-      border border-white/20
+      theme-card-muted
       rounded-full
       shadow-lg
-      backdrop-blur-md
       text-xs uppercase tracking-widest
     `.trim().replace(/\s+/g, ' ');
 
     this.phaseText = document.createElement('div');
-    this.phaseText.className = 'font-semibold';
+    this.phaseText.className = 'font-semibold theme-text';
     this.phaseText.textContent = 'Mode: --';
 
     this.tempoText = document.createElement('div');
-    this.tempoText.className = 'font-semibold text-white/80';
+    this.tempoText.className = 'font-semibold theme-text-secondary';
     this.tempoText.textContent = 'Rhythm: steady';
 
     this.surgeBadge = document.createElement('span');
-    this.surgeBadge.className = 'px-2 py-1 text-[10px] rounded-full bg-white/15 text-white/70';
+    this.surgeBadge.className = 'px-2 py-1 text-[10px] rounded-full bg-black/10 theme-text';
     this.surgeBadge.textContent = 'BOOST';
 
     container.appendChild(this.phaseText);
@@ -86,10 +84,10 @@ export class StrategyStatusHUD {
   }
 
   private getTempoClass(tempo: number): string {
-    if (tempo <= -1) return 'text-emerald-200';
-    if (tempo >= 2) return 'text-rose-200';
-    if (tempo === 1) return 'text-amber-200';
-    return 'text-white/80';
+    if (tempo <= -1) return 'text-emerald-600';
+    if (tempo >= 2) return 'text-rose-500';
+    if (tempo === 1) return 'text-amber-500';
+    return 'theme-text-secondary';
   }
 
   public mount(parent: HTMLElement): void {

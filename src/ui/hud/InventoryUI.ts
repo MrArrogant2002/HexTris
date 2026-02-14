@@ -19,7 +19,7 @@ export class InventoryUI {
     // Container
     const container = document.createElement('div');
     container.className = `
-      fixed bottom-4 left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-6 sm:translate-x-0 z-50
+      fixed bottom-40 left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-6 sm:translate-x-0 z-40
       flex gap-2 sm:gap-3
     `;
 
@@ -38,11 +38,11 @@ export class InventoryUI {
     slot.className = `
       relative w-16 h-16 sm:w-20 sm:h-20
       flex items-center justify-center
-      bg-gradient-to-br from-white/90 to-slate-200/70
-      border-2 border-slate-300/70
-      rounded-lg shadow-xl
+      theme-card
+      border border-transparent
+      rounded-xl shadow-xl
       transition-all duration-200
-      hover:scale-110 hover:shadow-2xl hover:border-gray-600
+      hover:scale-105 hover:shadow-2xl
       cursor-pointer
       backdrop-blur-sm
     `;
@@ -172,18 +172,18 @@ export class InventoryUI {
       slot.appendChild(iconWrap);
 
       // Active state
-      slot.style.borderColor = '#0f172a';
+      slot.style.borderColor = 'var(--theme-accent)';
       slot.style.borderWidth = '2px';
     } else {
       // Empty state
-      slot.style.borderColor = 'rgba(148, 163, 184, 0.75)';
+      slot.style.borderColor = 'var(--theme-border)';
       slot.style.borderWidth = '2px';
 
       const empty = document.createElement('div');
       empty.className = 'power-up-empty';
       empty.textContent = '-';
       empty.style.fontSize = '2.5rem';
-      empty.style.color = '#d1d5db';
+      empty.style.color = 'var(--theme-text-secondary)';
       empty.style.fontWeight = 'bold';
       empty.style.lineHeight = '1';
       empty.style.display = 'flex';

@@ -17,14 +17,12 @@ export class ComboHeatMeter {
   private createElements(): HTMLDivElement {
     const container = document.createElement('div');
     container.className = `
-      fixed bottom-6 left-1/2 -translate-x-1/2 z-20
+      fixed bottom-28 sm:bottom-6 left-1/2 -translate-x-1/2 z-20
       w-56 sm:w-72
       px-3 py-2
-      bg-black/70 text-white
-      border border-white/15
+      theme-card-muted
       rounded-xl
       shadow-lg
-      backdrop-blur-md
       text-xs uppercase tracking-widest
     `.trim().replace(/\s+/g, ' ');
 
@@ -32,18 +30,18 @@ export class ComboHeatMeter {
     labelRow.className = 'flex items-center justify-between mb-1';
 
     const label = document.createElement('span');
-    label.className = 'font-semibold';
+    label.className = 'font-semibold theme-text';
     label.textContent = 'Resonance';
 
     this.tierBadge = document.createElement('span');
-    this.tierBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-white/15';
+    this.tierBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-black/10 theme-text';
     this.tierBadge.textContent = 'Stage 0';
 
     labelRow.appendChild(label);
     labelRow.appendChild(this.tierBadge);
 
     const bar = document.createElement('div');
-    bar.className = 'h-2 w-full bg-white/10 rounded-full overflow-hidden';
+    bar.className = 'h-2 w-full bg-black/10 rounded-full overflow-hidden';
 
     this.fill = document.createElement('div');
     this.fill.className = 'h-full bg-gradient-to-r from-sky-400 via-emerald-400 to-fuchsia-400';
@@ -71,10 +69,10 @@ export class ComboHeatMeter {
   }
 
   private getTierClass(tier: number): string {
-    if (tier >= 3) return 'bg-rose-500/30 text-rose-100';
-    if (tier === 2) return 'bg-amber-400/30 text-amber-100';
-    if (tier === 1) return 'bg-cyan-400/30 text-cyan-100';
-    return 'bg-white/15 text-white/70';
+    if (tier >= 3) return 'bg-rose-500/20 text-rose-600';
+    if (tier === 2) return 'bg-amber-400/20 text-amber-600';
+    if (tier === 1) return 'bg-cyan-400/20 text-cyan-600';
+    return 'bg-black/10 theme-text-secondary';
   }
 
   public mount(parent: HTMLElement): void {

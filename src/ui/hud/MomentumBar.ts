@@ -15,23 +15,21 @@ export class MomentumBar {
   private createElements(): HTMLDivElement {
     const container = document.createElement('div');
     container.className = `
-      fixed top-16 left-4 z-20
+      fixed top-20 sm:top-16 left-4 z-20
       w-36 sm:w-44
       px-3 py-2
-      bg-black/70 text-white
-      border border-white/15
+      theme-card-muted
       rounded-xl
       shadow-lg
-      backdrop-blur-md
       text-[10px] uppercase tracking-widest
     `.trim().replace(/\s+/g, ' ');
 
     const label = document.createElement('div');
-    label.className = 'font-semibold mb-1';
+    label.className = 'font-semibold mb-1 theme-text';
     label.textContent = 'Sync Link';
 
     const bar = document.createElement('div');
-    bar.className = 'h-2 w-full bg-white/10 rounded-full overflow-hidden';
+    bar.className = 'h-2 w-full bg-black/10 rounded-full overflow-hidden';
 
     this.fill = document.createElement('div');
     this.fill.className = 'h-full bg-gradient-to-r from-indigo-400 to-cyan-300';

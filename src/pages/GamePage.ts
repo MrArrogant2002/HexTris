@@ -283,7 +283,7 @@ export class GamePage extends BasePage {
   private createMobileActionDock(): HTMLElement {
     const dock = document.createElement('div');
     dock.className = `
-      fixed bottom-24 left-1/2 -translate-x-1/2 z-40
+      fixed bottom-20 left-1/2 -translate-x-1/2 z-40
       flex flex-col gap-2 md:hidden pointer-events-auto
     `.trim().replace(/\s+/g, ' ');
 
@@ -298,8 +298,8 @@ export class GamePage extends BasePage {
       button.type = 'button';
       button.className = `
         px-3 py-2 rounded-full text-xs font-semibold
-        bg-white/80 text-slate-700
-        border border-white/60 shadow-lg
+        theme-card-muted theme-text
+        border border-transparent shadow-lg
         backdrop-blur-md
       `.trim().replace(/\s+/g, ' ');
       button.textContent = label;
@@ -430,7 +430,7 @@ export class GamePage extends BasePage {
     // Add pause button
     const pauseButton = document.createElement('button');
     pauseButton.className = `
-      fixed top-4 left-1/2 transform -translate-x-1/2 translate-y-16 z-20
+      fixed top-4 left-1/2 transform -translate-x-1/2 translate-y-24 sm:translate-y-16 z-20
       px-4 py-2 theme-card backdrop-blur-md
       rounded-lg shadow-lg
       text-sm font-bold theme-text

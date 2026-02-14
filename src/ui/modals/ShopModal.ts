@@ -109,7 +109,7 @@ export class ShopModal {
     const items = getAllShopItems();
     items.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'theme-card rounded-xl p-4 space-y-3';
+      card.className = 'theme-card rounded-xl p-4 space-y-3 relative overflow-hidden shop-item-card';
 
       const titleRow = document.createElement('div');
       titleRow.className = 'flex items-center justify-between';
@@ -161,8 +161,32 @@ export class ShopModal {
       card.appendChild(effect);
       card.appendChild(footer);
 
+      const preview = this.createPowerPreview(item.id, item.name);
+      if (preview) {
+        card.appendChild(preview);
+      }
+
       this.itemsContainer.appendChild(card);
     });
+  }
+
+  private createPowerPreview(itemId: ShopItemId, label: string): HTMLElement | null {
+    if (!this.isPowerUp(itemId)) return null;
+    const preview = document.createElement('div');
+    preview.className = 'shop-power-preview';
+
+    const img = document.createElement('img');
+    img.src = `/images/power-previews/${itemId}.gif`;
+    img.alt = `${label} preview`;
+    img.className = 'w-40 h-24 rounded-lg shadow-lg';
+
+    const caption = document.createElement('div');
+    caption.className = 'text-[11px] font-semibold text-slate-100 mt-2 uppercase tracking-[0.2em]';
+    caption.textContent = 'Preview';
+
+    preview.appendChild(img);
+    preview.appendChild(caption);
+    return preview;
   }
 
   private getAvailability(itemId: ShopItemId): {
