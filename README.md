@@ -207,6 +207,7 @@ VITE_APPWRITE_PROJECT_ID=your_project_id
 17. inventory_nova (number)
 
 Optional: inventory (JSON map) if you store all inventory counts in one field.
+Example: `{"pulse": 2, "tempo": 1, "aegis": 0, "shift": 1, "nova": 0, "continue": 0, "extraLife": 1}`
 
 ### Groups collection (6 columns)
 1. roomCode (string)

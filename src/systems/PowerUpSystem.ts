@@ -17,6 +17,10 @@ import { type PowerUpType, getPowerDefinition, POWER_SPAWN_POOL } from '@config/
 import type { InventoryUI } from '@ui/hud/InventoryUI';
 
 type PowerUpUseHandler = (type: PowerUpType) => void;
+
+const MS_PER_FRAME = 16.6667;
+const CRITICAL_LIFE_COOLDOWN_MULTIPLIER = 0.7;
+const LOW_LIFE_COOLDOWN_MULTIPLIER = 0.85;
 export interface PowerUpSystemOptions {
   hex: Hex;
   canvas: Canvas;
@@ -49,7 +53,7 @@ export class PowerUpSystem {
   public update(dt: number): void {
     if (!this.enabled) return;
 
-    this.elapsedMs += dt * 16.6667;
+    this.elapsedMs += dt * MS_PER_FRAME;
     this.tryTimedSpawn();
     this.trySpawnPending();
 
@@ -177,9 +181,9 @@ export class PowerUpSystem {
     }
     const lives = stateManager.getState().game.lives;
     const cooldown = lives <= 1
-      ? POWER_UP_SPAWN_COOLDOWN * 0.7
+      ? POWER_UP_SPAWN_COOLDOWN * CRITICAL_LIFE_COOLDOWN_MULTIPLIER
       : lives === 2
-        ? POWER_UP_SPAWN_COOLDOWN * 0.85
+        ? POWER_UP_SPAWN_COOLDOWN * LOW_LIFE_COOLDOWN_MULTIPLIER
         : POWER_UP_SPAWN_COOLDOWN;
     return this.elapsedMs - this.lastSpawnMs >= cooldown;
   }
