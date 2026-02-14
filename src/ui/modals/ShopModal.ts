@@ -177,16 +177,20 @@ export class ShopModal {
     const preview = document.createElement('div');
     preview.className = 'shop-power-preview';
 
-    const img = document.createElement('img');
-    img.src = `${ShopModal.POWER_PREVIEW_PATH}/${itemId}.gif`;
-    img.alt = `${label} preview`;
-    img.className = 'w-40 h-24 rounded-lg shadow-lg';
+    const video = document.createElement('video');
+    video.src = `${ShopModal.POWER_PREVIEW_PATH}/${itemId}.mp4`;
+    video.className = 'w-40 h-24 rounded-lg shadow-lg';
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('aria-label', `${label} preview`);
 
     const caption = document.createElement('div');
     caption.className = 'text-[11px] font-semibold text-slate-100 mt-2 uppercase tracking-[0.2em]';
     caption.textContent = 'Preview';
 
-    preview.appendChild(img);
+    preview.appendChild(video);
     preview.appendChild(caption);
     return preview;
   }
