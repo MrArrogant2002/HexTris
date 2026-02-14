@@ -164,6 +164,20 @@ export class ShopModal {
 
       const preview = this.createPowerPreview(item.id, item.name);
       if (preview) {
+        const video = preview.querySelector('video');
+        if (video) {
+          const play = () => {
+            void video.play().catch(() => undefined);
+          };
+          const stop = () => {
+            video.pause();
+            video.currentTime = 0;
+          };
+          card.addEventListener('mouseenter', play);
+          card.addEventListener('focusin', play);
+          card.addEventListener('mouseleave', stop);
+          card.addEventListener('focusout', stop);
+        }
         card.appendChild(preview);
       }
 
@@ -180,11 +194,11 @@ export class ShopModal {
     const video = document.createElement('video');
     video.src = `${ShopModal.POWER_PREVIEW_PATH}/${itemId}.mp4`;
     video.className = 'w-40 h-24 rounded-lg shadow-lg';
-    video.autoplay = true;
+    video.preload = 'metadata';
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.setAttribute('aria-label', `${label} preview`);
+    video.ariaLabel = `${label} preview`;
 
     const caption = document.createElement('div');
     caption.className = 'text-[11px] font-semibold text-slate-100 mt-2 uppercase tracking-[0.2em]';
