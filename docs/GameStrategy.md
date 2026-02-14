@@ -2,14 +2,18 @@
 
 This plan outlines gameplay goals, rules, and progression hooks for each major mode plus a refreshed difficulty ladder. It is structured so engineers can extract requirements while designers keep creative intent aligned.
 
-## Implementation Status (Feb 9, 2026)
+## Implementation Status (Feb 14, 2026)
 - **Delivered**
 	- Expanded five-tier difficulty schema with surge/adaptive metadata wired into config, menu selection flows, and GamePage runtime.
 	- WaveSystem now schedules surge windows plus adaptive assist triggers, and UI shows surge overlays/tempo state.
 	- Daily Challenge and difficulty menu options reference the new tiers, ensuring Fierce/Apex access pathways align with the roadmap.
+	- Added menu-facing strategy highlights for Single Player, Multiplayer, Daily Challenge, and Timer Attack so players see concise play tips before launching a mode.
 - **Outstanding**
 	- HUD/audio cues for surge, tempo, and strategy phase states plus milestone loot surfacing.
 	- Combo heat meter system, multiplayer momentum mechanics, challenge scripting tools, and Timer Attack time orbs.
+
+## Strategy Highlight Screenshot
+![Menu strategy highlights](./screenshots/menu-strategy-highlights.png)
 
 ## 1. Shared Design Pillars
 - **Readable pressure curve**: every 30–45 seconds should noticeably change spawn rhythm, obstacle mix, or rewards.
@@ -38,6 +42,11 @@ Additional knobs:
 *Status: Partially implemented — tier escalation and surge/adaptive hooks exist; combo heat meter, milestone loot, and music layering are pending.*
 **Goals**: long-form mastery, leaderboard chase, experimentation with mutators.
 
+**Strategy Highlights (Menu Surface)**
+- Keep the center low for safe rotations.
+- Save shields for surge windows.
+- Chain clears to build combo heat.
+
 **Structure**
 1. **Opening Calm (0–60s)**: Discovery/Easy blend, extra slow-mo drops to onboard.
 2. **Flow Phase (60–240s)**: Standard tier. Introduce rotating hazard arcs that demand directional swaps.
@@ -61,12 +70,22 @@ Additional knobs:
 - **Catch-Up Rubber Band**: trailing player gets +0.1× power-up odds, but only if difference >25% score.
 - **Live Events**: server can broadcast weekend modifiers (e.g., "Twin Hammers" event gives unique effect + leaderboard badge).
 
+**Strategy Highlights (Menu Surface)**
+- Push perfect rings to fill momentum.
+- Spend power-ups defensively during surges.
+- Time your push when rivals stall.
+
 ### 3.3 Daily / Weekly Challenges
 *Status: Pending — challenge seeds, scripted timelines, and reward tracks still need engineering support.*
 **Daily**
 - Fixed seed layout + curated mutator (e.g., mirrored input). Score-based leaderboard resets every 24h.
 - **Difficulty steps**: Discovery for first 30s, then Standard but with scripted hazard timeline to keep fairness.
 - Reward track: bronze/silver/gold chests = cosmetics, diamonds, booster charges.
+
+**Strategy Highlights (Menu Surface)**
+- Scan today’s mutator before the first drop.
+- Bank hammers for scripted spikes.
+- Prioritize survival over speed.
 
 **Weekly Gauntlet**
 - Five sequential stages, each locking a different mutator/difficulty pair (e.g., Stage 3 = Fierce + no shields).
@@ -82,6 +101,11 @@ Additional knobs:
 - **Time Orbs**: perfect clears spawn orbs; collecting three grants +5 seconds (cap per duration to keep balance).
 - **Threat Pacing**: use hazard playlist so final 10 seconds feel explosive (e.g., double-color waves, instant-drop streaks).
 - **Ghost Comparisons**: show best personal pace as translucent stack to motivate.
+
+**Strategy Highlights (Menu Surface)**
+- Clear quickly to spawn time orbs.
+- Rotate early to avoid dead zones.
+- Attack combos in the final countdown.
 
 ## 4. Feature Backlog Starters
 1. Surface surge/tempo/phase states in HUD + audio plus add telemetry hooks for milestone loot drops.

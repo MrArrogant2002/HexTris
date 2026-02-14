@@ -167,6 +167,72 @@ export class MenuPage extends BasePage {
     modesSection.appendChild(modesGrid);
     container.appendChild(modesSection);
 
+    const strategySection = document.createElement('div');
+    strategySection.className = 'mb-6 sm:mb-8';
+
+    const strategyTitle = document.createElement('h2');
+    strategyTitle.className = 'text-lg sm:text-xl font-bold theme-text mb-3 sm:mb-4 text-center';
+    strategyTitle.textContent = 'Strategy Highlights';
+    strategySection.appendChild(strategyTitle);
+
+    const strategyGrid = document.createElement('div');
+    strategyGrid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 px-0 sm:px-2';
+
+    const strategies = [
+      {
+        title: 'Single Player',
+        emoji: '🧠',
+        tips: ['Keep the center low for safe rotations.', 'Save shields for surge windows.', 'Chain clears to build combo heat.'],
+      },
+      {
+        title: 'Multiplayer',
+        emoji: '🤝',
+        tips: ['Push perfect rings to fill momentum.', 'Spend power-ups defensively during surges.', 'Time your push when rivals stall.'],
+      },
+      {
+        title: 'Daily Challenge',
+        emoji: '📅',
+        tips: ['Scan today’s mutator before the first drop.', 'Bank hammers for scripted spikes.', 'Prioritize survival over speed.'],
+      },
+      {
+        title: 'Timer Attack',
+        emoji: '⏱️',
+        tips: ['Clear quickly to spawn time orbs.', 'Rotate early to avoid dead zones.', 'Attack combos in the final countdown.'],
+      },
+    ];
+
+    strategies.forEach(({ title, emoji, tips }) => {
+      const card = document.createElement('div');
+      card.className = 'theme-card rounded-lg p-3 sm:p-4';
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center gap-2 text-sm font-bold theme-text';
+
+      const icon = document.createElement('span');
+      icon.textContent = emoji;
+      header.appendChild(icon);
+
+      const titleEl = document.createElement('span');
+      titleEl.textContent = title;
+      header.appendChild(titleEl);
+
+      const tipList = document.createElement('ul');
+      tipList.className = 'mt-2 space-y-1 text-xs theme-text-secondary';
+
+      tips.forEach((tip) => {
+        const item = document.createElement('li');
+        item.textContent = `• ${tip}`;
+        tipList.appendChild(item);
+      });
+
+      card.appendChild(header);
+      card.appendChild(tipList);
+      strategyGrid.appendChild(card);
+    });
+
+    strategySection.appendChild(strategyGrid);
+    container.appendChild(strategySection);
+
     // Bottom action buttons
     const actionSection = document.createElement('div');
     actionSection.className = 'flex gap-2 sm:gap-3 justify-center flex-wrap px-0 sm:px-2 pb-2 sm:pb-4';
@@ -442,4 +508,3 @@ export class MenuPage extends BasePage {
   }
 
 }
-
