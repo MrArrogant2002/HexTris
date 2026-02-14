@@ -35,6 +35,8 @@ interface ChallengeType {
 }
 
 class DailyChallengeSystem {
+  // Prime multiplier keeps hash distribution stable across dates.
+  private static readonly SEED_PRIME = 31;
   private currentChallenge: DailyChallenge | null = null;
   private challengeDate: string | null = null;
   private isActive = false;
@@ -310,7 +312,7 @@ class DailyChallengeSystem {
 
   dateToSeed(date: string): number {
     return Array.from(date).reduce((total, char) => {
-      const next = (total * 31 + char.charCodeAt(0)) >>> 0;
+      const next = (total * DailyChallengeSystem.SEED_PRIME + char.charCodeAt(0)) >>> 0;
       return next;
     }, 0);
   }

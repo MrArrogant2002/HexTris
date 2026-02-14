@@ -330,9 +330,11 @@ export class SettingsPage extends BasePage {
     const wrapper = document.createElement('div');
     wrapper.className = 'space-y-4 mt-4';
 
+    const controlsHint = 'Arrow keys (all directions) always rotate the hexagon. '
+      + 'Power slots map to the three active slots. Remap secondary keys below.';
     const hint = document.createElement('p');
     hint.className = 'text-xs theme-text-secondary';
-    hint.textContent = 'Arrow keys (all directions) always rotate the hexagon. Power slots map to the three active slots. Remap secondary keys below.';
+    hint.textContent = controlsHint;
     wrapper.appendChild(hint);
 
     let mapping: ControlMapping = loadControlMapping();

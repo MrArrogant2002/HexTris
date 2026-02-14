@@ -10,7 +10,15 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
-import { INVULNERABILITY_DURATION, LIFE_BONUS_INTERVAL, MAX_LIVES, ROUTES, GameStatus } from '@core/constants';
+import {
+  INVULNERABILITY_DURATION,
+  LIFE_BONUS_INTERVAL,
+  MAX_LIVES,
+  ROUTES,
+  GameStatus,
+  RESONANCE_SCORE_MULTIPLIER,
+  TIME_ORB_GOAL,
+} from '@core/constants';
 import { Hex } from '@entities/Hex';
 import { Block } from '@entities/Block';
 import { FloatingText } from '@entities/FloatingText';
@@ -42,8 +50,6 @@ import {
 import { audioManager } from '@/managers/AudioManager';
 import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 import { type PowerUpType, getPowerDefinition } from '@config/powers';
-
-const RESONANCE_SCORE_MULTIPLIER = 1.2;
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
 
@@ -188,7 +194,7 @@ export class GamePage extends BasePage {
   private handleTimeOrbCollected = (): void => {
     const state = stateManager.getState();
     const nextCount = (state.game.timeOrbCount ?? 0) + 1;
-    const goal = state.game.timeOrbGoal ?? 4;
+    const goal = state.game.timeOrbGoal ?? TIME_ORB_GOAL;
     if (nextCount >= goal) {
       this.timerAttack?.addRelayCharge();
       stateManager.updateGame({ timeOrbCount: 0 });
@@ -396,7 +402,7 @@ export class GamePage extends BasePage {
       strategyPhase: 'Drift',
       tempoLevel: 0,
       timeOrbCount: 0,
-      timeOrbGoal: 4,
+      timeOrbGoal: TIME_ORB_GOAL,
       activeMutators: [],
     });
 
@@ -659,7 +665,7 @@ export class GamePage extends BasePage {
     // Update special points from player state
     this.pointsDisplay.setPoints(updatedState.player.specialPoints);
     this.comboHeatMeter.setHeat(updatedState.game.comboHeat ?? 0, updatedState.game.comboTier ?? 0);
-    this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? 3);
+    this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? TIME_ORB_GOAL);
     this.momentumBar.setValue(updatedState.game.momentumValue ?? 0);
     this.strategyStatusHUD.setStatus({
       phase: updatedState.game.strategyPhase,

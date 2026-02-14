@@ -4,7 +4,7 @@
  */
 
 import type { GameState, StateEvent, StateListener } from '../types/game';
-import { GameStatus, STARTING_LIVES } from './constants';
+import { GameStatus, STARTING_LIVES, TIME_ORB_GOAL } from './constants';
 import { DEFAULT_DIFFICULTY } from '@config/difficulty';
 import { DEFAULT_THEME } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
@@ -61,7 +61,7 @@ export class StateManager {
         strategyPhase: undefined,
         tempoLevel: 0,
         timeOrbCount: 0,
-        timeOrbGoal: 4,
+        timeOrbGoal: TIME_ORB_GOAL,
         momentumValue: 0,
         ghostDelta: 0,
         activeMutators: [],
