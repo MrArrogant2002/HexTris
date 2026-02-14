@@ -167,7 +167,9 @@ export class ShopModal {
         const video = preview.querySelector('video');
         if (video) {
           const play = () => {
-            void video.play().catch(() => undefined);
+            void video.play().catch((error) => {
+              console.warn('Power preview playback failed', error);
+            });
           };
           const stop = () => {
             video.pause();
