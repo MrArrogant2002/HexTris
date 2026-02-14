@@ -56,7 +56,7 @@ export class MenuPage extends BasePage {
 
     const subtitle = document.createElement('p');
     subtitle.className = 'theme-text-secondary text-sm sm:text-base font-medium';
-    subtitle.textContent = 'Master the hexagon. Beat your high score.';
+    subtitle.textContent = 'Sync with the flow. Shape the resonance.';
     topSection.appendChild(subtitle);
 
     container.appendChild(topSection);
@@ -118,51 +118,62 @@ export class MenuPage extends BasePage {
 
     const modesTitle = document.createElement('h2');
     modesTitle.className = 'text-lg sm:text-xl font-bold theme-text mb-3 sm:mb-4 text-center';
-    modesTitle.textContent = 'Choose Your Mode';
+    modesTitle.textContent = 'Choose Your Flow';
     modesSection.appendChild(modesTitle);
 
     const modesGrid = document.createElement('div');
     modesGrid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 px-0 sm:px-2';
 
+    const createModeCard = (button: Button, description: string): HTMLDivElement => {
+      const card = document.createElement('div');
+      card.className = 'theme-card-muted rounded-xl p-3 space-y-2';
+      const desc = document.createElement('p');
+      desc.className = 'text-xs theme-text-secondary';
+      desc.textContent = description;
+      card.appendChild(button.element);
+      card.appendChild(desc);
+      return card;
+    };
+
     // Single Player
-    const singlePlayerBtn = new Button('SINGLE PLAYER', {
+    const singlePlayerBtn = new Button('RESONANCE DRIFT', {
       variant: 'primary',
       size: 'large',
       fullWidth: true,
       onClick: () => Router.getInstance().navigate(ROUTES.DIFFICULTY),
     });
     this.buttons.push(singlePlayerBtn);
-    modesGrid.appendChild(singlePlayerBtn.element);
+    modesGrid.appendChild(createModeCard(singlePlayerBtn, 'Build resonance with every clear.'));
 
     // Multiplayer
-    const multiplayerBtn = new Button('MULTIPLAYER', {
+    const multiplayerBtn = new Button('SYNC LINK', {
       variant: 'secondary',
       size: 'large',
       fullWidth: true,
       onClick: () => Router.getInstance().navigate(ROUTES.MULTIPLAYER),
     });
     this.buttons.push(multiplayerBtn);
-    modesGrid.appendChild(multiplayerBtn.element);
+    modesGrid.appendChild(createModeCard(multiplayerBtn, 'Charge sync bursts with your crew.'));
 
     // Daily Challenge
-    const dailyChallengeBtn = new Button('DAILY CHALLENGE', {
+    const dailyChallengeBtn = new Button('HEXFORGE TRIALS', {
       variant: 'primary',
       size: 'large',
       fullWidth: true,
       onClick: () => this.startDailyChallenge(),
     });
     this.buttons.push(dailyChallengeBtn);
-    modesGrid.appendChild(dailyChallengeBtn.element);
+    modesGrid.appendChild(createModeCard(dailyChallengeBtn, 'Complete the daily objective remix.'));
 
     // Timer Attack
-    const timerAttackBtn = new Button('TIMER ATTACK', {
+    const timerAttackBtn = new Button('PULSE RELAY', {
       variant: 'secondary',
       size: 'large',
       fullWidth: true,
       onClick: () => this.startTimerAttack(),
     });
     this.buttons.push(timerAttackBtn);
-    modesGrid.appendChild(timerAttackBtn.element);
+    modesGrid.appendChild(createModeCard(timerAttackBtn, 'Stack relay nodes to extend time.'));
 
     modesSection.appendChild(modesGrid);
     container.appendChild(modesSection);
@@ -252,7 +263,7 @@ export class MenuPage extends BasePage {
    * Start daily challenge mode
    */
   private startDailyChallenge(): void {
-    stateManager.updateGame({ difficulty: DifficultyLevel.FIERCE });
+    stateManager.updateGame({ difficulty: DifficultyLevel.STANDARD });
     stateManager.updateUI({ currentGameMode: 'dailyChallenge', timerDuration: undefined });
     Router.getInstance().navigate(ROUTES.GAME, { mode: 'daily' });
   }
@@ -272,21 +283,21 @@ export class MenuPage extends BasePage {
 
   private showTimerDurationSelector(): Promise<number | null> {
     return new Promise((resolve) => {
-      const modal = new Modal({
-        title: 'TIMER ATTACK',
-        closeOnBackdrop: true,
-        closeOnEscape: true,
-      });
+       const modal = new Modal({
+         title: 'PULSE RELAY',
+         closeOnBackdrop: true,
+         closeOnEscape: true,
+       });
 
       const content = document.createElement('div');
       content.className = 'space-y-3 py-2';
 
       const subtitle = document.createElement('p');
       subtitle.className = 'text-sm theme-text-secondary text-center';
-      subtitle.textContent = 'Choose your duration';
+       subtitle.textContent = 'Choose your relay window';
       content.appendChild(subtitle);
 
-      const durations = [30, 60, 120];
+       const durations = [45, 75, 105];
       durations.forEach((seconds) => {
         const label = `${seconds} SECONDS - ${this.describeTimerDifficulty(seconds)}`;
         const button = new Button(label, {
@@ -318,8 +329,8 @@ export class MenuPage extends BasePage {
   }
 
   private mapDurationToDifficulty(duration: number): DifficultyLevel {
-    if (duration <= 30) return DifficultyLevel.FIERCE;
-    if (duration <= 60) return DifficultyLevel.STANDARD;
+    if (duration <= 45) return DifficultyLevel.FIERCE;
+    if (duration <= 75) return DifficultyLevel.STANDARD;
     return DifficultyLevel.EASY;
   }
 
@@ -327,11 +338,11 @@ export class MenuPage extends BasePage {
     const difficulty = this.mapDurationToDifficulty(duration);
     switch (difficulty) {
       case DifficultyLevel.FIERCE:
-        return 'Fierce Pace';
+        return 'Sprint Relay';
       case DifficultyLevel.STANDARD:
-        return 'Standard Pace';
+        return 'Core Relay';
       default:
-        return 'Easy Pace';
+        return 'Extended Relay';
     }
   }
 
@@ -442,4 +453,3 @@ export class MenuPage extends BasePage {
   }
 
 }
-

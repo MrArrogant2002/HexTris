@@ -14,7 +14,7 @@ export class DailyChallengeModal {
    */
   public showPreview(challenge: DailyChallenge, streak: number): void {
     this.modal = new Modal({
-      title: 'TODAY\'S CHALLENGE',
+      title: 'HEXFORGE TRIAL',
       closeOnBackdrop: true,
       closeOnEscape: true,
       maxWidth: 'lg',
@@ -138,13 +138,13 @@ export class DailyChallengeModal {
     // Celebration animation
     const celebration = document.createElement('div');
     celebration.className = 'text-7xl mb-4 animate-bounce theme-text';
-    celebration.textContent = 'SUCCESS';
+    celebration.textContent = 'TRIAL CLEARED';
     content.appendChild(celebration);
 
     // Title
     const title = document.createElement('h2');
     title.className = 'text-3xl font-black theme-text mb-2';
-    title.textContent = 'CHALLENGE COMPLETE!';
+    title.textContent = 'TRIAL COMPLETE!';
     content.appendChild(title);
 
     // Challenge info
@@ -228,4 +228,3 @@ export class DailyChallengeModal {
     }
   }
 }
-

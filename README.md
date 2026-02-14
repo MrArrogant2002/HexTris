@@ -1,19 +1,20 @@
 # Hextris - TypeScript Rewrite
 
-Modern hexagonal falling block puzzle game built with TypeScript, Tailwind CSS, and Vite.
+Modern hexagonal falling block puzzle game built with TypeScript, Tailwind CSS, and Vite. Redesigned with new
+mode strategies, powers, and controls.
 
 ## 🎮 Features
 
 - **Modern Architecture**: Clean TypeScript codebase with proper type safety
-- **Black & White UI**: Minimalist design with game colors only in gameplay
+- **Glassmorphic UI**: Polished gradients, soft blur layers, and bold typography
 - **Responsive Design**: Works seamlessly on mobile, tablet, and desktop
 - **Hash-based SPA**: Fast page transitions without reloads
 - **Component Library**: Reusable UI components (Button, Modal, Card, Input)
 - **State Management**: Centralized state with event system
-- **Game Modes**: Single Player, Multiplayer, Daily Challenge, Timer Attack
+- **Game Modes**: Resonance Drift, Sync Link, Pulse Relay, Hexforge Trials
 - **Special Points System**: In-game currency for power-ups and continues
 - **Life System**: 3 lives with bonus lives at milestones
-- **Power-ups**: Hammer, Slowmo, Shield with inventory management
+- **Powers**: Pulse Wave, Tempo Break, Aegis Field, Orbit Shift, Nova Spark
 - **Cloud Saves**: Appwrite integration for persistent data
 - **Multiplayer**: Group-based leaderboards synced via Appwrite
 
@@ -79,30 +80,56 @@ hextris/
 └── vite.config.ts
 ```
 
-## 🎨 Design System
+## 🎮 Game Modes
 
-### Colors
+### Resonance Drift (Single)
+- **Rule**: Clearing 4+ blocks builds Resonance; switching colors accelerates charge.
+- **Rule**: Full Resonance triggers a slow-tempo surge and bonus scoring window.
+- **Strategy**: Rotate often to diversify colors and ignite Resonance before danger builds.
 
-**UI Colors (Black & White)**
-- Pure black (`#000000`) for primary text
-- Grays (`#f9fafb` to `#111827`) for backgrounds and secondary elements
-- Pure white (`#ffffff`) for cards and surfaces
+### Sync Link (Multiplayer)
+- **Rule**: Every clear charges Sync Link; 100% triggers a Sync Burst that calms waves.
+- **Rule**: Sync slowly drains between clears.
+- **Strategy**: Coordinate clears to maintain Harmonic tiers and time burst windows.
 
-**Game Colors** (used only in canvas/gameplay)
-- Red: `#e74c3c`
-- Yellow: `#f1c40f`
-- Blue: `#3498db`
-- Green: `#2ecc71`
-- Hex Dark: `#2c3e50`
-- Hex Light: `#34495e`
+### Pulse Relay (Timer)
+- **Rule**: Relay nodes spawn after strong clears; collect four to extend time.
+- **Rule**: Each Relay stage increases overall speed and scoring bonuses.
+- **Strategy**: Use Tempo Break before Relay completions to stay safe.
 
-**Status Colors**
-- Success: `#2ecc71`
-- Warning: `#f39c12`
-- Error: `#e74c3c`
-- Info: `#3498db`
+### Hexforge Trials (Challenge)
+- **Rule**: Daily objectives track rotations, clears, and power usage.
+- **Rule**: Complete the objective to earn bonus diamonds and streak perks.
+- **Strategy**: Read objectives first; tailor power usage to the requirement.
 
-**NO PURPLE** - All purple colors from the original design have been removed.
+## ⚡ Powers System
+
+| Power | Effect | Cooldown |
+| --- | --- | --- |
+| **Pulse Wave** | Clears the outermost ring of blocks across every lane. | 8s |
+| **Tempo Break** | Slows block fall and spawn rhythm briefly. | 10s |
+| **Aegis Field** | Grants invulnerability while the field is active. | 12s |
+| **Orbit Shift** | Rotates all settled stacks one lane clockwise. | 11s |
+| **Nova Spark** | Boosts scoring output for the next clears. | 14s |
+
+## ⌨️ Keyboard Shortcuts
+
+Arrow keys always rotate the hexagon. Secondary keys can be remapped in **Settings → Controls**.
+
+| Action | Default |
+| --- | --- |
+| Rotate Left | Arrow Left / Arrow Up / Q |
+| Rotate Right | Arrow Right / Arrow Down / E |
+| Glide Boost | Shift / S |
+| Pause | P / Space / Esc |
+| Use Power Slot 1-3 | 1 / 2 / 3 |
+
+## 🎨 UI/UX Guidelines
+
+- Glassmorphism cards with subtle blur, glow, and high-contrast accents.
+- Layered gradients to keep focus on the hexagon without visual clutter.
+- Responsive stacks that switch from vertical to grid layouts across breakpoints.
+- Motion-first feedback on buttons, meters, and power activations.
 
 ### Typography
 
@@ -143,19 +170,6 @@ VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
 ```
 
-## 🎯 Implementation Phases
-
-- [x] **Phase 1**: Foundation (pnpm, TS, Tailwind, configs)
-- [x] **Phase 2**: Core architecture (StateManager, Router, GameLoop)
-- [x] **Phase 3**: UI component library (Button, Modal, Card, Input)
-- [x] **Phase 4**: Base page class and entry page
-- [ ] **Phase 5**: Remaining pages (Menu, Difficulty, Game, Settings)
-- [ ] **Phase 6**: Game entities (Block, Hex, PowerUp)
-- [ ] **Phase 7**: Game systems (Life, Points, Matching, Physics)
-- [ ] **Phase 8**: Network integration (Appwrite, Multiplayer)
-- [ ] **Phase 9**: HUD elements and modals
-- [ ] **Phase 10**: Polish and optimization
-
 ## 📱 Responsive Design
 
 - **Mobile**: < 640px - Fullscreen canvas, minimal HUD
@@ -189,4 +203,4 @@ Based on the original Hextris game, modernized with TypeScript and Tailwind CSS.
 
 ---
 
-**Current Status**: Phase 1 Complete ✅ - Foundation laid with TypeScript, Tailwind, routing, state management, and UI components. Ready to implement game logic and pages.
+**Current Status**: Resonance redesign shipped ✅ - new modes, powers, and control remapping are live.

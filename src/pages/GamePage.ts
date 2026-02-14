@@ -154,6 +154,17 @@ export class GamePage extends BasePage {
       '#fbbf24'
     ));
   };
+  private handleTimerRelayComplete = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ stage?: number; bonusSeconds?: number }>;
+    const stage = customEvent.detail?.stage ?? 0;
+    const bonusSeconds = customEvent.detail?.bonusSeconds ?? 0;
+    this.floatingTexts.push(FloatingText.createMessage(
+      this.canvas.element.width / 2,
+      this.canvas.element.height / 2 - 170,
+      `RELAY ${stage + 1} +${bonusSeconds}s`,
+      '#a5b4fc'
+    ));
+  };
   private handlePowerUpUsedInventory = (event: Event): void => {
     const customEvent = event as CustomEvent<{ type?: ShopItemId }>;
     const type = customEvent.detail?.type;
@@ -328,7 +339,7 @@ export class GamePage extends BasePage {
       hover:scale-105 transition-all duration-200
       active:scale-95
     `;
-    pauseButton.textContent = 'PAUSE (P)';
+    pauseButton.textContent = 'PAUSE (P / Space)';
     pauseButton.onclick = () => this.pauseGame();
     hudContainer.appendChild(pauseButton);
 
@@ -1011,6 +1022,7 @@ export class GamePage extends BasePage {
     this.tempoActive = true;
     this.powerUpSpawnMultiplier = 0.85;
     this.applyWaveTuning();
+    this.syncTempoLevel();
     this.showSlowMoEffect(durationMs);
     this.slowMoTimeoutId = window.setTimeout(() => {
       this.powerUpSpeedMultiplier = 1;
@@ -1018,6 +1030,7 @@ export class GamePage extends BasePage {
       this.powerUpSpawnMultiplier = this.resonanceActive ? 0.9 : 1;
       this.clearSlowMoEffect();
       this.applyWaveTuning();
+      this.syncTempoLevel();
       this.slowMoTimeoutId = null;
     }, durationMs);
   }
@@ -1307,7 +1320,7 @@ export class GamePage extends BasePage {
     this.hideSurgeEffect();
     const overlay = document.createElement('div');
     overlay.className = 'game-effect-surge';
-    overlay.innerHTML = '<span>Surge</span><p>Brace for rapid waves</p>';
+    overlay.innerHTML = '<span>Flare</span><p>Waves intensify</p>';
     this.effectLayer.appendChild(overlay);
     this.surgeOverlay = overlay;
     if (this.surgeTimeoutId) {
@@ -1439,7 +1452,7 @@ export class GamePage extends BasePage {
 
   private syncTempoLevel(): void {
     let tempo = 0;
-    if (this.adaptiveAssistActive) {
+    if (this.adaptiveAssistActive || this.tempoActive) {
       tempo = -1;
     } else if (this.resonanceActive || this.syncBoostActive) {
       tempo = 1;
@@ -2051,6 +2064,7 @@ export class GamePage extends BasePage {
       this.lastLives = lives;
     });
     window.addEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.addEventListener('timerRelayComplete', this.handleTimerRelayComplete as EventListener);
     window.addEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.addEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
     window.addEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
@@ -2071,6 +2085,7 @@ export class GamePage extends BasePage {
 
     // Remove event listeners
     window.removeEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.removeEventListener('timerRelayComplete', this.handleTimerRelayComplete as EventListener);
     window.removeEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.removeEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
     window.removeEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);

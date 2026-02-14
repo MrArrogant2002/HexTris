@@ -175,8 +175,8 @@ class DailyChallengeSystem {
 
     window.addEventListener('scoreUpdate', ((e: CustomEvent) => this.onScoreUpdate(e)) as EventListener);
     window.addEventListener('matchResolved', ((e: CustomEvent) => this.onMatchResolved(e)) as EventListener);
-    window.addEventListener('hexRotated', ((e: CustomEvent) => this.onHexRotated(e)) as EventListener);
-    window.addEventListener('powerUpUsed', ((e: CustomEvent) => this.onPowerUsed(e)) as EventListener);
+    window.addEventListener('hexRotated', (() => this.onHexRotated()) as EventListener);
+    window.addEventListener('powerUpUsed', (() => this.onPowerUsed()) as EventListener);
   }
 
   initTrackingData(): TrackingData {
