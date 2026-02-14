@@ -18,9 +18,12 @@ import type { InventoryUI } from '@ui/hud/InventoryUI';
 
 type PowerUpUseHandler = (type: PowerUpType) => void;
 
-const MS_PER_FRAME = 16.6667;
+const MS_PER_FRAME_60FPS = 16.6667;
+// Applied when lives <= 1.
 const CRITICAL_LIFE_COOLDOWN_MULTIPLIER = 0.7;
+// Applied when lives === 2.
 const LOW_LIFE_COOLDOWN_MULTIPLIER = 0.85;
+const MAX_PENDING_SPAWNS = 2;
 export interface PowerUpSystemOptions {
   hex: Hex;
   canvas: Canvas;
@@ -53,7 +56,7 @@ export class PowerUpSystem {
   public update(dt: number): void {
     if (!this.enabled) return;
 
-    this.elapsedMs += dt * MS_PER_FRAME;
+    this.elapsedMs += dt * MS_PER_FRAME_60FPS;
     this.tryTimedSpawn();
     this.trySpawnPending();
 
@@ -128,7 +131,7 @@ export class PowerUpSystem {
     const spawnsToAdd = bucket - this.lastScoreBucket;
     this.lastScoreBucket = bucket;
 
-    this.pendingSpawns = Math.min(this.pendingSpawns + spawnsToAdd, 2);
+    this.pendingSpawns = Math.min(this.pendingSpawns + spawnsToAdd, MAX_PENDING_SPAWNS);
     this.trySpawnPending();
   };
 
