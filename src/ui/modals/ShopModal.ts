@@ -198,7 +198,7 @@ export class ShopModal {
     video.loop = true;
     video.muted = true;
     video.playsInline = true;
-    video.ariaLabel = `${label} preview`;
+    video.setAttribute('aria-label', `${label} preview`);
 
     const caption = document.createElement('div');
     caption.className = 'text-[11px] font-semibold text-slate-100 mt-2 uppercase tracking-[0.2em]';
