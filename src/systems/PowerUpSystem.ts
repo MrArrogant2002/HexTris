@@ -18,7 +18,8 @@ import type { InventoryUI } from '@ui/hud/InventoryUI';
 
 type PowerUpUseHandler = (type: PowerUpType) => void;
 
-const MS_PER_FRAME_60FPS = 16.6667;
+// Game loop dt is frame-units (1.0 at 60fps), convert to milliseconds.
+const FRAME_DURATION_MS_60FPS = 16.6667;
 // Applied when lives <= 1.
 const CRITICAL_LIFE_COOLDOWN_MULTIPLIER = 0.7;
 // Applied when lives === 2.
@@ -56,7 +57,7 @@ export class PowerUpSystem {
   public update(dt: number): void {
     if (!this.enabled) return;
 
-    this.elapsedMs += dt * MS_PER_FRAME_60FPS;
+    this.elapsedMs += dt * FRAME_DURATION_MS_60FPS;
     this.tryTimedSpawn();
     this.trySpawnPending();
 
@@ -183,12 +184,18 @@ export class PowerUpSystem {
       return false;
     }
     const lives = stateManager.getState().game.lives;
-    const cooldown = lives <= 1
-      ? POWER_UP_SPAWN_COOLDOWN * CRITICAL_LIFE_COOLDOWN_MULTIPLIER
-      : lives === 2
-        ? POWER_UP_SPAWN_COOLDOWN * LOW_LIFE_COOLDOWN_MULTIPLIER
-        : POWER_UP_SPAWN_COOLDOWN;
+    const cooldown = this.calculateCooldownForLives(lives);
     return this.elapsedMs - this.lastSpawnMs >= cooldown;
+  }
+
+  private calculateCooldownForLives(lives: number): number {
+    if (lives <= 1) {
+      return POWER_UP_SPAWN_COOLDOWN * CRITICAL_LIFE_COOLDOWN_MULTIPLIER;
+    }
+    if (lives === 2) {
+      return POWER_UP_SPAWN_COOLDOWN * LOW_LIFE_COOLDOWN_MULTIPLIER;
+    }
+    return POWER_UP_SPAWN_COOLDOWN;
   }
 
   private handleCollected(powerUp: PowerUp): void {
