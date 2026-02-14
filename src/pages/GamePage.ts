@@ -98,6 +98,7 @@ export class GamePage extends BasePage {
   private syncBoostTimeoutId: number | null = null;
   private nextLifeBonusScore: number = LIFE_BONUS_INTERVAL;
   private blockSettings: any;
+  private canvasScale: number = 1;
   private dailyChallenge: DailyChallengeSystem | null = null;
   private dailyChallengeModal: DailyChallengeModal | null = null;
   private timerAttack: TimerAttackMode | null = null;
@@ -450,6 +451,7 @@ export class GamePage extends BasePage {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseHexWidth = isMobile ? 87 : 65;
     const scale = Math.min(centerX / 400, centerY / 400);
+    this.canvasScale = scale;
     const hexRadius = baseHexWidth * scale;
     
     // Create hex with correct parameters (radius, canvasWidth, canvasHeight)
@@ -556,7 +558,7 @@ export class GamePage extends BasePage {
     // Original: 340 for desktop, 227 for mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseStartDist = isMobile ? 227 : 340;
-    const scale = Math.min(this.canvas.element.width / 800, this.canvas.element.height / 800);
+    const scale = this.canvasScale;
     const startDist = baseStartDist * scale;
     
     // Create block settings (original values)
@@ -625,7 +627,7 @@ export class GamePage extends BasePage {
     this.updateCatchupMultiplier();
     
     // Update physics (falling blocks move toward center and check collision)
-    this.physicsSystem.update(this.hex, dt, this.blockSettings?.scale ?? 1);
+    this.physicsSystem.update(this.hex, dt, this.canvasScale);
 
     this.powerUpSystem.update(dt);
     this.timeOrbSystem?.update(dt);
@@ -720,7 +722,7 @@ export class GamePage extends BasePage {
         
         // Move unsettled blocks down
         if (!block.settled) {
-          block.distFromHex -= block.iter * dt * 1; // scale = 1
+          block.distFromHex -= block.iter * dt * this.canvasScale;
         }
       }
     }
