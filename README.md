@@ -86,21 +86,29 @@ hextris/
 - **Rule**: Clearing 4+ blocks builds Resonance; switching colors accelerates charge.
 - **Rule**: Full Resonance triggers a slow-tempo surge and bonus scoring window.
 - **Strategy**: Rotate often to diversify colors and ignite Resonance before danger builds.
+- **Workflow**: Build Resonance with big clears → trigger Resonance Surge → enjoy slowed tempo + boosted scoring → meter resets.
+- **Power Flow**: Drops arrive on a score + timed cadence; Pulse clears outer stacks, Tempo extends safety, Aegis covers critical stacks.
 
 ### Sync Link (Multiplayer)
 - **Rule**: Every clear charges Sync Link; 100% triggers a Sync Burst that calms waves.
 - **Rule**: Sync slowly drains between clears.
 - **Strategy**: Coordinate clears to maintain Harmonic tiers and time burst windows.
+- **Workflow**: Clear blocks to fill Sync → trigger Sync Burst → reduced pressure for the crew → Sync resets.
+- **Power Flow**: Powers spawn at the same cadence; Nova is best during Harmonic tiers, Aegis protects when Sync drains.
 
 ### Pulse Relay (Timer)
 - **Rule**: Relay nodes spawn after strong clears; collect four to extend time.
 - **Rule**: Each Relay stage increases overall speed and scoring bonuses.
 - **Strategy**: Use Tempo Break before Relay completions to stay safe.
+- **Workflow**: Chain 4+ clears to spawn nodes → collect 4 nodes → time extension + stage bump → pace increases.
+- **Power Flow**: Tempo before node pickups, Pulse to reset outer lanes, Nova to amplify Relay bonuses.
 
 ### Hexforge Trials (Challenge)
 - **Rule**: Daily objectives track rotations, clears, and power usage.
 - **Rule**: Complete the objective to earn bonus diamonds and streak perks.
 - **Strategy**: Read objectives first; tailor power usage to the requirement.
+- **Workflow**: Review the daily objective → complete tracked targets → earn streak rewards at game over.
+- **Power Flow**: Some trials disable powers; otherwise powers follow standard cadence to help meet objectives.
 
 ## ⚡ Powers System
 
@@ -123,6 +131,13 @@ Arrow keys always rotate the hexagon. Secondary keys can be remapped in **Settin
 | Glide Boost | Shift / S |
 | Pause | P / Space / Esc |
 | Use Power Slot 1-3 | 1 / 2 / 3 |
+
+## 📱 Mobile Controls
+
+- Swipe left/right to rotate or tap the mobile action dock buttons.
+- Hold **Boost** in the dock to glide blocks faster.
+- Tap **P1–P3** in the dock (or the inventory slots) to trigger powers.
+- Use the **Pause** button in the dock to open the pause menu.
 
 ## 🎨 UI/UX Guidelines
 
@@ -169,6 +184,46 @@ Create a `.env` file in the root:
 VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
 ```
+
+## 🗄️ Appwrite Database Schema
+
+### Users collection (17 columns + optional inventory map)
+1. userId (string)
+2. name (string)
+3. email (string)
+4. singlePlayerHighScore (number)
+5. totalDiamonds (number)
+6. gamesPlayed (number)
+7. totalPlayTime (number)
+8. themesUnlocked (string[])
+9. selectedTheme (string)
+10. timerAttackBest (number)
+11. inventory_continue (number)
+12. inventory_extraLife (number)
+13. inventory_pulse (number)
+14. inventory_tempo (number)
+15. inventory_aegis (number)
+16. inventory_shift (number)
+17. inventory_nova (number)
+
+Optional: inventory (JSON map) if you store all inventory counts in one field.
+
+### Groups collection (6 columns)
+1. roomCode (string)
+2. groupName (string)
+3. createdBy (string)
+4. memberIds (string[])
+5. memberCount (number)
+6. isActive (boolean)
+
+### GroupScores collection (7 columns)
+1. userId (string)
+2. groupId (string)
+3. userName (string)
+4. bestScore (number)
+5. gamesPlayed (number)
+6. lastPlayedAt (string / ISO date)
+7. difficulty (string)
 
 ## 📱 Responsive Design
 

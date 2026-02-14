@@ -5,7 +5,12 @@
 
 import { Canvas } from '@core/Canvas';
 import { stateManager } from '@core/StateManager';
-import { GameStatus, POWER_UP_SCORE_INTERVAL } from '@core/constants';
+import {
+  GameStatus,
+  POWER_UP_MAX_WAIT,
+  POWER_UP_SCORE_INTERVAL,
+  POWER_UP_SPAWN_COOLDOWN,
+} from '@core/constants';
 import type { Hex } from '@entities/Hex';
 import { PowerUp } from '@entities/PowerUp';
 import { type PowerUpType, getPowerDefinition, POWER_SPAWN_POOL } from '@config/powers';
@@ -28,6 +33,9 @@ export class PowerUpSystem {
   private enabled = true;
   private onUse?: PowerUpUseHandler;
   private cooldowns = new Map<PowerUpType, number>();
+  private elapsedMs = 0;
+  private lastSpawnMs = -Infinity;
+  private pendingSpawns = 0;
 
   constructor(options: PowerUpSystemOptions) {
     this.hex = options.hex;
@@ -40,6 +48,10 @@ export class PowerUpSystem {
 
   public update(dt: number): void {
     if (!this.enabled) return;
+
+    this.elapsedMs += dt * 16.6667;
+    this.tryTimedSpawn();
+    this.trySpawnPending();
 
     const hexRadius = (this.hex.sideLength / 2) * Math.sqrt(3);
     for (let i = this.activePowerUps.length - 1; i >= 0; i--) {
@@ -69,6 +81,9 @@ export class PowerUpSystem {
     this.lastScoreBucket = 0;
     this.inventoryUI.clear();
     this.cooldowns.clear();
+    this.elapsedMs = 0;
+    this.lastSpawnMs = -Infinity;
+    this.pendingSpawns = 0;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -109,9 +124,8 @@ export class PowerUpSystem {
     const spawnsToAdd = bucket - this.lastScoreBucket;
     this.lastScoreBucket = bucket;
 
-    for (let i = 0; i < spawnsToAdd; i += 1) {
-      this.spawnPowerUp();
-    }
+    this.pendingSpawns = Math.min(this.pendingSpawns + spawnsToAdd, 2);
+    this.trySpawnPending();
   };
 
   private handlePowerUpUsed = (event: Event): void => {
@@ -139,6 +153,35 @@ export class PowerUpSystem {
     });
 
     this.activePowerUps.push(powerUp);
+    this.lastSpawnMs = this.elapsedMs;
+  }
+
+  private trySpawnPending(): void {
+    if (this.pendingSpawns <= 0) return;
+    if (this.inventoryUI.isFull()) return;
+    if (!this.canSpawnNow()) return;
+    this.pendingSpawns = Math.max(0, this.pendingSpawns - 1);
+    this.spawnPowerUp();
+  }
+
+  private tryTimedSpawn(): void {
+    if (this.inventoryUI.isFull()) return;
+    if (this.elapsedMs - this.lastSpawnMs < POWER_UP_MAX_WAIT) return;
+    if (!this.canSpawnNow()) return;
+    this.spawnPowerUp();
+  }
+
+  private canSpawnNow(): boolean {
+    if (stateManager.getState().status !== GameStatus.PLAYING) {
+      return false;
+    }
+    const lives = stateManager.getState().game.lives;
+    const cooldown = lives <= 1
+      ? POWER_UP_SPAWN_COOLDOWN * 0.7
+      : lives === 2
+        ? POWER_UP_SPAWN_COOLDOWN * 0.85
+        : POWER_UP_SPAWN_COOLDOWN;
+    return this.elapsedMs - this.lastSpawnMs >= cooldown;
   }
 
   private handleCollected(powerUp: PowerUp): void {

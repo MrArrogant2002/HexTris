@@ -258,6 +258,9 @@ export class GamePage extends BasePage {
     const controls = this.createControls();
     gameContainer.appendChild(controls);
 
+    const mobileDock = this.createMobileActionDock();
+    gameContainer.appendChild(mobileDock);
+
     this.element.appendChild(gameContainer);
     this.mount();
   }
@@ -271,10 +274,97 @@ export class GamePage extends BasePage {
     controls.innerHTML = `
       <div class="text-xs theme-text-secondary">
         <span class="hidden md:inline">Arrow Keys Rotate • Shift to Glide • 1-3 Powers • P to Pause</span>
-        <span class="md:hidden">Swipe to Rotate • Tap to Nudge • Hold to Glide</span>
+        <span class="md:hidden">Swipe to Rotate • Tap Dock Buttons • Hold Boost to Glide</span>
       </div>
     `;
     return controls;
+  }
+
+  private createMobileActionDock(): HTMLElement {
+    const dock = document.createElement('div');
+    dock.className = `
+      fixed bottom-24 left-1/2 -translate-x-1/2 z-40
+      flex flex-col gap-2 md:hidden pointer-events-auto
+    `.trim().replace(/\s+/g, ' ');
+
+    const mainRow = document.createElement('div');
+    mainRow.className = 'flex items-center gap-2';
+
+    const secondaryRow = document.createElement('div');
+    secondaryRow.className = 'flex items-center gap-2 justify-center';
+
+    const makeButton = (label: string, aria: string): HTMLButtonElement => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `
+        px-3 py-2 rounded-full text-xs font-semibold
+        bg-white/80 text-slate-700
+        border border-white/60 shadow-lg
+        backdrop-blur-md
+      `.trim().replace(/\s+/g, ' ');
+      button.textContent = label;
+      button.setAttribute('aria-label', aria);
+      button.style.touchAction = 'manipulation';
+      return button;
+    };
+
+    const rotateLeft = makeButton('⟲', 'Rotate left');
+    rotateLeft.addEventListener('click', () => this.handleMobileRotate(1));
+
+    const rotateRight = makeButton('⟳', 'Rotate right');
+    rotateRight.addEventListener('click', () => this.handleMobileRotate(-1));
+
+    const boost = makeButton('BOOST', 'Glide boost');
+    const stopBoost = (): void => this.handleMobileBoost(false);
+    boost.addEventListener('pointerdown', () => this.handleMobileBoost(true));
+    boost.addEventListener('pointerup', stopBoost);
+    boost.addEventListener('pointerleave', stopBoost);
+    boost.addEventListener('pointercancel', stopBoost);
+
+    const pause = makeButton('⏸', 'Pause');
+    pause.addEventListener('click', () => this.togglePause());
+
+    const power1 = makeButton('P1', 'Power slot 1');
+    power1.addEventListener('click', () => this.inventoryUI?.usePowerUp(0));
+
+    const power2 = makeButton('P2', 'Power slot 2');
+    power2.addEventListener('click', () => this.inventoryUI?.usePowerUp(1));
+
+    const power3 = makeButton('P3', 'Power slot 3');
+    power3.addEventListener('click', () => this.inventoryUI?.usePowerUp(2));
+
+    mainRow.appendChild(rotateLeft);
+    mainRow.appendChild(boost);
+    mainRow.appendChild(rotateRight);
+
+    secondaryRow.appendChild(power1);
+    secondaryRow.appendChild(power2);
+    secondaryRow.appendChild(power3);
+    secondaryRow.appendChild(pause);
+
+    dock.appendChild(mainRow);
+    dock.appendChild(secondaryRow);
+    return dock;
+  }
+
+  private handleMobileRotate(direction: 1 | -1): void {
+    if (stateManager.getState().status !== GameStatus.PLAYING) return;
+    if (!this.hex) return;
+    this.hex.rotate(direction);
+    window.dispatchEvent(new CustomEvent('hexRotated', { detail: { direction } }));
+  }
+
+  private handleMobileBoost(active: boolean): void {
+    if (stateManager.getState().status !== GameStatus.PLAYING) return;
+    this.rushMultiplier = active ? 4 : 1;
+  }
+
+  private togglePause(): void {
+    if (this.gameLoop.getIsRunning()) {
+      this.pauseGame();
+    } else {
+      this.resumeGame();
+    }
   }
 
   /**

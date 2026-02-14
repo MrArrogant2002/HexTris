@@ -19,7 +19,7 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
   pulse: {
     id: 'pulse',
     name: 'Pulse Wave',
-    icon: 'PULSE',
+    icon: '💫',
     color: '#7cdeff',
     description: 'Clears the outermost ring of blocks across every lane.',
     cooldownMs: 8000,
@@ -27,7 +27,7 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
   tempo: {
     id: 'tempo',
     name: 'Tempo Break',
-    icon: 'TEMPO',
+    icon: '🌀',
     color: '#6ee7b7',
     description: 'Slows block fall and spawn rhythm for a short burst.',
     cooldownMs: 10000,
@@ -36,7 +36,7 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
   aegis: {
     id: 'aegis',
     name: 'Aegis Field',
-    icon: 'AEGIS',
+    icon: '🛡️',
     color: '#fbcfe8',
     description: 'Grants brief invulnerability while the field is active.',
     cooldownMs: 12000,
@@ -45,7 +45,7 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
   shift: {
     id: 'shift',
     name: 'Orbit Shift',
-    icon: 'SHIFT',
+    icon: '🧭',
     color: '#fbbf24',
     description: 'Rotates all settled stacks one lane clockwise to realign colors.',
     cooldownMs: 11000,
@@ -53,7 +53,7 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
   nova: {
     id: 'nova',
     name: 'Nova Spark',
-    icon: 'NOVA',
+    icon: '✨',
     color: '#a78bfa',
     description: 'Boosts scoring output for the next few matches.',
     cooldownMs: 14000,
