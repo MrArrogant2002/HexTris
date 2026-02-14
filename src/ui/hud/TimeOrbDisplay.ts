@@ -29,7 +29,7 @@ export class TimeOrbDisplay {
 
     const icon = document.createElement('span');
     icon.className = 'text-sm';
-    icon.textContent = 'ORB';
+    icon.textContent = 'RELAY';
 
     this.countText = document.createElement('span');
     this.countText.className = 'font-semibold';

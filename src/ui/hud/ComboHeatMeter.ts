@@ -33,11 +33,11 @@ export class ComboHeatMeter {
 
     const label = document.createElement('span');
     label.className = 'font-semibold';
-    label.textContent = 'Heat';
+    label.textContent = 'Resonance';
 
     this.tierBadge = document.createElement('span');
     this.tierBadge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-white/15';
-    this.tierBadge.textContent = 'Tier 0';
+    this.tierBadge.textContent = 'Stage 0';
 
     labelRow.appendChild(label);
     labelRow.appendChild(this.tierBadge);
@@ -46,7 +46,7 @@ export class ComboHeatMeter {
     bar.className = 'h-2 w-full bg-white/10 rounded-full overflow-hidden';
 
     this.fill = document.createElement('div');
-    this.fill.className = 'h-full bg-gradient-to-r from-cyan-400 via-amber-400 to-rose-400';
+    this.fill.className = 'h-full bg-gradient-to-r from-sky-400 via-emerald-400 to-fuchsia-400';
     this.fill.style.width = '0%';
 
     bar.appendChild(this.fill);
@@ -64,7 +64,7 @@ export class ComboHeatMeter {
     }
 
     if (tier !== this.lastTier) {
-      this.tierBadge.textContent = `Tier ${tier}`;
+      this.tierBadge.textContent = `Stage ${tier}`;
       this.tierBadge.className = `text-[10px] px-2 py-0.5 rounded-full ${this.getTierClass(tier)}`;
       this.lastTier = tier;
     }

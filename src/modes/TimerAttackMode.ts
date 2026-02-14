@@ -1,20 +1,23 @@
-﻿/**
+/**
  * Timer Attack Mode
- * Race against the clock - survive for 90 seconds and maximize score
+ * Pulse Relay: build relay nodes to extend the clock and raise intensity.
  */
 
 class TimerAttackMode {
-  private isActive: boolean = false;
-  private timeLimit: number = 90; // 90 seconds
+  private isActive = false;
+  private timeLimit: number;
   private timeRemaining: number;
   private timerId: ReturnType<typeof setInterval> | null = null;
   private startTime: number | null = null;
-  private isPaused: boolean = false;
+  private isPaused = false;
   private bestTime: number | null;
   private bestScore: number;
-  private totalBonusSeconds = 0;
-  
-  constructor(timeLimit: number = 90) {
+  private relayGoal = 4;
+  private relayCount = 0;
+  private relayStage = 0;
+  private relayBonusSeconds = 0;
+
+  constructor(timeLimit: number = 75) {
     this.timeLimit = timeLimit;
     this.timeRemaining = this.timeLimit;
     this.bestTime = this.loadBestTime();
@@ -23,12 +26,10 @@ class TimerAttackMode {
   }
 
   init() {
-    // Listen for mode activation
     window.addEventListener('activateTimerMode', () => {
       this.activate();
     });
 
-    // Listen for game events
     window.addEventListener('gameStart', () => {
       if (this.isActive) {
         this.start();
@@ -49,16 +50,17 @@ class TimerAttackMode {
       this.resume();
     });
 
-    console.log('Timer Attack Mode initialized');
+    console.log('Timer Relay Mode initialized');
   }
 
   activate() {
     this.isActive = true;
     this.timeRemaining = this.timeLimit;
-    this.totalBonusSeconds = 0;
-    console.log('Timer Attack Mode ACTIVATED');
-    
-    // Show mode indicator
+    this.relayCount = 0;
+    this.relayStage = 0;
+    this.relayBonusSeconds = 0;
+    console.log('Timer Relay Mode ACTIVATED');
+
     this.showModeIndicator();
   }
 
@@ -66,7 +68,6 @@ class TimerAttackMode {
     this.isActive = false;
     this.stop();
     this.hideModeIndicator();
-    console.log('Timer Attack Mode deactivated');
   }
 
   start() {
@@ -74,17 +75,16 @@ class TimerAttackMode {
 
     this.startTime = Date.now();
     this.timeRemaining = this.timeLimit;
-    this.totalBonusSeconds = 0;
+    this.relayCount = 0;
+    this.relayStage = 0;
+    this.relayBonusSeconds = 0;
     this.isPaused = false;
 
-    // Start countdown
     this.timerId = setInterval(() => {
       if (!this.isPaused) {
         this.tick();
       }
-    }, 100); // Update every 100ms for smooth display
-
-    console.log('Timer started!');
+    }, 100);
   }
 
   stop() {
@@ -108,14 +108,12 @@ class TimerAttackMode {
 
   tick(): void {
     if (this.startTime === null) return;
-    
-    const elapsed = (Date.now() - this.startTime) / 1000;
-    this.timeRemaining = Math.max(0, this.timeLimit + this.totalBonusSeconds - elapsed);
 
-    // Update UI
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    this.timeRemaining = Math.max(0, this.timeLimit + this.relayBonusSeconds - elapsed);
+
     this.updateTimerDisplay();
 
-    // Check for time up
     if (this.timeRemaining <= 0) {
       this.onTimeUp();
     }
@@ -123,34 +121,24 @@ class TimerAttackMode {
 
   onTimeUp() {
     this.stop();
-    
-    // Calculate final score with time bonus
+
     const finalScore = this.calculateFinalScore(0);
-    
-    // Check for new best
     this.checkNewBest(finalScore);
-    
-    // Trigger game over
-    console.log('TIME UP! Final score:', finalScore);
-    
-    // Dispatch time up event
+
     window.dispatchEvent(new CustomEvent('timerModeTimeUp', {
       detail: { score: finalScore, survived: true }
     }));
   }
 
   end(): void {
-    // Called when player dies before time runs out
-    const timeElapsed = this.timeLimit - this.timeRemaining;
+    const timeElapsed = this.timeLimit + this.relayBonusSeconds - this.timeRemaining;
     const finalScore = this.calculateFinalScore(0);
-    
+
     this.stop();
-    
-    console.log(`Game ended at ${timeElapsed.toFixed(1)}s. Score: ${finalScore}`);
-    
+
     window.dispatchEvent(new CustomEvent('timerModeEnded', {
-      detail: { 
-        score: finalScore, 
+      detail: {
+        score: finalScore,
         timeElapsed,
         survived: false
       }
@@ -158,32 +146,40 @@ class TimerAttackMode {
   }
 
   calculateFinalScore(currentScore: number = 0): number {
-    let finalScore = currentScore;
-    
-    // Time bonus: +100 points per second survived
-    const timeElapsed = this.timeLimit + this.totalBonusSeconds - this.timeRemaining;
-    const timeBonus = Math.floor(timeElapsed * 100);
-    
-    // Completion bonus if survived full time
-    const completionBonus = this.timeRemaining <= 0 ? 5000 : 0;
-    
-    finalScore += timeBonus + completionBonus;
-    
-    console.log(`Score breakdown: Base=${currentScore}, Time bonus=${timeBonus}, Completion=${completionBonus}`);
-    
-    return finalScore;
+    const relayBonus = this.relayStage * 750;
+    const enduranceBonus = Math.floor((this.timeLimit + this.relayBonusSeconds - this.timeRemaining) * 60);
+    const completionBonus = this.timeRemaining <= 0 ? 4000 : 0;
+
+    return currentScore + relayBonus + enduranceBonus + completionBonus;
+  }
+
+  addRelayCharge(): void {
+    if (!this.isActive) return;
+    this.relayCount += 1;
+
+    if (this.relayCount >= this.relayGoal) {
+      this.completeRelay();
+    }
+    this.updateTimerDisplay();
+  }
+
+  private completeRelay(): void {
+    this.relayCount = 0;
+    this.relayStage += 1;
+    const bonusSeconds = 6 + this.relayStage * 2;
+    this.relayBonusSeconds += bonusSeconds;
+    this.updateTimerDisplay();
+    window.dispatchEvent(new CustomEvent('timerRelayComplete', {
+      detail: { stage: this.relayStage, bonusSeconds }
+    }));
   }
 
   checkNewBest(finalScore: number): void {
-    // Check best score
     if (finalScore > this.bestScore) {
       this.bestScore = finalScore;
       this.saveBestScore(finalScore);
-      
-      console.log('NEW TIMER ATTACK RECORD:', finalScore);
     }
-    
-    // Check best time (if survived)
+
     if (this.timeRemaining <= 0) {
       const currentTime = this.timeLimit;
       if (!this.bestTime || currentTime < this.bestTime) {
@@ -199,15 +195,12 @@ class TimerAttackMode {
 
     const seconds = Math.floor(this.timeRemaining);
     const milliseconds = Math.floor((this.timeRemaining % 1) * 10);
-    
-    // Format as MM:SS.d
+
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     const timeString = `${minutes}:${secs.toString().padStart(2, '0')}.${milliseconds}`;
-    
-    timerElement.textContent = timeString;
-    
-    // Change color based on urgency
+    timerElement.textContent = `${timeString} · R${this.relayStage + 1}`;
+
     if (this.timeRemaining <= 10) {
       timerElement.className = 'timer-attack-display critical';
     } else if (this.timeRemaining <= 30) {
@@ -218,46 +211,39 @@ class TimerAttackMode {
   }
 
   showModeIndicator() {
-    // Create timer display if it doesn't exist
     let timerDisplay = document.getElementById('timer-attack-display');
     if (!timerDisplay) {
       timerDisplay = document.createElement('div');
       timerDisplay.id = 'timer-attack-display';
       timerDisplay.className = 'timer-attack-display normal';
-      timerDisplay.textContent = `${this.timeLimit / 60}:00.0`;
+      timerDisplay.textContent = `${Math.floor(this.timeLimit / 60)}:${Math.floor(this.timeLimit % 60)
+        .toString()
+        .padStart(2, '0')}.0 · R1`;
       const hud = document.getElementById('hud-overlay');
       (hud || document.body).appendChild(timerDisplay);
     }
     timerDisplay.style.display = 'block';
 
-    // Show mode badge
     let modeBadge = document.getElementById('timer-mode-badge');
     if (!modeBadge) {
       modeBadge = document.createElement('div');
       modeBadge.id = 'timer-mode-badge';
       modeBadge.className = 'timer-mode-badge';
-      modeBadge.innerHTML = 'TIMER ATTACK';
+      modeBadge.innerHTML = 'PULSE RELAY';
       const hud = document.getElementById('hud-overlay');
       (hud || document.body).appendChild(modeBadge);
     }
     modeBadge.style.display = 'block';
   }
 
-  addBonusTime(seconds: number): void {
-    if (!this.isActive || seconds <= 0) return;
-    this.totalBonusSeconds += seconds;
-    this.updateTimerDisplay();
-  }
-
   hideModeIndicator() {
     const timerDisplay = document.getElementById('timer-attack-display');
     const modeBadge = document.getElementById('timer-mode-badge');
-    
+
     if (timerDisplay) timerDisplay.style.display = 'none';
     if (modeBadge) modeBadge.style.display = 'none';
   }
 
-  // Persistence
   loadBestTime(): number | null {
     try {
       const saved = localStorage.getItem('timerAttackBestTime');
@@ -292,7 +278,6 @@ class TimerAttackMode {
     }
   }
 
-  // Getters
   isTimerMode(): boolean {
     return this.isActive;
   }
@@ -308,16 +293,22 @@ class TimerAttackMode {
   getBestTime(): number | null {
     return this.bestTime;
   }
+
+  getRelayStage(): number {
+    return this.relayStage;
+  }
+
+  getRelayCount(): number {
+    return this.relayCount;
+  }
+
+  getRelayGoal(): number {
+    return this.relayGoal;
+  }
+
+  getPhaseLabel(): string {
+    return `Relay ${this.relayStage + 1}`;
+  }
 }
 
-// Export for use in the application
 export { TimerAttackMode };
-
-// Auto-initialize (commented out as it's not currently integrated)
-// if (typeof window !== 'undefined') {
-//   document.addEventListener('DOMContentLoaded', () => {
-//     new TimerAttackMode();
-//     console.log('Timer Attack Mode system initialized');
-//   });
-// }
-

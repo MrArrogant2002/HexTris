@@ -1,5 +1,5 @@
 /**
- * TimeOrb entity - collectible to extend timer attack duration.
+ * TimeOrb entity - collectible relay node for timer mode.
  */
 
 export interface TimeOrbOptions {
@@ -58,13 +58,13 @@ export class TimeOrb {
 
     ctx.save();
     ctx.globalAlpha = 0.25 * glow;
-    ctx.fillStyle = '#9ad8ff';
+    ctx.fillStyle = '#c7d2fe';
     ctx.beginPath();
     ctx.arc(x, y, this.size * 1.8, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.globalAlpha = 0.9;
-    ctx.fillStyle = '#5ecbff';
+    ctx.fillStyle = '#818cf8';
     ctx.beginPath();
     ctx.arc(x, y, this.size, 0, Math.PI * 2);
     ctx.fill();
@@ -74,7 +74,7 @@ export class TimeOrb {
     ctx.font = `${this.size * 0.6}px "Exo 2", Arial, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('+5', x, y);
+    ctx.fillText('R', x, y);
     ctx.restore();
   }
 

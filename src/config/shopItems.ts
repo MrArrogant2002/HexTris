@@ -6,9 +6,11 @@
 export enum ShopItemId {
   CONTINUE = 'continue',
   EXTRA_LIFE = 'extraLife',
-  HAMMER = 'hammer',
-  SLOWMO = 'slowmo',
-  SHIELD = 'shield',
+  PULSE = 'pulse',
+  TEMPO = 'tempo',
+  AEGIS = 'aegis',
+  SHIFT = 'shift',
+  NOVA = 'nova',
 }
 
 export interface ShopItem {
@@ -42,35 +44,55 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     category: 'consumable',
     effect: 'Immediately adds 1 life (max 5)',
   },
-  [ShopItemId.HAMMER]: {
-    id: ShopItemId.HAMMER,
-    name: 'Hammer',
-    description: 'Clear blocks in danger zone',
-    cost: 200,
-    icon: 'HAMMER',
+  [ShopItemId.PULSE]: {
+    id: ShopItemId.PULSE,
+    name: 'Pulse Wave',
+    description: 'Clear a full outer ring of blocks',
+    cost: 220,
+    icon: 'PULSE',
     category: 'powerup',
     maxQuantity: 3,
-    effect: 'Removes 3 blocks of the most common color',
+    effect: 'Clears the furthest block in each lane instantly.',
   },
-  [ShopItemId.SLOWMO]: {
-    id: ShopItemId.SLOWMO,
-    name: 'Slow Motion',
-    description: 'Slow down time temporarily',
-    cost: 150,
-    icon: 'TIMER',
+  [ShopItemId.TEMPO]: {
+    id: ShopItemId.TEMPO,
+    name: 'Tempo Break',
+    description: 'Slow down the incoming rhythm',
+    cost: 180,
+    icon: 'TEMPO',
     category: 'powerup',
     maxQuantity: 3,
-    effect: 'Reduces game speed by 50% for 10 seconds',
+    effect: 'Slows block fall and spawn speed for a short time.',
   },
-  [ShopItemId.SHIELD]: {
-    id: ShopItemId.SHIELD,
-    name: 'Shield',
-    description: 'Temporary invulnerability',
-    cost: 250,
-    icon: 'SHIELD',
+  [ShopItemId.AEGIS]: {
+    id: ShopItemId.AEGIS,
+    name: 'Aegis Field',
+    description: 'Project a protective field',
+    cost: 260,
+    icon: 'AEGIS',
     category: 'powerup',
     maxQuantity: 3,
-    effect: 'Blocks cannot cause game over for 5 seconds',
+    effect: 'Grants invulnerability while the field is active.',
+  },
+  [ShopItemId.SHIFT]: {
+    id: ShopItemId.SHIFT,
+    name: 'Orbit Shift',
+    description: 'Re-align every stack',
+    cost: 240,
+    icon: 'SHIFT',
+    category: 'powerup',
+    maxQuantity: 3,
+    effect: 'Rotates all settled stacks one lane clockwise.',
+  },
+  [ShopItemId.NOVA]: {
+    id: ShopItemId.NOVA,
+    name: 'Nova Spark',
+    description: 'Amplify scoring streaks',
+    cost: 280,
+    icon: 'NOVA',
+    category: 'powerup',
+    maxQuantity: 3,
+    effect: 'Boosts score output for your next few clears.',
   },
 };
 
@@ -109,9 +131,10 @@ export function createEmptyInventory(): Record<ShopItemId, number> {
   return {
     [ShopItemId.CONTINUE]: 0,
     [ShopItemId.EXTRA_LIFE]: 0,
-    [ShopItemId.HAMMER]: 0,
-    [ShopItemId.SLOWMO]: 0,
-    [ShopItemId.SHIELD]: 0,
+    [ShopItemId.PULSE]: 0,
+    [ShopItemId.TEMPO]: 0,
+    [ShopItemId.AEGIS]: 0,
+    [ShopItemId.SHIFT]: 0,
+    [ShopItemId.NOVA]: 0,
   };
 }
-

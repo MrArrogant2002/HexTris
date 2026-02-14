@@ -28,13 +28,13 @@ export class MomentumBar {
 
     const label = document.createElement('div');
     label.className = 'font-semibold mb-1';
-    label.textContent = 'Momentum';
+    label.textContent = 'Sync Link';
 
     const bar = document.createElement('div');
     bar.className = 'h-2 w-full bg-white/10 rounded-full overflow-hidden';
 
     this.fill = document.createElement('div');
-    this.fill.className = 'h-full bg-gradient-to-r from-emerald-400 to-cyan-300';
+    this.fill.className = 'h-full bg-gradient-to-r from-indigo-400 to-cyan-300';
     this.fill.style.width = '0%';
 
     bar.appendChild(this.fill);

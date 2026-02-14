@@ -23,9 +23,11 @@ export interface UserDocument {
   inventory?: Record<string, number>;
   inventory_continue?: number;
   inventory_extraLife?: number;
-  inventory_hammer?: number;
-  inventory_slowmo?: number;
-  inventory_shield?: number;
+  inventory_pulse?: number;
+  inventory_tempo?: number;
+  inventory_aegis?: number;
+  inventory_shift?: number;
+  inventory_nova?: number;
   $createdAt: string;
   $updatedAt: string;
 }
@@ -85,9 +87,11 @@ export class AppwriteClient {
           timerAttackBest: 0,
           inventory_continue: 0,
           inventory_extraLife: 0,
-          inventory_hammer: 0,
-          inventory_slowmo: 0,
-          inventory_shield: 0,
+          inventory_pulse: 0,
+          inventory_tempo: 0,
+          inventory_aegis: 0,
+          inventory_shift: 0,
+          inventory_nova: 0,
         }
       );
 
@@ -473,9 +477,11 @@ export class AppwriteClient {
     return {
       inventory_continue: inventory[ShopItemId.CONTINUE] ?? 0,
       inventory_extraLife: inventory[ShopItemId.EXTRA_LIFE] ?? 0,
-      inventory_hammer: inventory[ShopItemId.HAMMER] ?? 0,
-      inventory_slowmo: inventory[ShopItemId.SLOWMO] ?? 0,
-      inventory_shield: inventory[ShopItemId.SHIELD] ?? 0,
+      inventory_pulse: inventory[ShopItemId.PULSE] ?? 0,
+      inventory_tempo: inventory[ShopItemId.TEMPO] ?? 0,
+      inventory_aegis: inventory[ShopItemId.AEGIS] ?? 0,
+      inventory_shift: inventory[ShopItemId.SHIFT] ?? 0,
+      inventory_nova: inventory[ShopItemId.NOVA] ?? 0,
     };
   }
 
@@ -491,13 +497,14 @@ export class AppwriteClient {
       ...base,
       [ShopItemId.CONTINUE]: document.inventory_continue ?? base[ShopItemId.CONTINUE],
       [ShopItemId.EXTRA_LIFE]: document.inventory_extraLife ?? base[ShopItemId.EXTRA_LIFE],
-      [ShopItemId.HAMMER]: document.inventory_hammer ?? base[ShopItemId.HAMMER],
-      [ShopItemId.SLOWMO]: document.inventory_slowmo ?? base[ShopItemId.SLOWMO],
-      [ShopItemId.SHIELD]: document.inventory_shield ?? base[ShopItemId.SHIELD],
+      [ShopItemId.PULSE]: document.inventory_pulse ?? base[ShopItemId.PULSE],
+      [ShopItemId.TEMPO]: document.inventory_tempo ?? base[ShopItemId.TEMPO],
+      [ShopItemId.AEGIS]: document.inventory_aegis ?? base[ShopItemId.AEGIS],
+      [ShopItemId.SHIFT]: document.inventory_shift ?? base[ShopItemId.SHIFT],
+      [ShopItemId.NOVA]: document.inventory_nova ?? base[ShopItemId.NOVA],
     };
   }
 }
 
 // Export singleton instance
 export const appwriteClient = new AppwriteClient();
-

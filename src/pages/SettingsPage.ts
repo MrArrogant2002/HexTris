@@ -10,10 +10,23 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
 import { ThemeName, themes, availableThemes, themePrices, type Theme } from '@config/themes';
+import {
+  CONTROL_DEFINITIONS,
+  DEFAULT_CONTROL_MAPPING,
+  formatKeyLabel,
+  loadControlMapping,
+  saveControlMapping,
+  updateControlMapping,
+  type ControlCommand,
+  type ControlMapping,
+} from '@config/controls';
+import { MODE_GUIDES, UI_GUIDELINES } from '@config/modeGuide';
+import { POWER_DEFINITIONS } from '@config/powers';
 import { authService } from '@services/AuthService';
 import { appwriteClient } from '@network/AppwriteClient';
 import { audioManager } from '@/managers/AudioManager';
 import { themeManager } from '@/managers/ThemeManager';
+import { getInputManager } from '@utils/input';
 
 export class SettingsPage extends BasePage {
   private buttons: Button[] = [];
@@ -52,6 +65,12 @@ export class SettingsPage extends BasePage {
 
     // Accessibility Section
     sections.appendChild(this.createAccessibilitySection());
+
+    // Controls Section
+    sections.appendChild(this.createControlsSection());
+
+    // Game Guide Section
+    sections.appendChild(this.createGuideSection());
 
     // Account Section
     sections.appendChild(this.createAccountSection());
@@ -299,6 +318,233 @@ export class SettingsPage extends BasePage {
   }
 
   /**
+   * Create controls section
+   */
+  private createControlsSection(): HTMLElement {
+    const card = new Card({
+      title: 'Controls',
+      subtitle: 'View shortcuts and remap keys',
+      padding: 'large',
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'space-y-4 mt-4';
+
+    const hint = document.createElement('p');
+    hint.className = 'text-xs theme-text-secondary';
+    hint.textContent = 'Arrow keys always rotate the hexagon. Remap secondary keys below.';
+    wrapper.appendChild(hint);
+
+    let mapping: ControlMapping = loadControlMapping();
+    const keySlots = new Map<ControlCommand, HTMLDivElement>();
+
+    const updateKeyDisplay = (definition: typeof CONTROL_DEFINITIONS[number]): void => {
+      const wrap = keySlots.get(definition.command);
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      const keys = mapping[definition.command] ?? [];
+      const fixed = new Set(definition.fixedKeys ?? []);
+
+      const seen = new Set<string>();
+      keys.forEach((key) => {
+        if (seen.has(key)) return;
+        seen.add(key);
+        const chip = document.createElement('span');
+        chip.className = fixed.has(key)
+          ? 'px-2 py-1 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-200'
+          : 'px-2 py-1 rounded-full text-[10px] font-semibold bg-white/10 text-white/80';
+        chip.textContent = formatKeyLabel(key);
+        wrap.appendChild(chip);
+      });
+    };
+
+    const controlList = document.createElement('div');
+    controlList.className = 'space-y-3';
+
+    let activeCommand: ControlCommand | null = null;
+    let activeButton: HTMLButtonElement | null = null;
+
+    const handleKeyCapture = (event: KeyboardEvent): void => {
+      if (!activeCommand) return;
+      event.preventDefault();
+      mapping = updateControlMapping(mapping, activeCommand, event.key);
+      saveControlMapping(mapping);
+      getInputManager().setControlMapping(mapping);
+      const definition = CONTROL_DEFINITIONS.find(def => def.command === activeCommand);
+      if (definition) {
+        updateKeyDisplay(definition);
+      }
+      if (activeButton) {
+        activeButton.textContent = 'Remap';
+      }
+      activeCommand = null;
+      activeButton = null;
+      window.removeEventListener('keydown', handleKeyCapture, true);
+    };
+
+    CONTROL_DEFINITIONS.forEach((definition) => {
+      const row = document.createElement('div');
+      row.className = 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between theme-card-muted rounded-xl p-3';
+
+      const info = document.createElement('div');
+      info.className = 'space-y-1';
+      info.innerHTML = `
+        <div class="text-sm font-semibold theme-text">${definition.label}</div>
+        <div class="text-xs theme-text-secondary">${definition.description}</div>
+      `;
+
+      const keysWrap = document.createElement('div');
+      keysWrap.className = 'flex flex-wrap items-center gap-2';
+      keySlots.set(definition.command, keysWrap);
+      updateKeyDisplay(definition);
+
+      const remapBtn = document.createElement('button');
+      remapBtn.type = 'button';
+      remapBtn.className = 'theme-btn theme-btn-outline px-3 py-1 text-xs';
+      remapBtn.textContent = 'Remap';
+      remapBtn.addEventListener('click', () => {
+        if (activeButton) {
+          activeButton.textContent = 'Remap';
+        }
+        activeCommand = definition.command;
+        activeButton = remapBtn;
+        remapBtn.textContent = 'Press key...';
+        window.removeEventListener('keydown', handleKeyCapture, true);
+        window.addEventListener('keydown', handleKeyCapture, true);
+      });
+
+      const rightColumn = document.createElement('div');
+      rightColumn.className = 'flex items-center justify-between gap-3 sm:justify-end sm:min-w-[14rem]';
+      rightColumn.appendChild(keysWrap);
+      if (definition.remappable) {
+        rightColumn.appendChild(remapBtn);
+      }
+
+      row.appendChild(info);
+      row.appendChild(rightColumn);
+      controlList.appendChild(row);
+    });
+
+    const resetBtn = new Button('Reset Defaults', {
+      variant: 'outline',
+      size: 'small',
+      onClick: () => {
+        mapping = structuredClone(DEFAULT_CONTROL_MAPPING);
+        saveControlMapping(mapping);
+        getInputManager().setControlMapping(mapping);
+        CONTROL_DEFINITIONS.forEach((definition) => updateKeyDisplay(definition));
+      },
+    });
+    this.buttons.push(resetBtn);
+
+    wrapper.appendChild(controlList);
+    wrapper.appendChild(resetBtn.element);
+    card.appendChild(wrapper);
+    return card.element;
+  }
+
+  /**
+   * Create guide section
+   */
+  private createGuideSection(): HTMLElement {
+    const card = new Card({
+      title: 'Game Playbook',
+      subtitle: 'Rules, powers, and design guidelines',
+      padding: 'large',
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'space-y-6 mt-4';
+
+    const modeGrid = document.createElement('div');
+    modeGrid.className = 'grid gap-4 md:grid-cols-2';
+    MODE_GUIDES.forEach((mode) => {
+      const modeCard = document.createElement('div');
+      modeCard.className = 'theme-card-muted rounded-xl p-4 space-y-3';
+      const title = document.createElement('div');
+      title.className = 'text-sm font-bold theme-text';
+      title.textContent = mode.name;
+      const tagline = document.createElement('div');
+      tagline.className = 'text-xs theme-text-secondary';
+      tagline.textContent = mode.tagline;
+
+      const rules = document.createElement('ul');
+      rules.className = 'list-disc list-inside text-xs theme-text-secondary space-y-1';
+      mode.rules.forEach((rule) => {
+        const li = document.createElement('li');
+        li.textContent = rule;
+        rules.appendChild(li);
+      });
+
+      const strategy = document.createElement('ul');
+      strategy.className = 'list-disc list-inside text-xs theme-text-secondary space-y-1';
+      mode.strategy.forEach((rule) => {
+        const li = document.createElement('li');
+        li.textContent = rule;
+        strategy.appendChild(li);
+      });
+
+      const strategyLabel = document.createElement('div');
+      strategyLabel.className = 'text-[11px] font-semibold theme-text-secondary uppercase tracking-wide';
+      strategyLabel.textContent = 'Strategy';
+
+      modeCard.appendChild(title);
+      modeCard.appendChild(tagline);
+      modeCard.appendChild(rules);
+      modeCard.appendChild(strategyLabel);
+      modeCard.appendChild(strategy);
+      modeGrid.appendChild(modeCard);
+    });
+
+    const powersGrid = document.createElement('div');
+    powersGrid.className = 'grid gap-3 sm:grid-cols-2';
+    Object.values(POWER_DEFINITIONS).forEach((power) => {
+      const powerCard = document.createElement('div');
+      powerCard.className = 'theme-card-muted rounded-xl p-3 space-y-2';
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between';
+      header.innerHTML = `
+        <span class="text-sm font-semibold theme-text">${power.name}</span>
+        <span class="text-lg">${power.icon}</span>
+      `;
+      const description = document.createElement('div');
+      description.className = 'text-xs theme-text-secondary';
+      description.textContent = power.description;
+      const cooldown = document.createElement('div');
+      cooldown.className = 'text-[11px] theme-text-secondary';
+      cooldown.textContent = `Cooldown: ${(power.cooldownMs / 1000).toFixed(0)}s`;
+      powerCard.appendChild(header);
+      powerCard.appendChild(description);
+      powerCard.appendChild(cooldown);
+      powersGrid.appendChild(powerCard);
+    });
+
+    const uiList = document.createElement('ul');
+    uiList.className = 'list-disc list-inside text-xs theme-text-secondary space-y-1';
+    UI_GUIDELINES.forEach((rule) => {
+      const li = document.createElement('li');
+      li.textContent = rule;
+      uiList.appendChild(li);
+    });
+
+    const powersLabel = document.createElement('div');
+    powersLabel.className = 'text-xs font-semibold theme-text-secondary uppercase tracking-wide';
+    powersLabel.textContent = 'Powers System';
+
+    const uiLabel = document.createElement('div');
+    uiLabel.className = 'text-xs font-semibold theme-text-secondary uppercase tracking-wide';
+    uiLabel.textContent = 'UI/UX Guidelines';
+
+    wrapper.appendChild(modeGrid);
+    wrapper.appendChild(powersLabel);
+    wrapper.appendChild(powersGrid);
+    wrapper.appendChild(uiLabel);
+    wrapper.appendChild(uiList);
+    card.appendChild(wrapper);
+    return card.element;
+  }
+
+  /**
    * Create account section
    */
   private createAccountSection(): HTMLElement {
@@ -489,4 +735,3 @@ export class SettingsPage extends BasePage {
     this.buttons = [];
   }
 }
-

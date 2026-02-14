@@ -7,20 +7,16 @@ import { Canvas } from '@core/Canvas';
 import { stateManager } from '@core/StateManager';
 import { GameStatus, POWER_UP_SCORE_INTERVAL } from '@core/constants';
 import type { Hex } from '@entities/Hex';
-import { PowerUp, PowerUpType } from '@entities/PowerUp';
+import { PowerUp } from '@entities/PowerUp';
+import { type PowerUpType, getPowerDefinition, POWER_SPAWN_POOL } from '@config/powers';
 import type { InventoryUI } from '@ui/hud/InventoryUI';
 
 type PowerUpUseHandler = (type: PowerUpType) => void;
-type SlowMoHandler = (multiplier: number, durationMs: number) => void;
-type ShieldHandler = (durationMs: number) => void;
-
 export interface PowerUpSystemOptions {
   hex: Hex;
   canvas: Canvas;
   inventoryUI: InventoryUI;
   onUse?: PowerUpUseHandler;
-  onSlowMo?: SlowMoHandler;
-  onShield?: ShieldHandler;
 }
 
 export class PowerUpSystem {
@@ -31,16 +27,13 @@ export class PowerUpSystem {
   private lastScoreBucket = 0;
   private enabled = true;
   private onUse?: PowerUpUseHandler;
-  private onSlowMo?: SlowMoHandler;
-  private onShield?: ShieldHandler;
+  private cooldowns = new Map<PowerUpType, number>();
 
   constructor(options: PowerUpSystemOptions) {
     this.hex = options.hex;
     this.canvas = options.canvas;
     this.inventoryUI = options.inventoryUI;
     this.onUse = options.onUse;
-    this.onSlowMo = options.onSlowMo;
-    this.onShield = options.onShield;
 
     this.init();
   }
@@ -75,6 +68,7 @@ export class PowerUpSystem {
     this.activePowerUps = [];
     this.lastScoreBucket = 0;
     this.inventoryUI.clear();
+    this.cooldowns.clear();
   }
 
   public setEnabled(enabled: boolean): void {
@@ -125,17 +119,16 @@ export class PowerUpSystem {
     const type = customEvent.detail?.type;
     if (!type) return;
 
-    this.activatePowerUp(type);
-    window.dispatchEvent(new CustomEvent('powerUpUsed', { detail: { type } }));
-    if (this.onUse) {
-      this.onUse(type);
+    const activated = this.activatePowerUp(type);
+    if (!activated) {
+      return;
     }
+    window.dispatchEvent(new CustomEvent('powerUpUsed', { detail: { type } }));
   };
 
   private spawnPowerUp(): void {
     const lane = this.randomInt(0, this.hex.sides);
-    const types: PowerUpType[] = ['hammer', 'hammer', 'slowmo', 'shield'];
-    const type = types[this.randomInt(0, types.length)];
+    const type = POWER_SPAWN_POOL[this.randomInt(0, POWER_SPAWN_POOL.length)];
 
     const { startDist, scale } = this.getSpawnSettings();
     const powerUp = new PowerUp({
@@ -159,72 +152,24 @@ export class PowerUpSystem {
     }
   }
 
-  private activatePowerUp(type: PowerUpType): void {
-    switch (type) {
-      case 'hammer':
-        this.activateHammer();
-        break;
-      case 'slowmo':
-        if (this.onSlowMo) {
-          this.onSlowMo(0.55, 6000);
-        }
-        break;
-      case 'shield':
-        if (this.onShield) {
-          this.onShield(10000);
-        }
-        break;
-      default:
-        break;
+  private activatePowerUp(type: PowerUpType): boolean {
+    const definition = getPowerDefinition(type);
+    const now = Date.now();
+    const cooldownUntil = this.cooldowns.get(type) ?? 0;
+    if (cooldownUntil > now) {
+      this.inventoryUI.addPowerUp(type);
+      window.dispatchEvent(new CustomEvent('powerUpCooldown', {
+        detail: { type, remainingMs: cooldownUntil - now },
+      }));
+      return false;
     }
-  }
+    this.cooldowns.set(type, now + definition.cooldownMs);
 
-  private activateHammer(): void {
-    const lanes = this.hex.blocks;
-    if (!lanes.length) return;
-
-    let targetIndex = -1;
-    for (let index = 0; index < 20; index++) {
-      const complete = lanes.every(lane => lane.length > index && lane[index].deleted === 0);
-      if (complete) {
-        targetIndex = index;
-        break;
-      }
+    if (this.onUse) {
+      this.onUse(type);
     }
-
-    if (targetIndex === -1) {
-      let maxIndex = -1;
-      for (const lane of lanes) {
-        if (lane.length > 0) {
-          maxIndex = Math.max(maxIndex, lane.length - 1);
-        }
-      }
-
-      if (maxIndex === -1) {
-        return;
-      }
-
-      targetIndex = maxIndex;
-    }
-
-    let destroyed = 0;
-    for (const lane of lanes) {
-      const block = lane[targetIndex];
-      if (block) {
-        block.deleted = 1;
-        destroyed += 1;
-      }
-    }
-
-    if (destroyed > 0) {
-      const bonusScore = destroyed * 50;
-      const currentScore = stateManager.getState().game.score;
-      const newScore = currentScore + bonusScore;
-      stateManager.updateGame({ score: newScore });
-      window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: newScore } }));
-    }
-
-    window.dispatchEvent(new CustomEvent('powerUpEffect', { detail: { type: 'hammer' } }));
+    window.dispatchEvent(new CustomEvent('powerUpEffect', { detail: { type } }));
+    return true;
   }
 
   private getSpawnSettings(): { startDist: number; scale: number } {
@@ -241,4 +186,3 @@ export class PowerUpSystem {
     return Math.floor(Math.random() * (max - min)) + min;
   }
 }
-

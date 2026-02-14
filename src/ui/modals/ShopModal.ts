@@ -243,7 +243,13 @@ export class ShopModal {
   }
 
   private isPowerUp(itemId: ShopItemId): boolean {
-    return itemId === ShopItemId.HAMMER || itemId === ShopItemId.SLOWMO || itemId === ShopItemId.SHIELD;
+    return (
+      itemId === ShopItemId.PULSE ||
+      itemId === ShopItemId.TEMPO ||
+      itemId === ShopItemId.AEGIS ||
+      itemId === ShopItemId.SHIFT ||
+      itemId === ShopItemId.NOVA
+    );
   }
 
   private getItemCost(itemId: ShopItemId): number {
@@ -258,9 +264,11 @@ export class ShopModal {
     const iconMap: Record<ShopItemId, { src?: string; emoji: string; label: string }> = {
       [ShopItemId.CONTINUE]: { src: '/images/icons/replay.svg', emoji: '🔁', label: 'Continue' },
       [ShopItemId.EXTRA_LIFE]: { src: '/images/icons/extra-life.svg', emoji: '❤️', label: 'Extra Life' },
-      [ShopItemId.HAMMER]: { src: '/images/icons/hammer-drop.svg', emoji: '🛠️', label: 'Hammer' },
-      [ShopItemId.SLOWMO]: { emoji: '⏱️', label: 'Slow Motion' },
-      [ShopItemId.SHIELD]: { src: '/images/icons/shield-power-up.svg', emoji: '🛡️', label: 'Shield' },
+      [ShopItemId.PULSE]: { emoji: '💫', label: 'Pulse Wave' },
+      [ShopItemId.TEMPO]: { emoji: '🌀', label: 'Tempo Break' },
+      [ShopItemId.AEGIS]: { emoji: '🛡️', label: 'Aegis Field' },
+      [ShopItemId.SHIFT]: { emoji: '🧭', label: 'Orbit Shift' },
+      [ShopItemId.NOVA]: { emoji: '✨', label: 'Nova Spark' },
     };
 
     const asset = iconMap[itemId];

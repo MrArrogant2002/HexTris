@@ -61,7 +61,7 @@ export class StateManager {
         strategyPhase: undefined,
         tempoLevel: 0,
         timeOrbCount: 0,
-        timeOrbGoal: 3,
+        timeOrbGoal: 4,
         momentumValue: 0,
         ghostDelta: 0,
         activeMutators: [],
@@ -77,7 +77,7 @@ export class StateManager {
         sfxVolume: 0.6,
         preGamePowerUps: [],
         currentGameMode: 'standard',
-        timerDuration: 90,
+        timerDuration: 75,
         currentGroupId: undefined,
         multiplayerMode: 'race',
         prestigeMutators: [],
@@ -226,4 +226,3 @@ export class StateManager {
 
 // Export singleton instance
 export const stateManager = StateManager.getInstance();
-

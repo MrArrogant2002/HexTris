@@ -3,7 +3,14 @@
  * Modern event-driven input system
  */
 
-export type InputCommand = 'rotateLeft' | 'rotateRight' | 'speedUp' | 'pause' | 'restart';
+import {
+  type ControlCommand,
+  type ControlMapping,
+  loadControlMapping,
+  normalizeKey,
+} from '@config/controls';
+
+export type InputCommand = ControlCommand;
 
 export interface InputHandler {
   onCommand: (command: InputCommand, pressed: boolean) => void;
@@ -16,6 +23,7 @@ export class InputManager {
   private touchStartY: number = 0;
   private swipeThreshold: number = 50;
   private enabled: boolean = true;
+  private controlMapping: ControlMapping = loadControlMapping();
 
   constructor() {
     this.initKeyboardListeners();
@@ -62,63 +70,22 @@ export class InputManager {
    */
   private initKeyboardListeners(): void {
     document.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase(); // Normalize key for consistent tracking
+      const key = normalizeKey(e.key); // Normalize key for consistent tracking
       if (this.pressedKeys.has(key)) return; // Prevent key repeat
       this.pressedKeys.add(key);
 
-      switch (key) {
-        case 'arrowleft':
-        case 'a':
-          this.trigger('rotateLeft', true);
-          e.preventDefault();
-          break;
-        case 'arrowright':
-        case 'd':
-          this.trigger('rotateRight', true);
-          e.preventDefault();
-          break;
-        case 'arrowdown':
-        case 's':
-          this.trigger('speedUp', true);
-          e.preventDefault();
-          break;
-        case 'p':
-        case ' ': // Space
-          this.trigger('pause', true);
-          e.preventDefault();
-          break;
-        case 'enter':
-          this.trigger('restart', true);
-          e.preventDefault();
-          break;
-      }
+      const commands = this.getCommandsForKey(key);
+      if (!commands.length) return;
+      commands.forEach((command) => this.trigger(command, true));
+      e.preventDefault();
     });
 
     document.addEventListener('keyup', (e) => {
-      const key = e.key.toLowerCase(); // Normalize key for consistent tracking
+      const key = normalizeKey(e.key); // Normalize key for consistent tracking
       this.pressedKeys.delete(key);
 
-      switch (key) {
-        case 'arrowleft':
-        case 'a':
-          this.trigger('rotateLeft', false);
-          break;
-        case 'arrowright':
-        case 'd':
-          this.trigger('rotateRight', false);
-          break;
-        case 'arrowdown':
-        case 's':
-          this.trigger('speedUp', false);
-          break;
-        case 'p':
-        case ' ':
-          this.trigger('pause', false);
-          break;
-        case 'enter':
-          this.trigger('restart', false);
-          break;
-      }
+      const commands = this.getCommandsForKey(key);
+      commands.forEach((command) => this.trigger(command, false));
     });
 
     // Clear pressed keys on window blur
@@ -214,7 +181,7 @@ export class InputManager {
    * Check if a key is pressed
    */
   public isKeyPressed(key: string): boolean {
-    return this.pressedKeys.has(key);
+    return this.pressedKeys.has(normalizeKey(key));
   }
 
   /**
@@ -237,6 +204,24 @@ export class InputManager {
   public setSwipeThreshold(threshold: number): void {
     this.swipeThreshold = threshold;
   }
+
+  public setControlMapping(mapping: ControlMapping): void {
+    this.controlMapping = mapping;
+  }
+
+  public getControlMapping(): ControlMapping {
+    return this.controlMapping;
+  }
+
+  private getCommandsForKey(key: string): InputCommand[] {
+    const commands: InputCommand[] = [];
+    (Object.keys(this.controlMapping) as InputCommand[]).forEach((command) => {
+      if (this.controlMapping[command].includes(key)) {
+        commands.push(command);
+      }
+    });
+    return commands;
+  }
 }
 
 // Singleton instance
@@ -258,4 +243,3 @@ export function getInputManager(): InputManager {
 export function resetInputManager(): void {
   inputManagerInstance = null;
 }
-
