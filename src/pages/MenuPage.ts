@@ -217,11 +217,11 @@ export class MenuPage extends BasePage {
       header.appendChild(titleEl);
 
       const tipList = document.createElement('ul');
-      tipList.className = 'mt-2 space-y-1 text-xs theme-text-secondary';
+      tipList.className = 'mt-2 space-y-1 text-xs theme-text-secondary list-disc list-inside';
 
       tips.forEach((tip) => {
         const item = document.createElement('li');
-        item.textContent = `• ${tip}`;
+        item.textContent = tip;
         tipList.appendChild(item);
       });
 
