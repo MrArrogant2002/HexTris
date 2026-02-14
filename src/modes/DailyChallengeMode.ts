@@ -1,10 +1,9 @@
-﻿/**
+/**
  * Daily Challenge System
- * Procedurally generates a unique challenge each day using date seed
- * Same challenge for all players worldwide
+ * Builds fresh daily objectives with new mechanics and tracking.
  */
 
-interface DailyChallenge {
+export interface DailyChallenge {
   id: string;
   date: string;
   type: string;
@@ -20,12 +19,11 @@ interface DailyChallenge {
 
 interface TrackingData {
   startTime: number;
-  startScore: number;
   highestScore: number;
-  combos: Array<{ size: number; timestamp: number }>;
-  colorGroups: any[];
-  livesLost: number;
-  startingLives: number;
+  rotations: number;
+  largestClear: number;
+  colorsCleared: Set<string>;
+  powerUses: number;
 }
 
 interface ChallengeType {
@@ -37,9 +35,11 @@ interface ChallengeType {
 }
 
 class DailyChallengeSystem {
+  // Prime multiplier keeps hash distribution stable across dates.
+  private static readonly SEED_PRIME = 31;
   private currentChallenge: DailyChallenge | null = null;
   private challengeDate: string | null = null;
-  private isActive: boolean = false;
+  private isActive = false;
   private completionStatus: Record<string, boolean>;
   private streakDays: number;
   private lastCompletionDate: string | null;
@@ -51,74 +51,58 @@ class DailyChallengeSystem {
     this.completionStatus = this.loadCompletionStatus();
     this.streakDays = this.loadStreak();
     this.lastCompletionDate = this.loadLastCompletion();
-    
+
     this.challengeTypes = [
       {
-        id: 'score_target',
-        name: 'Score Target',
-        icon: 'TARGET',
-        description: 'Reach {target} points',
-        generateParams: () => ({ target: this.randomRange(5000, 15000, 1000) })
+        id: 'rotation_rally',
+        name: 'Rotation Rally',
+        icon: '🧭',
+        description: 'Rotate the hexagon {rotations} times.',
+        generateParams: () => ({ rotations: this.randomRange(24, 72, 6) }),
       },
       {
-        id: 'survival_time',
-        name: 'Survival Challenge',
-        icon: 'TIME',
-        description: 'Survive for {duration} seconds',
-        generateParams: () => ({ duration: this.randomRange(120, 300, 30) })
+        id: 'color_forge',
+        name: 'Color Forge',
+        icon: '🎨',
+        description: 'Clear matches in {colors} distinct colors.',
+        generateParams: () => ({ colors: this.randomRange(3, 5, 1) }),
       },
       {
-        id: 'combo_master',
-        name: 'Combo Master',
-        icon: 'COMBO',
-        description: 'Achieve {combos} combos of {size}+ blocks',
-        generateParams: () => ({ 
-          combos: this.randomRange(3, 8, 1), 
-          size: this.randomRange(5, 10, 1) 
-        })
+        id: 'burst_chain',
+        name: 'Burst Chain',
+        icon: '💥',
+        description: 'Land a clear of {blocks}+ blocks.',
+        generateParams: () => ({ blocks: this.randomRange(6, 10, 1) }),
       },
       {
-        id: 'color_challenge',
-        name: 'Color Challenge',
-        icon: 'COLOR',
-        description: 'Clear {clears} groups using only {colors} colors',
-        generateParams: () => ({ 
-          clears: this.randomRange(15, 30, 5),
-          colors: this.randomRange(2, 4, 1)
-        })
+        id: 'power_weave',
+        name: 'Power Weave',
+        icon: '✨',
+        description: 'Trigger {powers} powers in one run.',
+        generateParams: () => ({ powers: this.randomRange(3, 6, 1) }),
       },
       {
-        id: 'no_life_loss',
-        name: 'Perfect Run',
-        icon: 'PERFECT',
-        description: 'Reach {target} points without losing a life',
-        generateParams: () => ({ target: this.randomRange(3000, 8000, 500) })
+        id: 'endurance_drift',
+        name: 'Endurance Drift',
+        icon: '⏳',
+        description: 'Survive {duration}s and reach {score} points.',
+        generateParams: () => ({
+          duration: this.randomRange(90, 180, 15),
+          score: this.randomRange(4000, 9000, 500),
+        }),
       },
-      {
-        id: 'speed_run',
-        name: 'Speed Run',
-        icon: 'SPEED',
-        description: 'Reach {target} points in under {time} seconds',
-        generateParams: () => ({ 
-          target: this.randomRange(5000, 10000, 1000),
-          time: this.randomRange(60, 120, 15)
-        })
-      }
     ];
 
     this.init();
   }
 
   init() {
-    // Generate today's challenge
     this.generateTodaysChallenge();
-    
-    // Listen for challenge activation
+
     window.addEventListener('activateDailyChallenge', () => {
       this.activate();
     });
 
-    // Listen for game events
     window.addEventListener('gameStart', () => {
       if (this.isActive) {
         this.startTracking();
@@ -131,33 +115,27 @@ class DailyChallengeSystem {
       }
     });
 
-    // Update streak on daily login
     this.checkDailyLogin();
-
-    console.log('Daily Challenge System initialized');
-    console.log(`Today's challenge: ${this.currentChallenge?.name}`);
   }
 
   generateTodaysChallenge() {
     const today = this.getTodayString();
-    
-    // Check if we already generated today's challenge
+
     if (this.challengeDate === today && this.currentChallenge) {
       return this.currentChallenge;
     }
 
-    // Use date as seed for random number generator
     const seed = this.dateToSeed(today);
     this.seedRandom(seed);
 
-    // Select challenge type based on seeded random
     const typeIndex = Math.floor(this.seededRandom() * this.challengeTypes.length);
     const challengeType = this.challengeTypes[typeIndex];
 
-    // Generate challenge parameters
     const params = challengeType.generateParams();
 
-    // Create challenge object
+    const baseReward = 600;
+    const streakBonus = this.streakDays >= 5 ? 300 : 0;
+
     this.currentChallenge = {
       id: `${today}_${challengeType.id}`,
       date: today,
@@ -166,20 +144,19 @@ class DailyChallengeSystem {
       icon: challengeType.icon,
       description: this.formatDescription(challengeType.description, params),
       params,
-      baseReward: 500,
-      streakBonus: this.streakDays >= 7 ? 500 : 0,
-      totalReward: 500 + (this.streakDays >= 7 ? 500 : 0),
-      completed: this.isCompletedToday()
+      baseReward,
+      streakBonus,
+      totalReward: baseReward + streakBonus,
+      completed: this.isCompletedToday(),
     };
 
     this.challengeDate = today;
-    
     return this.currentChallenge;
   }
 
   formatDescription(template: string, params: Record<string, number>): string {
     let result = template;
-    Object.keys(params).forEach(key => {
+    Object.keys(params).forEach((key) => {
       result = result.replace(`{${key}}`, String(params[key]));
     });
     return result;
@@ -188,62 +165,59 @@ class DailyChallengeSystem {
   activate() {
     this.isActive = true;
     this.trackingData = this.initTrackingData();
-    console.log('Daily Challenge ACTIVATED:', this.currentChallenge?.name);
   }
 
   deactivate() {
     this.isActive = false;
     this.trackingData = null;
-    console.log('Daily Challenge deactivated');
   }
 
   startTracking(): void {
     this.trackingData = this.initTrackingData();
-    
-    // Listen for relevant game events
+
     window.addEventListener('scoreUpdate', ((e: CustomEvent) => this.onScoreUpdate(e)) as EventListener);
-    window.addEventListener('comboAchieved', ((e: CustomEvent) => this.onComboAchieved(e)) as EventListener);
-    window.addEventListener('livesChanged', ((e: CustomEvent) => this.onLifeChanged(e)) as EventListener);
+    window.addEventListener('matchResolved', ((e: CustomEvent) => this.onMatchResolved(e)) as EventListener);
+    window.addEventListener('hexRotated', (() => this.onHexRotated()) as EventListener);
+    window.addEventListener('powerUpUsed', (() => this.onPowerUsed()) as EventListener);
   }
 
   initTrackingData(): TrackingData {
     return {
       startTime: Date.now(),
-      startScore: 0,
       highestScore: 0,
-      combos: [],
-      colorGroups: [],
-      livesLost: 0,
-      startingLives: 3
+      rotations: 0,
+      largestClear: 0,
+      colorsCleared: new Set(),
+      powerUses: 0,
     };
   }
 
   onScoreUpdate(e: CustomEvent): void {
     if (!this.trackingData) return;
-    
     const currentScore = e.detail?.score || 0;
     this.trackingData.highestScore = Math.max(this.trackingData.highestScore, currentScore);
   }
 
-  onComboAchieved(e: CustomEvent): void {
+  onMatchResolved(e: CustomEvent): void {
     if (!this.trackingData) return;
-    
-    const combo = e.detail;
-    if (combo && combo.count >= 3) {
-      this.trackingData.combos.push({
-        size: combo.count,
-        timestamp: Date.now()
-      });
+    const blocksCleared = e.detail?.blocksCleared ?? 0;
+    const color = e.detail?.color;
+    if (color) {
+      this.trackingData.colorsCleared.add(color);
+    }
+    if (blocksCleared > this.trackingData.largestClear) {
+      this.trackingData.largestClear = blocksCleared;
     }
   }
 
-  onLifeChanged(e: CustomEvent): void {
+  onHexRotated(): void {
     if (!this.trackingData) return;
-    
-    if (e.detail && e.detail.currentLives < this.trackingData.startingLives) {
-      this.trackingData.livesLost++;
-      this.trackingData.startingLives = e.detail.currentLives;
-    }
+    this.trackingData.rotations += 1;
+  }
+
+  onPowerUsed(): void {
+    if (!this.trackingData) return;
+    this.trackingData.powerUses += 1;
   }
 
   checkCompletion() {
@@ -253,35 +227,26 @@ class DailyChallengeSystem {
     let completed = false;
 
     switch (challenge.type) {
-      case 'score_target':
-        completed = this.trackingData.highestScore >= challenge.params.target;
+      case 'rotation_rally':
+        completed = this.trackingData.rotations >= challenge.params.rotations;
         break;
-
-      case 'survival_time':
+      case 'color_forge':
+        completed = this.trackingData.colorsCleared.size >= challenge.params.colors;
+        break;
+      case 'burst_chain':
+        completed = this.trackingData.largestClear >= challenge.params.blocks;
+        break;
+      case 'power_weave':
+        completed = this.trackingData.powerUses >= challenge.params.powers;
+        break;
+      case 'endurance_drift': {
         const timeElapsed = (Date.now() - this.trackingData.startTime) / 1000;
-        completed = timeElapsed >= challenge.params.duration;
+        completed = timeElapsed >= challenge.params.duration
+          && this.trackingData.highestScore >= challenge.params.score;
         break;
-
-      case 'combo_master':
-        const validCombos = this.trackingData.combos.filter(c => c.size >= challenge.params.size);
-        completed = validCombos.length >= challenge.params.combos;
-        break;
-
-      case 'color_challenge':
-        // Simplified - count all clears (would need more game integration for color tracking)
-        completed = this.trackingData.combos.length >= challenge.params.clears;
-        break;
-
-      case 'no_life_loss':
-        completed = this.trackingData.highestScore >= challenge.params.target && 
-                   this.trackingData.livesLost === 0;
-        break;
-
-      case 'speed_run':
-        const duration = (Date.now() - this.trackingData.startTime) / 1000;
-        completed = this.trackingData.highestScore >= challenge.params.target && 
-                   duration <= challenge.params.time;
-        break;
+      }
+      default:
+        completed = false;
     }
 
     if (completed && !this.isCompletedToday()) {
@@ -293,62 +258,43 @@ class DailyChallengeSystem {
 
   onChallengeCompleted(): void {
     if (!this.currentChallenge) return;
-    
-    console.log('DAILY CHALLENGE COMPLETED!');
-    
-    // Mark as completed
     this.markCompleted();
-    
-    // Update streak
     this.updateStreak();
-    
-    // Award rewards - would need integration with game systems
-    console.log(`Reward awarded: ${this.currentChallenge.totalReward} special points`);
-    
-    // Show completion notification
     this.showCompletionNotification();
   }
 
   showCompletionNotification(): void {
     if (!this.currentChallenge) return;
-    
-    const streakBonus = this.streakDays >= 7 ? ' (2x Streak Bonus!)' : '';
-    console.log(`Challenge Complete! You earned ${this.currentChallenge.totalReward} special points!${streakBonus} ${this.streakDays}-day streak!`);
+    const streakBonus = this.streakDays >= 5 ? ' (Streak Bonus!)' : '';
+    console.log(`Challenge Complete! You earned ${this.currentChallenge.totalReward} diamonds.${streakBonus}`);
   }
 
   checkDailyLogin() {
     const today = this.getTodayString();
     const lastLogin = localStorage.getItem('lastDailyLogin');
-    
+
     if (lastLogin !== today) {
       localStorage.setItem('lastDailyLogin', today);
-      console.log('Daily login registered');
     }
   }
 
   updateStreak() {
     const today = this.getTodayString();
     const yesterday = this.getYesterdayString();
-    
+
     if (this.lastCompletionDate === yesterday) {
-      // Continue streak
       this.streakDays++;
     } else if (this.lastCompletionDate === today) {
-      // Already completed today (shouldn't happen)
       return;
     } else {
-      // Streak broken, reset
       this.streakDays = 1;
     }
-    
+
     this.lastCompletionDate = today;
     this.saveStreak();
     this.saveLastCompletion();
-    
-    console.log(`Challenge streak: ${this.streakDays} days`);
   }
 
-  // Seeded random number generator (for consistent daily challenges)
   seedRandom(seed: number): void {
     this.randomSeed = seed;
   }
@@ -359,37 +305,45 @@ class DailyChallengeSystem {
   }
 
   randomRange(min: number, max: number, step: number): number {
-    const range = (max - min) / step;
-    return min + Math.floor(this.seededRandom() * (range + 1)) * step;
+    const range = Math.floor((max - min) / step) + 1;
+    const value = min + Math.floor(this.seededRandom() * range) * step;
+    return Math.min(max, Math.max(min, value));
   }
 
-  dateToSeed(dateString: string): number {
-    // Convert date string to numeric seed
-    const parts = dateString.split('-').map(Number);
-    return parts[0] * 10000 + parts[1] * 100 + parts[2];
+  dateToSeed(date: string): number {
+    return Array.from(date).reduce((total, char) => {
+      const next = (total * DailyChallengeSystem.SEED_PRIME + char.charCodeAt(0)) >>> 0;
+      return next;
+    }, 0);
   }
 
   getTodayString(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return new Date().toISOString().slice(0, 10);
   }
 
   getYesterdayString(): string {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    const date = new Date();
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().slice(0, 10);
   }
 
-  // Persistence
-  markCompleted(): void {
-    const today = this.getTodayString();
-    this.completionStatus[today] = true;
-    this.saveCompletionStatus();
+  getCurrentChallenge(): DailyChallenge | null {
+    return this.currentChallenge;
+  }
+
+  getStreak(): number {
+    return this.streakDays;
   }
 
   isCompletedToday(): boolean {
-    const today = this.getTodayString();
-    return this.completionStatus[today] === true;
+    if (!this.currentChallenge) return false;
+    return this.completionStatus[this.currentChallenge.id] === true;
+  }
+
+  markCompleted(): void {
+    if (!this.currentChallenge) return;
+    this.completionStatus[this.currentChallenge.id] = true;
+    this.saveCompletionStatus();
   }
 
   loadCompletionStatus(): Record<string, boolean> {
@@ -405,7 +359,7 @@ class DailyChallengeSystem {
     try {
       localStorage.setItem('dailyChallengeCompletions', JSON.stringify(this.completionStatus));
     } catch (error) {
-      console.error('Error saving completion status:', error);
+      console.error('Error saving challenge completion:', error);
     }
   }
 
@@ -427,55 +381,14 @@ class DailyChallengeSystem {
   }
 
   loadLastCompletion(): string | null {
-    try {
-      return localStorage.getItem('lastChallengeCompletion');
-    } catch (error) {
-      return null;
-    }
+    return localStorage.getItem('lastChallengeCompletion');
   }
 
   saveLastCompletion(): void {
-    try {
-      if (this.lastCompletionDate) {
-        localStorage.setItem('lastChallengeCompletion', this.lastCompletionDate);
-      }
-    } catch (error) {
-      console.error('Error saving last completion:', error);
+    if (this.lastCompletionDate) {
+      localStorage.setItem('lastChallengeCompletion', this.lastCompletionDate);
     }
-  }
-
-  async syncCompletionToCloud(): Promise<void> {
-    try {
-      // This would require an Appwrite collection for daily challenges
-      // For now, just log it
-      console.log('Would sync challenge completion to cloud');
-    } catch (error) {
-      console.error('Error syncing to cloud:', error);
-    }
-  }
-
-  // Getters
-  getCurrentChallenge(): DailyChallenge | null {
-    return this.currentChallenge;
-  }
-
-  getStreak(): number {
-    return this.streakDays;
-  }
-
-  isActiveChallengeMode(): boolean {
-    return this.isActive;
   }
 }
 
-// Export for use in the application
-export { DailyChallengeSystem, type DailyChallenge, type TrackingData };
-
-// Auto-initialize (commented out as it's not currently integrated)
-// if (typeof window !== 'undefined') {
-//   document.addEventListener('DOMContentLoaded', () => {
-//     new DailyChallengeSystem();
-//     console.log('Daily Challenge System initialized');
-//   });
-// }
-
+export { DailyChallengeSystem };

@@ -19,8 +19,8 @@ export class InventoryUI {
     // Container
     const container = document.createElement('div');
     container.className = `
-      fixed bottom-6 left-6 z-50
-      flex gap-3
+      fixed bottom-40 left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-6 sm:translate-x-0 z-40
+      flex gap-2 sm:gap-3
     `;
 
     // Create slots
@@ -36,13 +36,13 @@ export class InventoryUI {
   private createSlot(index: number): HTMLDivElement {
     const slot = document.createElement('div');
     slot.className = `
-      relative w-20 h-20
+      relative w-16 h-16 sm:w-20 sm:h-20
       flex items-center justify-center
-      bg-gradient-to-br from-white to-gray-100
-      border-3 border-gray-400
-      rounded-lg shadow-xl
+      theme-card
+      border border-transparent
+      rounded-xl shadow-xl
       transition-all duration-200
-      hover:scale-110 hover:shadow-2xl hover:border-gray-600
+      hover:scale-105 hover:shadow-2xl
       cursor-pointer
       backdrop-blur-sm
     `;
@@ -75,9 +75,11 @@ export class InventoryUI {
    */
   private getPowerUpAsset(type: string): { src?: string; emoji: string; label: string } {
     const map: Record<string, { src?: string; emoji: string; label: string }> = {
-      hammer: { src: '/images/icons/hammer-drop.svg', emoji: '🛠️', label: 'Hammer' },
-      slowmo: { emoji: '⏱️', label: 'Slow Motion' },
-      shield: { src: '/images/icons/shield-power-up.svg', emoji: '🛡️', label: 'Shield' },
+      pulse: { emoji: '💫', label: 'Pulse Wave' },
+      tempo: { emoji: '🌀', label: 'Tempo Break' },
+      aegis: { emoji: '🛡️', label: 'Aegis Field' },
+      shift: { emoji: '🧭', label: 'Orbit Shift' },
+      nova: { emoji: '✨', label: 'Nova Spark' },
     };
     return map[type] || { emoji: '❓', label: 'Unknown' };
   }
@@ -170,18 +172,18 @@ export class InventoryUI {
       slot.appendChild(iconWrap);
 
       // Active state
-      slot.style.borderColor = '#1f2937';
-      slot.style.borderWidth = '3px';
+      slot.style.borderColor = 'var(--theme-accent)';
+      slot.style.borderWidth = '2px';
     } else {
       // Empty state
-      slot.style.borderColor = '#9ca3af';
-      slot.style.borderWidth = '3px';
+      slot.style.borderColor = 'var(--theme-border)';
+      slot.style.borderWidth = '2px';
 
       const empty = document.createElement('div');
       empty.className = 'power-up-empty';
       empty.textContent = '-';
-      empty.style.fontSize = '3rem';
-      empty.style.color = '#d1d5db';
+      empty.style.fontSize = '2.5rem';
+      empty.style.color = 'var(--theme-text-secondary)';
       empty.style.fontWeight = 'bold';
       empty.style.lineHeight = '1';
       empty.style.display = 'flex';
@@ -234,4 +236,3 @@ export class InventoryUI {
     return this.element;
   }
 }
-

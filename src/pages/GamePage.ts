@@ -10,7 +10,15 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
-import { INVULNERABILITY_DURATION, LIFE_BONUS_INTERVAL, MAX_LIVES, ROUTES, GameStatus } from '@core/constants';
+import {
+  INVULNERABILITY_DURATION,
+  LIFE_BONUS_INTERVAL,
+  MAX_LIVES,
+  ROUTES,
+  GameStatus,
+  RESONANCE_SCORE_MULTIPLIER,
+  TIME_ORB_GOAL,
+} from '@core/constants';
 import { Hex } from '@entities/Hex';
 import { Block } from '@entities/Block';
 import { FloatingText } from '@entities/FloatingText';
@@ -41,6 +49,7 @@ import {
 } from '@ui/hud';
 import { audioManager } from '@/managers/AudioManager';
 import { createEmptyInventory, ShopItemId } from '@config/shopItems';
+import { type PowerUpType, getPowerDefinition } from '@config/powers';
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
 
@@ -77,11 +86,16 @@ export class GamePage extends BasePage {
   private frameCount: number = 0;
   private rushMultiplier: number = 1;
   private powerUpSpeedMultiplier: number = 1;
+  private powerUpSpawnMultiplier: number = 1;
+  private scoreBoostMultiplier: number = 1;
   private slowMoTimeoutId: number | null = null;
   private slowMoIntervalId: number | null = null;
   private shieldTimeoutId: number | null = null;
   private invulnerabilityTimeoutId: number | null = null;
   private hammerEffectTimeoutId: number | null = null;
+  private novaTimeoutId: number | null = null;
+  private resonanceTimeoutId: number | null = null;
+  private syncBoostTimeoutId: number | null = null;
   private nextLifeBonusScore: number = LIFE_BONUS_INTERVAL;
   private blockSettings: any;
   private dailyChallenge: DailyChallengeSystem | null = null;
@@ -94,6 +108,10 @@ export class GamePage extends BasePage {
   private slowMoTimerEl: HTMLDivElement | null = null;
   private shieldOverlay: HTMLDivElement | null = null;
   private hammerOverlay: HTMLDivElement | null = null;
+  private shiftOverlay: HTMLDivElement | null = null;
+  private novaOverlay: HTMLDivElement | null = null;
+  private resonanceOverlay: HTMLDivElement | null = null;
+  private syncOverlay: HTMLDivElement | null = null;
   private surgeOverlay: HTMLDivElement | null = null;
   private surgeTimeoutId: number | null = null;
   private activeDifficultyConfig: DifficultyConfig | null = null;
@@ -105,10 +123,11 @@ export class GamePage extends BasePage {
   private comboTier = 0;
   private lastComboFrame = 0;
   private heatDecayRate = 6;
+  private lastResonanceColor: string | null = null;
+  private resonanceActive = false;
+  private tempoActive = false;
   private challengeScript: ChallengeScript | null = null;
   private challengePhaseIndex = 0;
-  private timerRampTimer = 0;
-  private nextTimerRamp = 15;
   private timerRampStage = 0;
   private timerRampSpeedMultiplier = 1;
   private timerRampSpawnMultiplier = 1;
@@ -118,6 +137,7 @@ export class GamePage extends BasePage {
   private catchupSpawnMultiplier = 1;
   private momentumValue = 0;
   private momentumDecayRate = 4;
+  private syncBoostActive = false;
   private activeMutators = new Set<string>();
   private noShieldActive = false;
   private handleGameOverSfx = (): void => {
@@ -129,6 +149,30 @@ export class GamePage extends BasePage {
   private handlePowerUpCollectedSfx = (): void => {
     audioManager.playSfx('powerUpCollect');
   };
+  private handlePowerUpCooldown = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ type?: PowerUpType; remainingMs?: number }>;
+    const type = customEvent.detail?.type;
+    if (!type) return;
+    const remaining = Math.max(0, customEvent.detail?.remainingMs ?? 0);
+    const label = getPowerDefinition(type).name.toUpperCase();
+    this.floatingTexts.push(FloatingText.createMessage(
+      this.canvas.element.width / 2,
+      this.canvas.element.height / 2 + 140,
+      `${label} ${Math.ceil(remaining / 1000)}s`,
+      '#fbbf24'
+    ));
+  };
+  private handleTimerRelayComplete = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ stage?: number; bonusSeconds?: number }>;
+    const stage = customEvent.detail?.stage ?? 0;
+    const bonusSeconds = customEvent.detail?.bonusSeconds ?? 0;
+    this.floatingTexts.push(FloatingText.createMessage(
+      this.canvas.element.width / 2,
+      this.canvas.element.height / 2 - 170,
+      `RELAY ${stage + 1} +${bonusSeconds}s`,
+      '#a5b4fc'
+    ));
+  };
   private handlePowerUpUsedInventory = (event: Event): void => {
     const customEvent = event as CustomEvent<{ type?: ShopItemId }>;
     const type = customEvent.detail?.type;
@@ -139,23 +183,26 @@ export class GamePage extends BasePage {
   private handlePowerUpEffect = (event: Event): void => {
     const customEvent = event as CustomEvent<{ type?: string }>;
     const type = customEvent.detail?.type;
-    if (type === 'hammer') {
+    if (type === 'pulse') {
       this.triggerHammerEffect();
+    }
+    if (type === 'shift') {
+      this.triggerShiftEffect();
     }
   };
 
   private handleTimeOrbCollected = (): void => {
     const state = stateManager.getState();
     const nextCount = (state.game.timeOrbCount ?? 0) + 1;
-    const goal = state.game.timeOrbGoal ?? 3;
+    const goal = state.game.timeOrbGoal ?? TIME_ORB_GOAL;
     if (nextCount >= goal) {
-      this.timerAttack?.addBonusTime(5);
+      this.timerAttack?.addRelayCharge();
       stateManager.updateGame({ timeOrbCount: 0 });
       this.floatingTexts.push(FloatingText.createMessage(
         this.canvas.element.width / 2,
         this.canvas.element.height / 2 - 140,
-        '+5s',
-        '#9ad8ff'
+        'RELAY!',
+        '#c7d2fe'
       ));
     } else {
       stateManager.updateGame({ timeOrbCount: nextCount });
@@ -211,6 +258,9 @@ export class GamePage extends BasePage {
     const controls = this.createControls();
     gameContainer.appendChild(controls);
 
+    const mobileDock = this.createMobileActionDock();
+    gameContainer.appendChild(mobileDock);
+
     this.element.appendChild(gameContainer);
     this.mount();
   }
@@ -223,11 +273,98 @@ export class GamePage extends BasePage {
     controls.className = 'theme-card-muted backdrop-blur-sm border-t-2 px-4 py-2 text-center';
     controls.innerHTML = `
       <div class="text-xs theme-text-secondary">
-        <span class="hidden md:inline">Left/Right Arrow Keys to Rotate - Down Arrow to Speed Up - P or Space to Pause</span>
-        <span class="md:hidden">Swipe to Move - Tap to Rotate</span>
+        <span class="hidden md:inline">Arrow Keys Rotate • Shift to Glide • 1-3 Powers • P to Pause</span>
+        <span class="md:hidden">Swipe to rotate • Tap dock buttons • Hold boost to glide</span>
       </div>
     `;
     return controls;
+  }
+
+  private createMobileActionDock(): HTMLElement {
+    const dock = document.createElement('div');
+    dock.className = `
+      fixed bottom-20 left-1/2 -translate-x-1/2 z-40
+      flex flex-col gap-2 md:hidden pointer-events-auto
+    `.trim().replace(/\s+/g, ' ');
+
+    const mainRow = document.createElement('div');
+    mainRow.className = 'flex items-center gap-2';
+
+    const secondaryRow = document.createElement('div');
+    secondaryRow.className = 'flex items-center gap-2 justify-center';
+
+    const makeButton = (label: string, aria: string): HTMLButtonElement => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `
+        px-3 py-2 rounded-full text-xs font-semibold
+        theme-card-muted theme-text
+        border border-transparent shadow-lg
+        backdrop-blur-md
+      `.trim().replace(/\s+/g, ' ');
+      button.textContent = label;
+      button.setAttribute('aria-label', aria);
+      button.style.touchAction = 'manipulation';
+      return button;
+    };
+
+    const rotateLeft = makeButton('⟲', 'Rotate left');
+    rotateLeft.addEventListener('click', () => this.handleMobileRotate(1));
+
+    const rotateRight = makeButton('⟳', 'Rotate right');
+    rotateRight.addEventListener('click', () => this.handleMobileRotate(-1));
+
+    const boost = makeButton('BOOST', 'Glide boost');
+    const stopBoost = (): void => this.handleMobileBoost(false);
+    boost.addEventListener('pointerdown', () => this.handleMobileBoost(true));
+    boost.addEventListener('pointerup', stopBoost);
+    boost.addEventListener('pointerleave', stopBoost);
+    boost.addEventListener('pointercancel', stopBoost);
+
+    const pause = makeButton('⏸', 'Pause');
+    pause.addEventListener('click', () => this.togglePause());
+
+    const power1 = makeButton('P1', 'Power slot 1');
+    power1.addEventListener('click', () => this.inventoryUI?.usePowerUp(0));
+
+    const power2 = makeButton('P2', 'Power slot 2');
+    power2.addEventListener('click', () => this.inventoryUI?.usePowerUp(1));
+
+    const power3 = makeButton('P3', 'Power slot 3');
+    power3.addEventListener('click', () => this.inventoryUI?.usePowerUp(2));
+
+    mainRow.appendChild(rotateLeft);
+    mainRow.appendChild(boost);
+    mainRow.appendChild(rotateRight);
+
+    secondaryRow.appendChild(power1);
+    secondaryRow.appendChild(power2);
+    secondaryRow.appendChild(power3);
+    secondaryRow.appendChild(pause);
+
+    dock.appendChild(mainRow);
+    dock.appendChild(secondaryRow);
+    return dock;
+  }
+
+  private handleMobileRotate(direction: 1 | -1): void {
+    if (stateManager.getState().status !== GameStatus.PLAYING) return;
+    if (!this.hex) return;
+    this.hex.rotate(direction);
+    window.dispatchEvent(new CustomEvent('hexRotated', { detail: { direction } }));
+  }
+
+  private handleMobileBoost(active: boolean): void {
+    if (stateManager.getState().status !== GameStatus.PLAYING) return;
+    this.rushMultiplier = active ? 4 : 1;
+  }
+
+  private togglePause(): void {
+    if (this.gameLoop.getIsRunning()) {
+      this.pauseGame();
+    } else {
+      this.resumeGame();
+    }
   }
 
   /**
@@ -293,14 +430,14 @@ export class GamePage extends BasePage {
     // Add pause button
     const pauseButton = document.createElement('button');
     pauseButton.className = `
-      fixed top-4 left-1/2 transform -translate-x-1/2 translate-y-16 z-20
+      fixed top-4 left-1/2 transform -translate-x-1/2 translate-y-24 sm:translate-y-16 z-20
       px-4 py-2 theme-card backdrop-blur-md
       rounded-lg shadow-lg
       text-sm font-bold theme-text
       hover:scale-105 transition-all duration-200
       active:scale-95
     `;
-    pauseButton.textContent = 'PAUSE (P)';
+    pauseButton.textContent = 'PAUSE (P / Space)';
     pauseButton.onclick = () => this.pauseGame();
     hudContainer.appendChild(pauseButton);
 
@@ -334,8 +471,6 @@ export class GamePage extends BasePage {
     this.comboHeatValue = 0;
     this.comboTier = 0;
     this.lastComboFrame = 0;
-    this.timerRampTimer = 0;
-    this.nextTimerRamp = 15;
     this.timerRampStage = 0;
     this.timerRampSpeedMultiplier = 1;
     this.timerRampSpawnMultiplier = 1;
@@ -354,10 +489,10 @@ export class GamePage extends BasePage {
     }
     stateManager.updateGame({
       surgeActive: false,
-      strategyPhase: undefined,
+      strategyPhase: 'Drift',
       tempoLevel: 0,
       timeOrbCount: 0,
-      timeOrbGoal: 3,
+      timeOrbGoal: TIME_ORB_GOAL,
       activeMutators: [],
     });
 
@@ -386,14 +521,13 @@ export class GamePage extends BasePage {
       hex: this.hex,
       canvas: this.canvas,
       inventoryUI: this.inventoryUI,
-      onSlowMo: (multiplier, durationMs) => this.applySlowMo(multiplier, durationMs),
-      onShield: (durationMs) => this.applyShield(durationMs),
+      onUse: (type) => this.activatePower(type),
     });
     this.timeOrbSystem = new TimeOrbSystem({
       hex: this.hex,
       canvas: this.canvas,
-      spawnChance: 0.55,
-      cooldownMs: 7500,
+      spawnChance: 0.45,
+      cooldownMs: 6200,
       onCollect: this.handleTimeOrbCollected,
     });
     this.timeOrbSystem.setEnabled(state.ui.currentGameMode === 'timerAttack');
@@ -484,7 +618,7 @@ export class GamePage extends BasePage {
     
     // Update wave generation (spawn new blocks)
     this.waveSystem.update(dt, this.frameCount);
-    this.updateTimerRamp(dt);
+    this.updateTimerRamp();
     this.updateChallengePhase();
     this.updateDifficultyPhase();
     this.updateCatchupMultiplier();
@@ -502,40 +636,39 @@ export class GamePage extends BasePage {
     let runningScore = state.game.score;
     let diamondsToAdd = 0;
     for (const result of matchResults) {
-      // Add score
-      runningScore += result.score;
+      const scoreMultiplier = this.scoreBoostMultiplier
+        * (this.resonanceActive ? RESONANCE_SCORE_MULTIPLIER : 1);
+      const adjustedScore = Math.round(result.score * scoreMultiplier);
+      runningScore += adjustedScore;
       window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: runningScore } }));
 
-      // Award diamonds based on streak (combo)
-      const diamondsEarned = Math.max(0, result.combo - 1);
-      console.log(`Match found: ${result.blocksCleared} blocks, Combo: ${result.combo}, Diamonds earned: ${diamondsEarned}`);
+      const diamondsEarned = Math.floor(result.blocksCleared / 5);
       if (diamondsEarned > 0) {
         diamondsToAdd += diamondsEarned;
       }
-      
-      // Create floating text for score
+
       const centerX = this.canvas.element.width / 2;
       const centerY = this.canvas.element.height / 2;
       this.floatingTexts.push(
-        FloatingText.createScore(centerX + result.centerX, centerY + result.centerY, result.score, result.color)
+        FloatingText.createScore(centerX + result.centerX, centerY + result.centerY, adjustedScore, result.color)
       );
-      
-      // Show combo text if combo > 1
-      if (result.combo > 1) {
-        this.floatingTexts.push(
-          FloatingText.createCombo(centerX, centerY - 50, result.combo)
-        );
-        window.dispatchEvent(new CustomEvent('comboAchieved', { detail: { count: result.combo } }));
-        this.addComboHeat(result.combo);
-      }
 
-      if (state.ui.currentGameMode === 'timerAttack' && result.blocksCleared >= 4 && result.combo >= 2) {
+      window.dispatchEvent(new CustomEvent('matchResolved', {
+        detail: {
+          blocksCleared: result.blocksCleared,
+          color: result.color,
+          score: adjustedScore,
+        },
+      }));
+
+      this.addResonance(result.blocksCleared, result.color);
+
+      if (state.ui.currentGameMode === 'timerAttack' && result.blocksCleared >= 4) {
         this.timeOrbSystem?.trySpawn();
       }
-      
-      // Speed up wave system
+
       this.waveSystem.onBlocksDestroyed();
-      this.addMomentum(result.blocksCleared);
+      this.addSyncCharge(result.blocksCleared);
     }
 
     if (matchResults.length > 0) {
@@ -604,8 +737,8 @@ export class GamePage extends BasePage {
     // Increment hex frame counter
     this.hex.ct += dt;
 
-    this.decayComboHeat(dt);
-    this.decayMomentum(dt);
+    this.decayResonance(dt);
+    this.decaySync(dt);
     
     // Check for game over (original: checks if blocks exceed rows setting)
     if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
@@ -622,7 +755,7 @@ export class GamePage extends BasePage {
     // Update special points from player state
     this.pointsDisplay.setPoints(updatedState.player.specialPoints);
     this.comboHeatMeter.setHeat(updatedState.game.comboHeat ?? 0, updatedState.game.comboTier ?? 0);
-    this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? 3);
+    this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? TIME_ORB_GOAL);
     this.momentumBar.setValue(updatedState.game.momentumValue ?? 0);
     this.strategyStatusHUD.setStatus({
       phase: updatedState.game.strategyPhase,
@@ -888,10 +1021,16 @@ export class GamePage extends BasePage {
     this.frameCount = 0;
     this.rushMultiplier = 1;
     this.powerUpSpeedMultiplier = 1;
+    this.powerUpSpawnMultiplier = 1;
+    this.scoreBoostMultiplier = 1;
     this.comboHeatValue = 0;
     this.comboTier = 0;
     this.lastComboFrame = 0;
     this.momentumValue = 0;
+    this.resonanceActive = false;
+    this.lastResonanceColor = null;
+    this.tempoActive = false;
+    this.syncBoostActive = false;
     stateManager.updateGame({ comboHeat: 0, comboTier: 0, momentumValue: 0, timeOrbCount: 0 });
     this.nextLifeBonusScore = LIFE_BONUS_INTERVAL;
     if (this.slowMoTimeoutId) {
@@ -902,14 +1041,33 @@ export class GamePage extends BasePage {
       window.clearTimeout(this.shieldTimeoutId);
       this.shieldTimeoutId = null;
     }
+    if (this.novaTimeoutId) {
+      window.clearTimeout(this.novaTimeoutId);
+      this.novaTimeoutId = null;
+    }
+    if (this.resonanceTimeoutId) {
+      window.clearTimeout(this.resonanceTimeoutId);
+      this.resonanceTimeoutId = null;
+    }
+    if (this.syncBoostTimeoutId) {
+      window.clearTimeout(this.syncBoostTimeoutId);
+      this.syncBoostTimeoutId = null;
+    }
     this.clearSlowMoEffect();
     this.hideShieldEffect();
     this.hideSurgeEffect();
+    this.hideNovaEffect();
+    this.hideResonanceEffect();
+    this.hideSyncEffect();
     audioManager.setMusicIntensity(0.4);
     audioManager.setMusicTempoLevel(0);
     if (this.hammerOverlay) {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
+    }
+    if (this.shiftOverlay) {
+      this.shiftOverlay.remove();
+      this.shiftOverlay = null;
     }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);
@@ -931,16 +1089,65 @@ export class GamePage extends BasePage {
     Router.getInstance().navigate(ROUTES.MENU);
   }
 
+  private activatePower(type: PowerUpType): void {
+    const definition = getPowerDefinition(type);
+    switch (type) {
+      case 'pulse':
+        this.triggerPulseWave();
+        break;
+      case 'tempo': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Tempo power missing duration.');
+          return;
+        }
+        this.applySlowMo(0.7, durationMs);
+        break;
+      }
+      case 'aegis': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Aegis power missing duration.');
+          return;
+        }
+        this.applyShield(durationMs);
+        break;
+      }
+      case 'shift':
+        this.applyOrbitShift();
+        break;
+      case 'nova': {
+        const durationMs = definition.durationMs;
+        if (!durationMs) {
+          console.warn('Nova power missing duration.');
+          return;
+        }
+        this.applyNovaBoost(durationMs);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   private applySlowMo(multiplier: number, durationMs: number): void {
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
     }
     this.clearSlowMoEffect();
     this.powerUpSpeedMultiplier = multiplier;
+    this.tempoActive = true;
+    this.powerUpSpawnMultiplier = 0.85;
+    this.applyWaveTuning();
+    this.syncTempoLevel();
     this.showSlowMoEffect(durationMs);
     this.slowMoTimeoutId = window.setTimeout(() => {
       this.powerUpSpeedMultiplier = 1;
+      this.tempoActive = false;
+      this.powerUpSpawnMultiplier = this.resonanceActive ? 0.9 : 1;
       this.clearSlowMoEffect();
+      this.applyWaveTuning();
+      this.syncTempoLevel();
       this.slowMoTimeoutId = null;
     }, durationMs);
   }
@@ -966,11 +1173,11 @@ export class GamePage extends BasePage {
     this.clearSlowMoEffect();
 
     const overlay = document.createElement('div');
-    overlay.className = 'game-effect-slowmo';
+    overlay.className = 'game-effect-tempo';
 
     const label = document.createElement('div');
     label.className = 'game-effect-label';
-    label.textContent = 'SLOW-MO';
+    label.textContent = 'TEMPO';
 
     const timer = document.createElement('div');
     timer.className = 'game-effect-timer';
@@ -994,7 +1201,7 @@ export class GamePage extends BasePage {
     this.slowMoIntervalId = window.setInterval(updateTimer, 100);
 
     if (this.canvas?.element) {
-      this.canvas.element.classList.add('game-canvas-slowmo');
+      this.canvas.element.classList.add('game-canvas-tempo');
     }
   }
 
@@ -1008,17 +1215,17 @@ export class GamePage extends BasePage {
       this.slowMoOverlay = null;
       this.slowMoTimerEl = null;
     }
-    this.canvas?.element.classList.remove('game-canvas-slowmo');
+    this.canvas?.element.classList.remove('game-canvas-tempo');
   }
 
   private showShieldEffect(): void {
     if (!this.effectLayer) return;
     this.hideShieldEffect();
     const overlay = document.createElement('div');
-    overlay.className = 'game-effect-shield';
+    overlay.className = 'game-effect-aegis';
     this.effectLayer.appendChild(overlay);
     this.shieldOverlay = overlay;
-    this.canvas?.element.classList.add('game-canvas-shield');
+    this.canvas?.element.classList.add('game-canvas-aegis');
   }
 
   private hideShieldEffect(): void {
@@ -1026,7 +1233,7 @@ export class GamePage extends BasePage {
       this.shieldOverlay.remove();
       this.shieldOverlay = null;
     }
-    this.canvas?.element.classList.remove('game-canvas-shield');
+    this.canvas?.element.classList.remove('game-canvas-aegis');
   }
 
   private triggerHammerEffect(): void {
@@ -1041,23 +1248,23 @@ export class GamePage extends BasePage {
     }
 
     const overlay = document.createElement('div');
-    overlay.className = 'game-effect-hammer';
+    overlay.className = 'game-effect-pulse';
 
     const flash = document.createElement('div');
-    flash.className = 'game-effect-hammer-flash';
+    flash.className = 'game-effect-pulse-flash';
     overlay.appendChild(flash);
 
     const burst = document.createElement('div');
-    burst.className = 'game-effect-hammer-burst';
+    burst.className = 'game-effect-pulse-burst';
 
     const impact = document.createElement('div');
-    impact.className = 'game-effect-hammer-impact';
+    impact.className = 'game-effect-pulse-impact';
     burst.appendChild(impact);
 
     const ringCount = 3;
     for (let i = 0; i < ringCount; i++) {
       const ring = document.createElement('div');
-      ring.className = 'game-effect-hammer-ring';
+      ring.className = 'game-effect-pulse-ring';
       ring.style.animationDelay = `${i * 0.1}s`;
       burst.appendChild(ring);
     }
@@ -1067,7 +1274,7 @@ export class GamePage extends BasePage {
     const sparkCount = 12;
     for (let i = 0; i < sparkCount; i++) {
       const spark = document.createElement('span');
-      spark.className = 'game-effect-hammer-spark';
+      spark.className = 'game-effect-pulse-spark';
       const rotation = (360 / sparkCount) * i + (Math.random() * 12 - 6);
       spark.style.setProperty('--spark-angle', `${rotation}deg`);
       spark.style.animationDelay = `${i * 0.02}s`;
@@ -1083,12 +1290,155 @@ export class GamePage extends BasePage {
     }, 1100);
   }
 
+  private triggerPulseWave(): void {
+    const lanes = this.hex.blocks;
+    let cleared = 0;
+    for (const lane of lanes) {
+      const block = lane[lane.length - 1];
+      if (block && block.deleted === 0) {
+        block.deleted = 1;
+        cleared += 1;
+      }
+    }
+    if (cleared > 0) {
+      const bonus = cleared * 60;
+      const currentScore = stateManager.getState().game.score;
+      const newScore = currentScore + bonus;
+      stateManager.updateGame({ score: newScore });
+      window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: newScore } }));
+      this.floatingTexts.push(FloatingText.createMessage(
+        this.canvas.element.width / 2,
+        this.canvas.element.height / 2 - 120,
+        `+${bonus}`,
+        '#7cdeff'
+      ));
+      this.waveSystem.onBlocksDestroyed();
+    }
+  }
+
+  private applyOrbitShift(): void {
+    const sides = this.hex.sides;
+    if (!sides) return;
+    const angleStep = 360 / sides;
+    const shifted: Block[][] = Array.from({ length: sides }, () => []);
+    for (let i = 0; i < sides; i++) {
+      const target = (i + 1) % sides;
+      const lane = this.hex.blocks[i];
+      shifted[target] = lane;
+      lane.forEach((block) => {
+        block.attachedLane = target;
+        block.targetAngle -= angleStep;
+      });
+    }
+    this.hex.blocks = shifted;
+  }
+
+  private applyNovaBoost(durationMs: number): void {
+    if (this.novaTimeoutId) {
+      window.clearTimeout(this.novaTimeoutId);
+    }
+    this.scoreBoostMultiplier = 1.5;
+    this.showNovaEffect(durationMs);
+    this.novaTimeoutId = window.setTimeout(() => {
+      this.scoreBoostMultiplier = 1;
+      this.hideNovaEffect();
+      this.novaTimeoutId = null;
+    }, durationMs);
+  }
+
+  private triggerShiftEffect(): void {
+    if (!this.effectLayer) return;
+    if (this.shiftOverlay) {
+      this.shiftOverlay.remove();
+      this.shiftOverlay = null;
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-shift';
+    overlay.textContent = 'SHIFT';
+    this.effectLayer.appendChild(overlay);
+    this.shiftOverlay = overlay;
+    window.setTimeout(() => {
+      overlay.remove();
+      if (this.shiftOverlay === overlay) {
+        this.shiftOverlay = null;
+      }
+    }, 900);
+  }
+
+  private showNovaEffect(durationMs: number): void {
+    if (!this.effectLayer) return;
+    if (this.novaOverlay) {
+      this.novaOverlay.remove();
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-nova';
+    overlay.innerHTML = '<span>NOVA</span><p>Score Surge</p>';
+    this.effectLayer.appendChild(overlay);
+    this.novaOverlay = overlay;
+    window.setTimeout(() => {
+      if (this.novaOverlay === overlay && durationMs <= 1200) {
+        overlay.classList.add('fade');
+      }
+    }, 200);
+  }
+
+  private hideNovaEffect(): void {
+    if (this.novaOverlay) {
+      this.novaOverlay.remove();
+      this.novaOverlay = null;
+    }
+  }
+
+  private showResonanceEffect(durationMs: number): void {
+    if (!this.effectLayer) return;
+    if (this.resonanceOverlay) {
+      this.resonanceOverlay.remove();
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-resonance';
+    overlay.innerHTML = '<span>RESONANCE</span><p>Flow unlocked</p>';
+    this.effectLayer.appendChild(overlay);
+    this.resonanceOverlay = overlay;
+    window.setTimeout(() => {
+      if (this.resonanceOverlay === overlay && durationMs <= 1200) {
+        overlay.classList.add('fade');
+      }
+    }, 300);
+  }
+
+  private hideResonanceEffect(): void {
+    if (this.resonanceOverlay) {
+      this.resonanceOverlay.remove();
+      this.resonanceOverlay = null;
+    }
+  }
+
+  private showSyncEffect(): void {
+    if (!this.effectLayer) return;
+    if (this.syncOverlay) {
+      this.syncOverlay.remove();
+      this.syncOverlay = null;
+    }
+    const overlay = document.createElement('div');
+    overlay.className = 'game-effect-sync';
+    overlay.innerHTML = '<span>SYNC LINK</span><p>Team tempo stabilized</p>';
+    this.effectLayer.appendChild(overlay);
+    this.syncOverlay = overlay;
+  }
+
+  private hideSyncEffect(): void {
+    if (this.syncOverlay) {
+      this.syncOverlay.remove();
+      this.syncOverlay = null;
+    }
+  }
+
   private showSurgeEffect(durationMs: number): void {
     if (!this.effectLayer) return;
     this.hideSurgeEffect();
     const overlay = document.createElement('div');
     overlay.className = 'game-effect-surge';
-    overlay.innerHTML = '<span>Surge</span><p>Brace for rapid waves</p>';
+    overlay.innerHTML = '<span>Flare</span><p>Waves intensify</p>';
     this.effectLayer.appendChild(overlay);
     this.surgeOverlay = overlay;
     if (this.surgeTimeoutId) {
@@ -1114,6 +1464,10 @@ export class GamePage extends BasePage {
   }
 
   private updateDifficultyPhase(): void {
+    const state = stateManager.getState();
+    if (state.ui.currentGameMode && state.ui.currentGameMode !== 'standard') {
+      return;
+    }
     if (!this.waveSystem || !this.activeDifficultyConfig || !this.activeDifficultyConfig.phases?.length) {
       return;
     }
@@ -1139,8 +1493,14 @@ export class GamePage extends BasePage {
 
   private applyWaveTuning(): void {
     if (!this.waveSystem) return;
-    const speedMultiplier = this.timerRampSpeedMultiplier * this.challengeSpeedMultiplier * this.catchupSpeedMultiplier;
-    const spawnMultiplier = this.timerRampSpawnMultiplier * this.challengeSpawnMultiplier * this.catchupSpawnMultiplier;
+    const speedMultiplier = this.timerRampSpeedMultiplier
+      * this.challengeSpeedMultiplier
+      * this.catchupSpeedMultiplier
+      * this.powerUpSpawnMultiplier;
+    const spawnMultiplier = this.timerRampSpawnMultiplier
+      * this.challengeSpawnMultiplier
+      * this.catchupSpawnMultiplier
+      * this.powerUpSpawnMultiplier;
     this.waveSystem.setExternalMultipliers({ speedMultiplier, spawnMultiplier });
   }
 
@@ -1158,6 +1518,8 @@ export class GamePage extends BasePage {
     if (nextIndex === this.challengePhaseIndex) return;
     this.challengePhaseIndex = nextIndex;
     const phase = phases[nextIndex];
+    this.currentPhaseName = phase.name;
+    stateManager.updateGame({ strategyPhase: phase.name });
 
     this.challengeSpeedMultiplier = phase.speedMultiplier ?? 1;
     this.challengeSpawnMultiplier = phase.spawnMultiplier ?? 1;
@@ -1208,8 +1570,10 @@ export class GamePage extends BasePage {
 
   private syncTempoLevel(): void {
     let tempo = 0;
-    if (this.adaptiveAssistActive) {
+    if (this.adaptiveAssistActive || this.tempoActive) {
       tempo = -1;
+    } else if (this.resonanceActive || this.syncBoostActive) {
+      tempo = 1;
     } else if (this.waveSystem?.isSurgeActive()) {
       tempo = 2;
     }
@@ -1217,17 +1581,21 @@ export class GamePage extends BasePage {
     audioManager.setMusicTempoLevel(tempo);
   }
 
-  private updateTimerRamp(dt: number): void {
+  private updateTimerRamp(): void {
     const state = stateManager.getState();
-    if (state.ui.currentGameMode !== 'timerAttack') return;
-    this.timerRampTimer += dt;
-    if (this.timerRampTimer < this.nextTimerRamp) return;
-
-    this.timerRampTimer = 0;
-    this.timerRampStage += 1;
-    this.timerRampSpeedMultiplier = 1 + this.timerRampStage * 0.02;
-    this.timerRampSpawnMultiplier = 1 + this.timerRampStage * 0.03;
+    if (state.ui.currentGameMode !== 'timerAttack' || !this.timerAttack) return;
+    const stage = this.timerAttack.getRelayStage();
+    if (stage === this.timerRampStage) return;
+    this.timerRampStage = stage;
+    this.timerRampSpeedMultiplier = 1 + this.timerRampStage * 0.04;
+    this.timerRampSpawnMultiplier = 1 + this.timerRampStage * 0.05;
     this.applyWaveTuning();
+
+    const phaseLabel = this.timerAttack.getPhaseLabel();
+    if (phaseLabel && phaseLabel !== this.currentPhaseName) {
+      this.currentPhaseName = phaseLabel;
+      stateManager.updateGame({ strategyPhase: phaseLabel });
+    }
   }
 
   private updateCatchupMultiplier(): void {
@@ -1239,73 +1607,147 @@ export class GamePage extends BasePage {
       this.applyWaveTuning();
       return;
     }
-
-    const delta = state.game.ghostDelta ?? 0;
-    if (delta <= -0.25) {
-      this.catchupSpeedMultiplier = 0.95;
-      this.catchupSpawnMultiplier = 0.9;
-    } else if (delta >= 0.25) {
-      this.catchupSpeedMultiplier = 1.05;
-      this.catchupSpawnMultiplier = 1.05;
-    } else {
+    if (this.syncBoostActive) {
+      return;
+    }
+    if (this.catchupSpeedMultiplier !== 1 || this.catchupSpawnMultiplier !== 1) {
       this.catchupSpeedMultiplier = 1;
       this.catchupSpawnMultiplier = 1;
+      this.applyWaveTuning();
     }
-    this.applyWaveTuning();
   }
 
-  private addComboHeat(combo: number): void {
-    const gain = Math.min(35, combo * 8);
+  private addResonance(blocksCleared: number, color: string): void {
+    if (blocksCleared < 4) return;
+    const colorShift = this.lastResonanceColor && this.lastResonanceColor !== color ? 6 : 0;
+    const gain = Math.min(32, blocksCleared * 4 + colorShift);
     this.comboHeatValue = Math.min(100, this.comboHeatValue + gain);
     this.lastComboFrame = this.hex.ct;
+    this.lastResonanceColor = color;
 
-    const nextTier = this.getComboTier(this.comboHeatValue);
+    const nextTier = this.getResonanceTier(this.comboHeatValue);
     if (nextTier !== this.comboTier) {
       this.comboTier = nextTier;
       this.scoreDisplay.flashCombo();
     }
 
+    if (this.comboHeatValue >= 100) {
+      this.triggerResonanceSurge();
+    }
+
     stateManager.updateGame({ comboHeat: this.comboHeatValue, comboTier: this.comboTier });
   }
 
-  private decayComboHeat(dt: number): void {
+  private decayResonance(dt: number): void {
+    if (this.resonanceActive) return;
     const sinceCombo = this.hex.ct - this.lastComboFrame;
     if (sinceCombo < 30) return;
     if (this.comboHeatValue <= 0) return;
 
     this.comboHeatValue = Math.max(0, this.comboHeatValue - this.heatDecayRate * dt);
-    const nextTier = this.getComboTier(this.comboHeatValue);
+    const nextTier = this.getResonanceTier(this.comboHeatValue);
     if (nextTier !== this.comboTier) {
       this.comboTier = nextTier;
     }
     stateManager.updateGame({ comboHeat: this.comboHeatValue, comboTier: this.comboTier });
   }
 
-  private getComboTier(heat: number): number {
-    if (heat >= 80) return 3;
-    if (heat >= 50) return 2;
-    if (heat >= 20) return 1;
+  private getResonanceTier(heat: number): number {
+    if (heat >= 85) return 3;
+    if (heat >= 60) return 2;
+    if (heat >= 30) return 1;
     return 0;
   }
 
-  private addMomentum(blocksCleared: number): void {
-    const state = stateManager.getState();
-    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
-    if (!isMultiplayer) return;
-
-    const gain = Math.min(12, blocksCleared * 2);
-    this.momentumValue = Math.min(100, this.momentumValue + gain);
-    stateManager.updateGame({ momentumValue: this.momentumValue });
+  private triggerResonanceSurge(): void {
+    if (this.resonanceActive) return;
+    this.resonanceActive = true;
+    this.powerUpSpawnMultiplier = this.tempoActive ? 0.85 : 0.9;
+    this.applyWaveTuning();
+    this.showResonanceEffect(8000);
+    this.syncTempoLevel();
+    if (this.resonanceTimeoutId) {
+      window.clearTimeout(this.resonanceTimeoutId);
+    }
+    this.resonanceTimeoutId = window.setTimeout(() => {
+      this.resonanceActive = false;
+      this.powerUpSpawnMultiplier = this.tempoActive ? 0.85 : 1;
+      this.comboHeatValue = 0;
+      this.comboTier = 0;
+      this.hideResonanceEffect();
+      this.applyWaveTuning();
+      this.syncTempoLevel();
+      stateManager.updateGame({ comboHeat: 0, comboTier: 0 });
+      this.resonanceTimeoutId = null;
+    }, 8000);
   }
 
-  private decayMomentum(dt: number): void {
+  private addSyncCharge(blocksCleared: number): void {
     const state = stateManager.getState();
     const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
     if (!isMultiplayer) return;
+
+    const gain = Math.min(18, blocksCleared * 3);
+    this.momentumValue = Math.min(100, this.momentumValue + gain);
+    if (this.momentumValue >= 100) {
+      this.triggerSyncBoost();
+    }
+    stateManager.updateGame({ momentumValue: this.momentumValue });
+    this.updateSyncPhase();
+  }
+
+  private decaySync(dt: number): void {
+    const state = stateManager.getState();
+    const isMultiplayer = state.ui.currentGameMode?.startsWith('multiplayer');
+    if (!isMultiplayer || this.syncBoostActive) return;
 
     if (this.momentumValue <= 0) return;
     this.momentumValue = Math.max(0, this.momentumValue - this.momentumDecayRate * dt);
     stateManager.updateGame({ momentumValue: this.momentumValue });
+    this.updateSyncPhase();
+  }
+
+  private triggerSyncBoost(): void {
+    if (this.syncBoostActive) return;
+    this.syncBoostActive = true;
+    this.momentumValue = 0;
+    stateManager.updateGame({ momentumValue: 0 });
+    this.catchupSpeedMultiplier = 0.92;
+    this.catchupSpawnMultiplier = 0.9;
+    this.applyWaveTuning();
+    this.showSyncEffect();
+    this.syncTempoLevel();
+    this.updateSyncPhase();
+    if (this.syncBoostTimeoutId) {
+      window.clearTimeout(this.syncBoostTimeoutId);
+    }
+    this.syncBoostTimeoutId = window.setTimeout(() => {
+      this.syncBoostActive = false;
+      this.catchupSpeedMultiplier = 1;
+      this.catchupSpawnMultiplier = 1;
+      this.applyWaveTuning();
+      this.hideSyncEffect();
+      this.syncTempoLevel();
+      this.updateSyncPhase();
+      this.syncBoostTimeoutId = null;
+    }, 7000);
+  }
+
+  private updateSyncPhase(): void {
+    const state = stateManager.getState();
+    if (!state.ui.currentGameMode?.startsWith('multiplayer')) return;
+    let phase = 'Signal';
+    if (this.syncBoostActive) {
+      phase = 'Sync Burst';
+    } else if (this.momentumValue >= 70) {
+      phase = 'Harmonic';
+    } else if (this.momentumValue >= 35) {
+      phase = 'Linking';
+    }
+    if (phase !== this.currentPhaseName) {
+      this.currentPhaseName = phase;
+      stateManager.updateGame({ strategyPhase: phase });
+    }
   }
 
   private applyLifeBonus(score: number): void {
@@ -1549,7 +1991,13 @@ export class GamePage extends BasePage {
 
   private seedInventorySlots(): void {
     const inventory = stateManager.getState().player.inventory ?? createEmptyInventory();
-    const slotOrder: ShopItemId[] = [ShopItemId.HAMMER, ShopItemId.SLOWMO, ShopItemId.SHIELD];
+    const slotOrder: ShopItemId[] = [
+      ShopItemId.PULSE,
+      ShopItemId.TEMPO,
+      ShopItemId.AEGIS,
+      ShopItemId.SHIFT,
+      ShopItemId.NOVA,
+    ];
 
     for (const itemId of slotOrder) {
       const count = Math.max(0, inventory[itemId] ?? 0);
@@ -1602,55 +2050,6 @@ export class GamePage extends BasePage {
   }
 
   /**
-   * Handle keyboard input
-   */
-  private handleKeyDown = (event: KeyboardEvent): void => {
-    const state = stateManager.getState();
-    if (state.status !== GameStatus.PLAYING) return;
-    
-    switch (event.key) {
-      case 'p':
-      case 'P':
-      case 'Escape':
-        if (this.gameLoop.getIsRunning()) {
-          this.pauseGame();
-        } else {
-          this.resumeGame();
-        }
-        break;
-      
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        // Speed up blocks (handled by inputManager)
-        break;
-      
-      case ' ':
-      case 'ArrowUp':
-        // Rotate - handled by inputManager
-        event.preventDefault();
-        break;
-      
-      // Note: ArrowLeft, ArrowRight, 'a', 'A', 'd', 'D' are handled by inputManager
-      // to avoid double rotation
-    }
-  };
-  
-  /**
-   * Handle key release
-   */
-  private handleKeyUp = (event: KeyboardEvent): void => {
-    switch (event.key) {
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        // Reset speed multiplier
-        this.rushMultiplier = 1;
-        break;
-    }
-  };
-
-  /**
    * Handle window resize
    */
   public onResize(): void {
@@ -1698,12 +2097,17 @@ export class GamePage extends BasePage {
         this.challengePhaseIndex = 0;
         this.challengeSpeedMultiplier = this.challengeScript.phases[0]?.speedMultiplier ?? 1;
         this.challengeSpawnMultiplier = this.challengeScript.phases[0]?.spawnMultiplier ?? 1;
+        this.currentPhaseName = this.challengeScript.phases[0]?.name ?? 'Trial';
+        stateManager.updateGame({ strategyPhase: this.currentPhaseName });
         this.applyWaveTuning();
         this.applyMutators(this.challengeScript.mutators);
       }
     } else if (uiState.currentGameMode === 'timerAttack') {
       const duration = uiState.timerDuration || 90;
       this.timerAttack = new TimerAttackMode(duration);
+      this.currentPhaseName = this.timerAttack.getPhaseLabel();
+      stateManager.updateGame({ strategyPhase: this.currentPhaseName });
+      stateManager.updateGame({ timeOrbGoal: this.timerAttack.getRelayGoal() });
       window.dispatchEvent(new CustomEvent('activateTimerMode'));
       this.timeOrbSystem?.setEnabled(true);
       this.applyMutators([]);
@@ -1721,12 +2125,14 @@ export class GamePage extends BasePage {
       if (pressed && stateManager.getState().status === GameStatus.PLAYING) {
         // Original Hextris: only rotate hex, not falling blocks
         this.hex.rotate(1);
+        window.dispatchEvent(new CustomEvent('hexRotated', { detail: { direction: 'left' } }));
       }
     });
     inputManager.on('rotateRight', (pressed) => {
       if (pressed && stateManager.getState().status === GameStatus.PLAYING) {
         // Original Hextris: only rotate hex, not falling blocks
         this.hex.rotate(-1);
+        window.dispatchEvent(new CustomEvent('hexRotated', { detail: { direction: 'right' } }));
       }
     });
     inputManager.on('speedUp', (pressed) => {
@@ -1741,11 +2147,28 @@ export class GamePage extends BasePage {
         }
       }
     });
+    inputManager.on('powerSlot1', (pressed) => {
+      if (pressed) {
+        this.inventoryUI.usePowerUp(0);
+      }
+    });
+    inputManager.on('powerSlot2', (pressed) => {
+      if (pressed) {
+        this.inventoryUI.usePowerUp(1);
+      }
+    });
+    inputManager.on('powerSlot3', (pressed) => {
+      if (pressed) {
+        this.inventoryUI.usePowerUp(2);
+      }
+    });
+    inputManager.on('restart', (pressed) => {
+      if (!pressed) return;
+      if (stateManager.getState().status === GameStatus.GAME_OVER) {
+        this.playAgain();
+      }
+    });
     
-    // Listen for keyboard input
-    window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
-
     // Listen for game over event
     this.unsubscribeGameOver = stateManager.subscribe('gameOver', () => {
       this.handleGameOverSfx();
@@ -1759,9 +2182,11 @@ export class GamePage extends BasePage {
       this.lastLives = lives;
     });
     window.addEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.addEventListener('timerRelayComplete', this.handleTimerRelayComplete as EventListener);
     window.addEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.addEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
     window.addEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
+    window.addEventListener('powerUpCooldown', this.handlePowerUpCooldown as EventListener);
     window.addEventListener('blockLand', this.handleBlockLandSfx as EventListener);
   }
 
@@ -1777,19 +2202,26 @@ export class GamePage extends BasePage {
     inputManager.clearHandlers();
 
     // Remove event listeners
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('timerModeTimeUp', this.handleTimerModeTimeUp as EventListener);
+    window.removeEventListener('timerRelayComplete', this.handleTimerRelayComplete as EventListener);
     window.removeEventListener('powerUpCollected', this.handlePowerUpCollectedSfx as EventListener);
     window.removeEventListener('powerUpUsed', this.handlePowerUpUsedInventory as EventListener);
     window.removeEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
+    window.removeEventListener('powerUpCooldown', this.handlePowerUpCooldown as EventListener);
     window.removeEventListener('blockLand', this.handleBlockLandSfx as EventListener);
 
     this.clearSlowMoEffect();
     this.hideShieldEffect();
+    this.hideNovaEffect();
+    this.hideResonanceEffect();
+    this.hideSyncEffect();
     if (this.hammerOverlay) {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
+    }
+    if (this.shiftOverlay) {
+      this.shiftOverlay.remove();
+      this.shiftOverlay = null;
     }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);
@@ -1803,6 +2235,18 @@ export class GamePage extends BasePage {
     if (this.shieldTimeoutId) {
       window.clearTimeout(this.shieldTimeoutId);
       this.shieldTimeoutId = null;
+    }
+    if (this.novaTimeoutId) {
+      window.clearTimeout(this.novaTimeoutId);
+      this.novaTimeoutId = null;
+    }
+    if (this.resonanceTimeoutId) {
+      window.clearTimeout(this.resonanceTimeoutId);
+      this.resonanceTimeoutId = null;
+    }
+    if (this.syncBoostTimeoutId) {
+      window.clearTimeout(this.syncBoostTimeoutId);
+      this.syncBoostTimeoutId = null;
     }
     if (this.invulnerabilityTimeoutId) {
       window.clearTimeout(this.invulnerabilityTimeoutId);
@@ -1901,5 +2345,3 @@ export class GamePage extends BasePage {
     return inventory[itemId] ?? 0;
   }
 }
-
-

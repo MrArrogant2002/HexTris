@@ -29,15 +29,15 @@ export class MultiplayerPage extends BasePage {
       paddingClass: 'px-2 sm:px-4 py-8 sm:py-12',
     });
 
-    const header = this.createHeader('MULTIPLAYER GROUPS', 'Create or join groups to compare scores');
+    const header = this.createHeader('SYNC LINK HUB', 'Create or join crews to share the flow');
     container.appendChild(header);
 
     const tabRow = document.createElement('div');
     tabRow.className = 'grid grid-cols-3 gap-2';
 
-    tabRow.appendChild(this.createTabButton('My Groups', 'list'));
-    tabRow.appendChild(this.createTabButton('Create', 'create'));
-    tabRow.appendChild(this.createTabButton('Join', 'join'));
+    tabRow.appendChild(this.createTabButton('My Crews', 'list'));
+    tabRow.appendChild(this.createTabButton('Create Crew', 'create'));
+    tabRow.appendChild(this.createTabButton('Join Crew', 'join'));
 
     container.appendChild(tabRow);
 
@@ -97,7 +97,7 @@ export class MultiplayerPage extends BasePage {
 
     const loading = document.createElement('div');
     loading.className = 'text-sm theme-inline-message';
-    loading.textContent = 'Loading groups...';
+      loading.textContent = 'Loading crews...';
     this.contentContainer.appendChild(loading);
 
     void this.loadGroups();
@@ -111,7 +111,7 @@ export class MultiplayerPage extends BasePage {
     this.contentContainer.innerHTML = '';
 
     if (this.groups.length === 0) {
-      this.showInlineMessage('No groups yet. Create or join one to get started.');
+      this.showInlineMessage('No crews yet. Create or join one to get started.');
       return;
     }
 
@@ -142,7 +142,7 @@ export class MultiplayerPage extends BasePage {
       const actions = document.createElement('div');
       actions.className = 'flex flex-wrap gap-2';
 
-      const leaderboardBtn = new Button('View Leaderboard', {
+      const leaderboardBtn = new Button('View Sync Board', {
         variant: 'outline',
         size: 'small',
         onClick: () => this.showGroupLeaderboard(group),
@@ -150,7 +150,7 @@ export class MultiplayerPage extends BasePage {
       this.buttons.push(leaderboardBtn);
       actions.appendChild(leaderboardBtn.element);
 
-      const playBtn = new Button('Play In Group', {
+      const playBtn = new Button('Start Sync', {
         variant: 'primary',
         size: 'small',
         onClick: () => this.playGroup(group),
@@ -179,15 +179,15 @@ export class MultiplayerPage extends BasePage {
     }
 
     const nameInput = new Input({
-      label: 'Group Name',
-      placeholder: 'Enter group name',
+      label: 'Crew Name',
+      placeholder: 'Enter crew name',
       required: true,
       maxLength: 50,
     });
 
     this.contentContainer.appendChild(nameInput.container);
 
-    const createBtn = new Button('Create Group', {
+    const createBtn = new Button('Create Crew', {
       variant: 'primary',
       size: 'medium',
       fullWidth: true,
@@ -197,7 +197,7 @@ export class MultiplayerPage extends BasePage {
 
         try {
           const group = await this.groupManager.createGroup(state.player.id, name, state.player.name);
-          this.showMessage('Group Created', `Room code: ${group.roomCode}`);
+            this.showMessage('Crew Created', `Room code: ${group.roomCode}`);
           this.currentView = 'list';
           this.renderView();
         } catch (error: any) {
@@ -218,8 +218,8 @@ export class MultiplayerPage extends BasePage {
     }
 
     const codeInput = new Input({
-      label: 'Room Code',
-      placeholder: 'Enter room code',
+      label: 'Crew Code',
+      placeholder: 'Enter crew code',
       required: true,
       maxLength: 6,
       onChange: (value) => {
@@ -229,7 +229,7 @@ export class MultiplayerPage extends BasePage {
 
     this.contentContainer.appendChild(codeInput.container);
 
-    const joinBtn = new Button('Join Group', {
+    const joinBtn = new Button('Join Crew', {
       variant: 'primary',
       size: 'medium',
       fullWidth: true,
@@ -239,7 +239,7 @@ export class MultiplayerPage extends BasePage {
 
         try {
           const group = await this.groupManager.joinGroup(state.player.id, state.player.name, code);
-          this.showMessage('Joined Group', `You joined ${group.groupName}`);
+            this.showMessage('Joined Crew', `You joined ${group.groupName}`);
           this.currentView = 'list';
           this.renderView();
         } catch (error: any) {
@@ -355,4 +355,3 @@ export class MultiplayerPage extends BasePage {
     this.buttons = [];
   }
 }
-

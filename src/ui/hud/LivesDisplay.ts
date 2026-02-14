@@ -18,7 +18,12 @@ export class LivesDisplay {
   private createElements(): HTMLDivElement {
     // Container
     const container = document.createElement('div');
-    container.className = 'fixed top-4 left-4 z-20 flex items-center gap-2';
+    container.className = `
+      fixed top-4 left-4 z-30
+      flex items-center gap-2
+      theme-card-muted px-2.5 py-1.5
+      rounded-full shadow-lg
+    `.trim().replace(/\s+/g, ' ');
 
     // Hearts container
     this.heartsContainer = document.createElement('div');
@@ -36,8 +41,8 @@ export class LivesDisplay {
     for (let i = 0; i < this.maxLives; i++) {
       const heart = document.createElement('div');
       heart.className = `
-        w-8 h-8 flex items-center justify-center
-        text-2xl transition-all duration-300
+        w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center
+        text-xl sm:text-2xl transition-all duration-300
         ${i < this.currentLives 
           ? 'opacity-100 scale-100 filter drop-shadow-[0_0_8px_rgba(231,76,60,0.6)]' 
           : 'opacity-30 scale-90 grayscale'
@@ -116,4 +121,3 @@ export class LivesDisplay {
     return this.element;
   }
 }
-

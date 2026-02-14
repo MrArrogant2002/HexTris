@@ -21,12 +21,14 @@ export interface ShopModalOptions {
 }
 
 export class ShopModal {
+  private static readonly POWER_PREVIEW_PATH = '/images/power-previews';
   private modal: Modal;
   private options: ShopModalOptions;
   private pointsSystem = new SpecialPointsSystem();
   private content: HTMLDivElement;
   private pointsLabel: HTMLSpanElement;
   private messageLabel: HTMLParagraphElement;
+  private previewControllers: AbortController[] = [];
   private itemsContainer: HTMLDivElement;
   private themesContainer: HTMLDivElement | null = null;
 
@@ -104,12 +106,14 @@ export class ShopModal {
   }
 
   private renderItems(): void {
+    this.previewControllers.forEach((controller) => controller.abort());
+    this.previewControllers = [];
     this.itemsContainer.innerHTML = '';
 
     const items = getAllShopItems();
     items.forEach((item) => {
       const card = document.createElement('div');
-      card.className = 'theme-card rounded-xl p-4 space-y-3';
+      card.className = 'theme-card rounded-xl p-4 space-y-3 relative overflow-hidden shop-item-card';
 
       const titleRow = document.createElement('div');
       titleRow.className = 'flex items-center justify-between';
@@ -161,8 +165,55 @@ export class ShopModal {
       card.appendChild(effect);
       card.appendChild(footer);
 
+      const preview = this.createPowerPreview(item.id, item.name);
+      if (preview) {
+        const video = preview.querySelector('video');
+        if (video) {
+          const controller = new AbortController();
+          const play = () => {
+            void video.play().catch((error) => {
+              console.warn(`Power preview playback failed for ${item.name}`, error);
+            });
+          };
+          const stop = () => {
+            video.pause();
+            video.currentTime = 0;
+          };
+          card.addEventListener('mouseenter', play, { signal: controller.signal });
+          card.addEventListener('focusin', play, { signal: controller.signal });
+          card.addEventListener('mouseleave', stop, { signal: controller.signal });
+          card.addEventListener('focusout', stop, { signal: controller.signal });
+          this.previewControllers.push(controller);
+        }
+        card.appendChild(preview);
+      }
+
       this.itemsContainer.appendChild(card);
     });
+  }
+
+  private createPowerPreview(itemId: ShopItemId, label: string): HTMLElement | null {
+    if (!this.isPowerUp(itemId)) return null;
+    // Preview file naming follows `/public/images/power-previews/{itemId}.gif`.
+    const preview = document.createElement('div');
+    preview.className = 'shop-power-preview';
+
+    const video = document.createElement('video');
+    video.src = `${ShopModal.POWER_PREVIEW_PATH}/${itemId}.mp4`;
+    video.className = 'w-40 h-24 rounded-lg shadow-lg';
+    video.preload = 'metadata';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('aria-label', `${label} preview`);
+
+    const caption = document.createElement('div');
+    caption.className = 'text-[11px] font-semibold text-slate-100 mt-2 uppercase tracking-[0.2em]';
+    caption.textContent = 'Preview';
+
+    preview.appendChild(video);
+    preview.appendChild(caption);
+    return preview;
   }
 
   private getAvailability(itemId: ShopItemId): {
@@ -243,7 +294,13 @@ export class ShopModal {
   }
 
   private isPowerUp(itemId: ShopItemId): boolean {
-    return itemId === ShopItemId.HAMMER || itemId === ShopItemId.SLOWMO || itemId === ShopItemId.SHIELD;
+    return (
+      itemId === ShopItemId.PULSE ||
+      itemId === ShopItemId.TEMPO ||
+      itemId === ShopItemId.AEGIS ||
+      itemId === ShopItemId.SHIFT ||
+      itemId === ShopItemId.NOVA
+    );
   }
 
   private getItemCost(itemId: ShopItemId): number {
@@ -258,9 +315,11 @@ export class ShopModal {
     const iconMap: Record<ShopItemId, { src?: string; emoji: string; label: string }> = {
       [ShopItemId.CONTINUE]: { src: '/images/icons/replay.svg', emoji: '🔁', label: 'Continue' },
       [ShopItemId.EXTRA_LIFE]: { src: '/images/icons/extra-life.svg', emoji: '❤️', label: 'Extra Life' },
-      [ShopItemId.HAMMER]: { src: '/images/icons/hammer-drop.svg', emoji: '🛠️', label: 'Hammer' },
-      [ShopItemId.SLOWMO]: { emoji: '⏱️', label: 'Slow Motion' },
-      [ShopItemId.SHIELD]: { src: '/images/icons/shield-power-up.svg', emoji: '🛡️', label: 'Shield' },
+      [ShopItemId.PULSE]: { emoji: '💫', label: 'Pulse Wave' },
+      [ShopItemId.TEMPO]: { emoji: '🌀', label: 'Tempo Break' },
+      [ShopItemId.AEGIS]: { emoji: '🛡️', label: 'Aegis Field' },
+      [ShopItemId.SHIFT]: { emoji: '🧭', label: 'Orbit Shift' },
+      [ShopItemId.NOVA]: { emoji: '✨', label: 'Nova Spark' },
     };
 
     const asset = iconMap[itemId];

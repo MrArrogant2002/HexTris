@@ -1,9 +1,9 @@
-﻿/**
+/**
  * PowerUp Base Class
  * Base entity for all power-up types in the game
  */
 
-export type PowerUpType = 'hammer' | 'slowmo' | 'shield';
+import { type PowerUpType, getPowerDefinition } from '@config/powers';
 
 export interface PowerUpOptions {
   type: PowerUpType;
@@ -37,8 +37,9 @@ export class PowerUp {
     this.speed = options.speed ?? 1.5;
     this.size = 30 * options.scale;
 
-    this.icon = this.getIcon();
-    this.color = this.getColor();
+    const definition = getPowerDefinition(this.type);
+    this.icon = definition.icon;
+    this.color = definition.color;
   }
 
   /**
@@ -107,22 +108,4 @@ export class PowerUp {
     return this.removed || this.collected;
   }
 
-  private getIcon(): string {
-    const icons: Record<PowerUpType, string> = {
-      hammer: 'HAMMER',
-      slowmo: 'TIMER',
-      shield: 'SHIELD',
-    };
-    return icons[this.type];
-  }
-
-  private getColor(): string {
-    const colors: Record<PowerUpType, string> = {
-      hammer: '#f39c12',
-      slowmo: '#3498db',
-      shield: '#2ecc71',
-    };
-    return colors[this.type];
-  }
 }
-

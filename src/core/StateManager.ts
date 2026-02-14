@@ -4,7 +4,7 @@
  */
 
 import type { GameState, StateEvent, StateListener } from '../types/game';
-import { GameStatus, STARTING_LIVES } from './constants';
+import { GameStatus, STARTING_LIVES, TIME_ORB_GOAL } from './constants';
 import { DEFAULT_DIFFICULTY } from '@config/difficulty';
 import { DEFAULT_THEME } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
@@ -61,7 +61,7 @@ export class StateManager {
         strategyPhase: undefined,
         tempoLevel: 0,
         timeOrbCount: 0,
-        timeOrbGoal: 3,
+        timeOrbGoal: TIME_ORB_GOAL,
         momentumValue: 0,
         ghostDelta: 0,
         activeMutators: [],
@@ -77,7 +77,7 @@ export class StateManager {
         sfxVolume: 0.6,
         preGamePowerUps: [],
         currentGameMode: 'standard',
-        timerDuration: 90,
+        timerDuration: 75,
         currentGroupId: undefined,
         multiplayerMode: 'race',
         prestigeMutators: [],
@@ -226,4 +226,3 @@ export class StateManager {
 
 // Export singleton instance
 export const stateManager = StateManager.getInstance();
-

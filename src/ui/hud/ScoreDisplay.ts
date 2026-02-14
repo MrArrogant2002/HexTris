@@ -20,16 +20,22 @@ export class ScoreDisplay {
     // Container
     const container = document.createElement('div');
     container.className = `
-      fixed top-4 left-1/2 transform -translate-x-1/2 z-20
+      fixed top-14 sm:top-4 left-1/2 transform -translate-x-1/2 z-30
       flex flex-col items-center
     `;
+
+    const panel = document.createElement('div');
+    panel.className = `
+      theme-card-muted px-4 py-2 rounded-2xl
+      shadow-lg flex flex-col items-center
+    `.trim().replace(/\s+/g, ' ');
 
     // Score text
     this.scoreText = document.createElement('div');
     this.scoreText.className = `
-      text-4xl md:text-5xl lg:text-6xl font-bold
-      text-white
-      drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]
+      text-3xl sm:text-4xl lg:text-5xl font-black
+      theme-text
+      drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]
       transition-all duration-300
     `;
     this.scoreText.textContent = '0';
@@ -37,13 +43,14 @@ export class ScoreDisplay {
     // Score label
     const label = document.createElement('div');
     label.className = `
-      text-sm md:text-base text-white/80 uppercase tracking-wider
+      text-[10px] sm:text-xs theme-text-secondary uppercase tracking-wider
       mt-1
     `;
     label.textContent = 'Score';
 
-    container.appendChild(this.scoreText);
-    container.appendChild(label);
+    panel.appendChild(this.scoreText);
+    panel.appendChild(label);
+    container.appendChild(panel);
 
     return container;
   }
@@ -150,4 +157,3 @@ export class ScoreDisplay {
     return this.element;
   }
 }
-

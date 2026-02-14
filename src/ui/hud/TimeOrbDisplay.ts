@@ -16,23 +16,21 @@ export class TimeOrbDisplay {
   private createElements(): HTMLDivElement {
     const container = document.createElement('div');
     container.className = `
-      fixed top-16 right-4 z-20
+      fixed top-20 sm:top-16 right-4 z-20
       flex items-center gap-2
       px-3 py-2
-      bg-black/70 text-white
-      border border-white/15
+      theme-card-muted
       rounded-full
       shadow-lg
-      backdrop-blur-md
       text-xs uppercase tracking-widest
     `.trim().replace(/\s+/g, ' ');
 
     const icon = document.createElement('span');
-    icon.className = 'text-sm';
-    icon.textContent = 'ORB';
+    icon.className = 'text-sm theme-text';
+    icon.textContent = 'RELAY';
 
     this.countText = document.createElement('span');
-    this.countText.className = 'font-semibold';
+    this.countText.className = 'font-semibold theme-text';
     this.countText.textContent = '0/3';
 
     container.appendChild(icon);

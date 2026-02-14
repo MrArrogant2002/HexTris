@@ -5,22 +5,33 @@
 
 import { Canvas } from '@core/Canvas';
 import { stateManager } from '@core/StateManager';
-import { GameStatus, POWER_UP_SCORE_INTERVAL } from '@core/constants';
+import {
+  GameStatus,
+  POWER_UP_MAX_WAIT,
+  POWER_UP_SCORE_INTERVAL,
+  POWER_UP_SPAWN_COOLDOWN,
+} from '@core/constants';
 import type { Hex } from '@entities/Hex';
-import { PowerUp, PowerUpType } from '@entities/PowerUp';
+import { PowerUp } from '@entities/PowerUp';
+import { type PowerUpType, getPowerDefinition, POWER_SPAWN_POOL } from '@config/powers';
 import type { InventoryUI } from '@ui/hud/InventoryUI';
 
 type PowerUpUseHandler = (type: PowerUpType) => void;
-type SlowMoHandler = (multiplier: number, durationMs: number) => void;
-type ShieldHandler = (durationMs: number) => void;
 
+// Game loop dt is frame-units (1.0 at 60fps), convert to milliseconds.
+const FRAME_DURATION_MS_60FPS = 1000 / 60;
+// Applied when lives <= 1.
+const CRITICAL_LIFE_COOLDOWN_MULTIPLIER = 0.7;
+// Applied when lives === 2.
+const LOW_LIFE_COOLDOWN_MULTIPLIER = 0.85;
+const CRITICAL_LIFE_THRESHOLD = 1;
+const LOW_LIFE_THRESHOLD = 2;
+const MAX_PENDING_SPAWNS = 2;
 export interface PowerUpSystemOptions {
   hex: Hex;
   canvas: Canvas;
   inventoryUI: InventoryUI;
   onUse?: PowerUpUseHandler;
-  onSlowMo?: SlowMoHandler;
-  onShield?: ShieldHandler;
 }
 
 export class PowerUpSystem {
@@ -31,22 +42,26 @@ export class PowerUpSystem {
   private lastScoreBucket = 0;
   private enabled = true;
   private onUse?: PowerUpUseHandler;
-  private onSlowMo?: SlowMoHandler;
-  private onShield?: ShieldHandler;
+  private cooldowns = new Map<PowerUpType, number>();
+  private elapsedMs = 0;
+  private lastSpawnMs = -Infinity;
+  private pendingSpawns = 0;
 
   constructor(options: PowerUpSystemOptions) {
     this.hex = options.hex;
     this.canvas = options.canvas;
     this.inventoryUI = options.inventoryUI;
     this.onUse = options.onUse;
-    this.onSlowMo = options.onSlowMo;
-    this.onShield = options.onShield;
 
     this.init();
   }
 
   public update(dt: number): void {
     if (!this.enabled) return;
+
+    this.elapsedMs += dt * FRAME_DURATION_MS_60FPS;
+    this.tryTimedSpawn();
+    this.trySpawnPending();
 
     const hexRadius = (this.hex.sideLength / 2) * Math.sqrt(3);
     for (let i = this.activePowerUps.length - 1; i >= 0; i--) {
@@ -75,6 +90,10 @@ export class PowerUpSystem {
     this.activePowerUps = [];
     this.lastScoreBucket = 0;
     this.inventoryUI.clear();
+    this.cooldowns.clear();
+    this.elapsedMs = 0;
+    this.lastSpawnMs = -Infinity;
+    this.pendingSpawns = 0;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -115,9 +134,8 @@ export class PowerUpSystem {
     const spawnsToAdd = bucket - this.lastScoreBucket;
     this.lastScoreBucket = bucket;
 
-    for (let i = 0; i < spawnsToAdd; i += 1) {
-      this.spawnPowerUp();
-    }
+    this.pendingSpawns = Math.min(this.pendingSpawns + spawnsToAdd, MAX_PENDING_SPAWNS);
+    this.trySpawnPending();
   };
 
   private handlePowerUpUsed = (event: Event): void => {
@@ -125,17 +143,16 @@ export class PowerUpSystem {
     const type = customEvent.detail?.type;
     if (!type) return;
 
-    this.activatePowerUp(type);
-    window.dispatchEvent(new CustomEvent('powerUpUsed', { detail: { type } }));
-    if (this.onUse) {
-      this.onUse(type);
+    const activated = this.activatePowerUp(type);
+    if (!activated) {
+      return;
     }
+    window.dispatchEvent(new CustomEvent('powerUpUsed', { detail: { type } }));
   };
 
   private spawnPowerUp(): void {
     const lane = this.randomInt(0, this.hex.sides);
-    const types: PowerUpType[] = ['hammer', 'hammer', 'slowmo', 'shield'];
-    const type = types[this.randomInt(0, types.length)];
+    const type = POWER_SPAWN_POOL[this.randomInt(0, POWER_SPAWN_POOL.length)];
 
     const { startDist, scale } = this.getSpawnSettings();
     const powerUp = new PowerUp({
@@ -146,6 +163,41 @@ export class PowerUpSystem {
     });
 
     this.activePowerUps.push(powerUp);
+    this.lastSpawnMs = this.elapsedMs;
+  }
+
+  private trySpawnPending(): void {
+    if (this.pendingSpawns <= 0) return;
+    if (this.inventoryUI.isFull()) return;
+    if (!this.canSpawnNow()) return;
+    this.pendingSpawns = Math.max(0, this.pendingSpawns - 1);
+    this.spawnPowerUp();
+  }
+
+  private tryTimedSpawn(): void {
+    if (this.inventoryUI.isFull()) return;
+    if (this.elapsedMs - this.lastSpawnMs < POWER_UP_MAX_WAIT) return;
+    if (!this.canSpawnNow()) return;
+    this.spawnPowerUp();
+  }
+
+  private canSpawnNow(): boolean {
+    if (stateManager.getState().status !== GameStatus.PLAYING) {
+      return false;
+    }
+    const lives = stateManager.getState().game.lives;
+    const cooldown = this.calculateCooldownForLives(lives);
+    return this.elapsedMs - this.lastSpawnMs >= cooldown;
+  }
+
+  private calculateCooldownForLives(lives: number): number {
+    if (lives <= CRITICAL_LIFE_THRESHOLD) {
+      return POWER_UP_SPAWN_COOLDOWN * CRITICAL_LIFE_COOLDOWN_MULTIPLIER;
+    }
+    if (lives === LOW_LIFE_THRESHOLD) {
+      return POWER_UP_SPAWN_COOLDOWN * LOW_LIFE_COOLDOWN_MULTIPLIER;
+    }
+    return POWER_UP_SPAWN_COOLDOWN;
   }
 
   private handleCollected(powerUp: PowerUp): void {
@@ -159,72 +211,24 @@ export class PowerUpSystem {
     }
   }
 
-  private activatePowerUp(type: PowerUpType): void {
-    switch (type) {
-      case 'hammer':
-        this.activateHammer();
-        break;
-      case 'slowmo':
-        if (this.onSlowMo) {
-          this.onSlowMo(0.55, 6000);
-        }
-        break;
-      case 'shield':
-        if (this.onShield) {
-          this.onShield(10000);
-        }
-        break;
-      default:
-        break;
+  private activatePowerUp(type: PowerUpType): boolean {
+    const definition = getPowerDefinition(type);
+    const now = Date.now();
+    const cooldownUntil = this.cooldowns.get(type) ?? 0;
+    if (cooldownUntil > now) {
+      this.inventoryUI.addPowerUp(type);
+      window.dispatchEvent(new CustomEvent('powerUpCooldown', {
+        detail: { type, remainingMs: cooldownUntil - now },
+      }));
+      return false;
     }
-  }
+    this.cooldowns.set(type, now + definition.cooldownMs);
 
-  private activateHammer(): void {
-    const lanes = this.hex.blocks;
-    if (!lanes.length) return;
-
-    let targetIndex = -1;
-    for (let index = 0; index < 20; index++) {
-      const complete = lanes.every(lane => lane.length > index && lane[index].deleted === 0);
-      if (complete) {
-        targetIndex = index;
-        break;
-      }
+    if (this.onUse) {
+      this.onUse(type);
     }
-
-    if (targetIndex === -1) {
-      let maxIndex = -1;
-      for (const lane of lanes) {
-        if (lane.length > 0) {
-          maxIndex = Math.max(maxIndex, lane.length - 1);
-        }
-      }
-
-      if (maxIndex === -1) {
-        return;
-      }
-
-      targetIndex = maxIndex;
-    }
-
-    let destroyed = 0;
-    for (const lane of lanes) {
-      const block = lane[targetIndex];
-      if (block) {
-        block.deleted = 1;
-        destroyed += 1;
-      }
-    }
-
-    if (destroyed > 0) {
-      const bonusScore = destroyed * 50;
-      const currentScore = stateManager.getState().game.score;
-      const newScore = currentScore + bonusScore;
-      stateManager.updateGame({ score: newScore });
-      window.dispatchEvent(new CustomEvent('scoreUpdate', { detail: { score: newScore } }));
-    }
-
-    window.dispatchEvent(new CustomEvent('powerUpEffect', { detail: { type: 'hammer' } }));
+    window.dispatchEvent(new CustomEvent('powerUpEffect', { detail: { type } }));
+    return true;
   }
 
   private getSpawnSettings(): { startDist: number; scale: number } {
@@ -241,4 +245,3 @@ export class PowerUpSystem {
     return Math.floor(Math.random() * (max - min)) + min;
   }
 }
-

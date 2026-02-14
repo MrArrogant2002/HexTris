@@ -23,10 +23,13 @@ export const DAILY_LOGIN_BONUS = 100;
 export const PERFECT_CLEAR_BONUS = 150;
 
 // Power-ups
-export const POWER_UP_SPAWN_COOLDOWN = 30000; // 30 seconds
-export const POWER_UP_SCORE_INTERVAL = 100; // Spawn a power-up every 100 score
+export const POWER_UP_SPAWN_COOLDOWN = 12000; // Minimum ms between drops
+export const POWER_UP_MAX_WAIT = 20000; // Guarantee a drop after this window
+export const POWER_UP_SCORE_INTERVAL = 140; // Spawn pacing based on score
 export const POWER_UP_COMBO_THRESHOLD = 10; // Combo required to spawn power-up
 export const MAX_POWER_UP_INVENTORY = 3; // Max power-ups per type
+export const TIME_ORB_GOAL = 4; // Relay nodes needed per timer extension
+export const RESONANCE_SCORE_MULTIPLIER = 1.2;
 
 // Combo System
 export const COMBO_BASE_MULTIPLIER = 1.5;
@@ -89,4 +92,3 @@ export const MIN_TOUCH_TARGET_SIZE = 48; // pixels
 // Performance
 export const TARGET_FPS = 60;
 export const FRAME_TIME = 1000 / TARGET_FPS;
-

@@ -26,29 +26,27 @@ export class PointsDisplay {
     // Container
     const container = document.createElement('div');
     container.className = `
-      fixed top-4 right-4 z-20
-      flex items-center gap-3
+      fixed top-4 right-4 z-30
+      flex items-center gap-2
     `;
 
     // Points display
     const pointsContainer = document.createElement('div');
     pointsContainer.className = `
-      flex items-center gap-2 px-4 py-2
-      bg-white/90 backdrop-blur-md
-      border-2 border-gray-900
-      rounded-lg shadow-lg
+      flex items-center gap-2 px-3 py-2
+      theme-card-muted rounded-xl shadow-lg
       transition-all duration-300
       hover:scale-105
-    `;
+    `.trim().replace(/\s+/g, ' ');
 
     // Diamond icon
     const diamond = document.createElement('span');
-    diamond.className = 'text-xl filter drop-shadow-[0_0_6px_rgba(255,215,0,0.6)]';
+    diamond.className = 'text-xl filter drop-shadow-[0_0_6px_rgba(255,215,0,0.45)]';
     diamond.textContent = '💎';
 
     // Points text
     this.pointsText = document.createElement('span');
-    this.pointsText.className = 'text-lg font-bold text-gray-900';
+    this.pointsText.className = 'text-lg font-bold theme-text';
     this.pointsText.textContent = this.currentPoints.toString();
 
     pointsContainer.appendChild(diamond);
@@ -59,11 +57,11 @@ export class PointsDisplay {
       const shopButton = document.createElement('button');
       shopButton.type = 'button';
       shopButton.className = `
-        px-3 py-2
-        bg-black text-white text-xs font-bold
+        theme-btn theme-btn-primary
+        px-3 py-2 text-xs font-bold
         rounded-lg shadow-lg
         transition-all duration-200
-        hover:bg-gray-800 hover:scale-105
+        hover:scale-105
       `.trim().replace(/\s+/g, ' ');
       shopButton.textContent = '🛒 Shop';
       shopButton.addEventListener('click', () => this.onShopClick?.());
@@ -88,7 +86,7 @@ export class PointsDisplay {
     if (gained && difference > 0) {
       // Add floating text for the diamond gain
       const floatingText = document.createElement('div');
-      floatingText.className = 'absolute -top-8 left-0 text-yellow-400 font-bold text-lg animate-pulse';
+      floatingText.className = 'absolute -top-8 left-0 text-amber-400 font-bold text-lg animate-pulse';
       floatingText.textContent = `+${difference}`;
       this.element.appendChild(floatingText);
       setTimeout(() => floatingText.remove(), 600);
@@ -161,4 +159,3 @@ export class PointsDisplay {
     return this.element;
   }
 }
-
