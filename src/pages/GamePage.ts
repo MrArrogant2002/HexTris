@@ -274,7 +274,7 @@ export class GamePage extends BasePage {
     controls.innerHTML = `
       <div class="text-xs theme-text-secondary">
         <span class="hidden md:inline">Arrow Keys Rotate • Shift to Glide • 1-3 Powers • P to Pause</span>
-        <span class="md:hidden">Swipe to Rotate • Tap Dock Buttons • Hold Boost to Glide</span>
+        <span class="md:hidden">Swipe to rotate • Tap dock buttons • Hold boost to glide</span>
       </div>
     `;
     return controls;

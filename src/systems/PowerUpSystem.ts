@@ -19,11 +19,13 @@ import type { InventoryUI } from '@ui/hud/InventoryUI';
 type PowerUpUseHandler = (type: PowerUpType) => void;
 
 // Game loop dt is frame-units (1.0 at 60fps), convert to milliseconds.
-const FRAME_DURATION_MS_60FPS = 16.6667;
+const FRAME_DURATION_MS_60FPS = 1000 / 60;
 // Applied when lives <= 1.
 const CRITICAL_LIFE_COOLDOWN_MULTIPLIER = 0.7;
 // Applied when lives === 2.
 const LOW_LIFE_COOLDOWN_MULTIPLIER = 0.85;
+const CRITICAL_LIFE_THRESHOLD = 1;
+const LOW_LIFE_THRESHOLD = 2;
 const MAX_PENDING_SPAWNS = 2;
 export interface PowerUpSystemOptions {
   hex: Hex;
@@ -189,10 +191,10 @@ export class PowerUpSystem {
   }
 
   private calculateCooldownForLives(lives: number): number {
-    if (lives <= 1) {
+    if (lives <= CRITICAL_LIFE_THRESHOLD) {
       return POWER_UP_SPAWN_COOLDOWN * CRITICAL_LIFE_COOLDOWN_MULTIPLIER;
     }
-    if (lives === 2) {
+    if (lives === LOW_LIFE_THRESHOLD) {
       return POWER_UP_SPAWN_COOLDOWN * LOW_LIFE_COOLDOWN_MULTIPLIER;
     }
     return POWER_UP_SPAWN_COOLDOWN;
