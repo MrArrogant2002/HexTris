@@ -172,6 +172,7 @@ export class ShopModal {
 
   private createPowerPreview(itemId: ShopItemId, label: string): HTMLElement | null {
     if (!this.isPowerUp(itemId)) return null;
+    // Preview file naming follows `/public/images/power-previews/{itemId}.gif`.
     const preview = document.createElement('div');
     preview.className = 'shop-power-preview';
 
