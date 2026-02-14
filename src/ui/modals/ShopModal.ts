@@ -21,6 +21,7 @@ export interface ShopModalOptions {
 }
 
 export class ShopModal {
+  private static readonly POWER_PREVIEW_PATH = '/images/power-previews';
   private modal: Modal;
   private options: ShopModalOptions;
   private pointsSystem = new SpecialPointsSystem();
@@ -177,7 +178,7 @@ export class ShopModal {
     preview.className = 'shop-power-preview';
 
     const img = document.createElement('img');
-    img.src = `/images/power-previews/${itemId}.gif`;
+    img.src = `${ShopModal.POWER_PREVIEW_PATH}/${itemId}.gif`;
     img.alt = `${label} preview`;
     img.className = 'w-40 h-24 rounded-lg shadow-lg';
 
