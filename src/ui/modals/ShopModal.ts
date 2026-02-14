@@ -28,6 +28,7 @@ export class ShopModal {
   private content: HTMLDivElement;
   private pointsLabel: HTMLSpanElement;
   private messageLabel: HTMLParagraphElement;
+  private previewControllers: AbortController[] = [];
   private itemsContainer: HTMLDivElement;
   private themesContainer: HTMLDivElement | null = null;
 
@@ -105,6 +106,8 @@ export class ShopModal {
   }
 
   private renderItems(): void {
+    this.previewControllers.forEach((controller) => controller.abort());
+    this.previewControllers = [];
     this.itemsContainer.innerHTML = '';
 
     const items = getAllShopItems();
@@ -166,19 +169,21 @@ export class ShopModal {
       if (preview) {
         const video = preview.querySelector('video');
         if (video) {
+          const controller = new AbortController();
           const play = () => {
             void video.play().catch((error) => {
-              console.warn('Power preview playback failed', error);
+              console.warn(`Power preview playback failed for ${item.name}`, error);
             });
           };
           const stop = () => {
             video.pause();
             video.currentTime = 0;
           };
-          card.addEventListener('mouseenter', play);
-          card.addEventListener('focusin', play);
-          card.addEventListener('mouseleave', stop);
-          card.addEventListener('focusout', stop);
+          card.addEventListener('mouseenter', play, { signal: controller.signal });
+          card.addEventListener('focusin', play, { signal: controller.signal });
+          card.addEventListener('mouseleave', stop, { signal: controller.signal });
+          card.addEventListener('focusout', stop, { signal: controller.signal });
+          this.previewControllers.push(controller);
         }
         card.appendChild(preview);
       }
