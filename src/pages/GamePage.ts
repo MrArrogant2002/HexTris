@@ -211,6 +211,13 @@ export class GamePage extends BasePage {
     }
   };
 
+  private getCanvasScale(): number {
+    return Math.min(
+      this.canvas.element.width / CANVAS_WIDTH,
+      this.canvas.element.height / CANVAS_HEIGHT
+    );
+  }
+
   private applyMutators(mutators: string[]): void {
     this.activeMutators = new Set(mutators);
     this.noShieldActive = this.activeMutators.has('noShield');
@@ -451,10 +458,7 @@ export class GamePage extends BasePage {
     // Scale proportionally to canvas size
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseHexWidth = isMobile ? 87 : 65;
-    const scale = Math.min(
-      this.canvas.element.width / CANVAS_WIDTH,
-      this.canvas.element.height / CANVAS_HEIGHT
-    );
+    const scale = this.getCanvasScale();
     const hexRadius = baseHexWidth * scale;
     
     // Create hex with correct parameters (radius, canvasWidth, canvasHeight)
@@ -561,10 +565,7 @@ export class GamePage extends BasePage {
     // Original: 340 for desktop, 227 for mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseStartDist = isMobile ? 227 : 340;
-    const scale = Math.min(
-      this.canvas.element.width / CANVAS_WIDTH,
-      this.canvas.element.height / CANVAS_HEIGHT
-    );
+    const scale = this.getCanvasScale();
     const startDist = baseStartDist * scale;
     
     // Create block settings (original values)
@@ -616,7 +617,7 @@ export class GamePage extends BasePage {
     
     // Apply rush multiplier to deltaTime (original: dt * rush)
     const dt = deltaTime * this.rushMultiplier * this.powerUpSpeedMultiplier;
-    const scale = this.blockSettings?.scale ?? 1;
+    const scale = this.blockSettings?.scale ?? this.getCanvasScale();
     
     this.frameCount++;
     
