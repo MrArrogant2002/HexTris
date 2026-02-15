@@ -120,6 +120,13 @@ hextris/
 | **Orbit Shift** | Rotates all settled stacks one lane clockwise. | 11s |
 | **Nova Spark** | Boosts scoring output for the next clears. | 14s |
 
+### Orbit Shift physics note
+
+- Orbit Shift remaps only settled lane stacks; it does not rotate the outer hex container.
+- After remap, each shifted block is snapped back to lane spacing with:
+  `distFromHex = hexRadius + (block.height * laneIndex)` to prevent overlaps and micro-gaps.
+- Collision remains collision-before-move, so new falling blocks always test against the shifted stack tops first.
+
 ## ⌨️ Keyboard Shortcuts
 
 Arrow keys always rotate the hexagon. Secondary keys can be remapped in **Settings → Controls**.
@@ -211,12 +218,22 @@ VITE_APPWRITE_PROJECT_ID=your_project_id
 Optional: inventory (JSON map) if you store all inventory counts in one field.
 Example: `{"pulse": 2, "tempo": 1, "aegis": 0, "shift": 1, "nova": 0, "continue": 0, "extraLife": 1}`
 
-### ThemeProfiles collection (5 columns)
+### ThemeProfiles collection (7 columns)
 1. themeId (string, matches `ThemeName`)
 2. themeName (string)
 3. blockColors (string[] of 4 hex colors)
 4. accentColor (string hex)
 5. buttonGradient (string[] start/end hex colors)
+6. uiPrimary (string hex)
+7. background (string CSS/hex)
+
+### ThemeScores collection (6 columns)
+1. userId (string)
+2. themeId (string)
+3. bestScore (number)
+4. gamesPlayed (number)
+5. updatedAt (string / ISO date)
+6. mode (string)
 
 ### Groups collection (6 columns)
 1. roomCode (string)
@@ -269,3 +286,14 @@ Based on the original Hextris game, modernized with TypeScript and Tailwind CSS.
 ---
 
 **Current Status**: Resonance redesign shipped ✅ - new modes, powers, and control remapping are live.
+
+## 🎨 Theme extension guide
+
+Current catalog includes 10 branded themes:
+Spiderman, Cinderella, Barbie, Avengers, Batman, Galaxy, Cyberpunk, Jungle, Ocean, Retro.
+
+To add a new theme:
+1. Add a new `ThemeName` enum key in `/src/config/themes.ts`.
+2. Add its `colors.blocks`, `ui.accent`, and `colors.background` values in the `themes` map.
+3. Ensure `applyThemeToDocument` writes required CSS variables for UI (`--theme-ui-primary`) and blocks (`--theme-block-1..4`).
+4. Add unlock pricing in `themePrices` and (if needed) migration support for stored `selectedTheme`.

@@ -45,8 +45,8 @@ export interface Theme {
 export const themes: Record<ThemeName, Theme> = {
   [ThemeName.CLASSIC]: {
     id: ThemeName.CLASSIC,
-    name: 'Classic',
-    description: 'Original Hextris color scheme',
+    name: 'Batman',
+    description: 'Noir shadows with high-contrast tactical highlights',
     previewShape: 'circle',
     colors: {
       background: '#e9eef2',
@@ -65,8 +65,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.NEON]: {
     id: ThemeName.NEON,
-    name: 'Neon',
-    description: 'Vibrant neon colors on dark background',
+    name: 'Galaxy',
+    description: 'Cosmic neon glow across a deep-space backdrop',
     previewShape: 'diamond',
     colors: {
       background: '#05070f',
@@ -85,8 +85,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.DARK]: {
     id: ThemeName.DARK,
-    name: 'Dark',
-    description: 'Sleek dark mode with muted tones',
+    name: 'Cyberpunk',
+    description: 'Urban night palette with electric edge lighting',
     previewShape: 'hex',
     colors: {
       background: '#111827',
@@ -105,8 +105,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.LIGHT]: {
     id: ThemeName.LIGHT,
-    name: 'Light',
-    description: 'Clean light theme with soft pastels',
+    name: 'Cinderella',
+    description: 'Soft royal pastels with bright glass accents',
     previewShape: 'pill',
     colors: {
       background: '#f8fafc',
@@ -185,8 +185,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.RETRO_ARCADE]: {
     id: ThemeName.RETRO_ARCADE,
-    name: 'Retro Arcade',
-    description: 'Arcade glow with punchy contrast',
+    name: 'Retro',
+    description: 'Arcade glow with punchy old-school contrast',
     previewShape: 'diamond',
     colors: {
       background: '#070a1b',
@@ -205,8 +205,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.STARBLOOM]: {
     id: ThemeName.STARBLOOM,
-    name: 'Cyndrilla',
-    description: 'Dreamy candy skies with royal sparkles',
+    name: 'Jungle',
+    description: 'Leafy saturation with warm tropical highlights',
     previewShape: 'spark',
     colors: {
       background: '#fff5fa',
@@ -225,8 +225,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.TURBO_FORGE]: {
     id: ThemeName.TURBO_FORGE,
-    name: 'Turbo Forge',
-    description: 'Steel blues with molten energy for speed runners',
+    name: 'Ocean',
+    description: 'Cool tides and marine blues with bright crest accents',
     previewShape: 'hex',
     colors: {
       background: '#070e1b',
@@ -326,12 +326,14 @@ export function applyThemeToDocument(theme: Theme): void {
 
   const root = document.documentElement;
   root.style.setProperty('--theme-bg', theme.colors.background);
+  root.style.setProperty('--theme-background', theme.colors.background);
   root.style.setProperty('--theme-surface', theme.ui.surface);
   root.style.setProperty('--theme-surface-muted', theme.ui.surfaceMuted);
   root.style.setProperty('--theme-border', theme.ui.border);
   root.style.setProperty('--theme-text', theme.colors.text);
   root.style.setProperty('--theme-text-secondary', theme.colors.textSecondary);
   root.style.setProperty('--theme-accent', theme.ui.accent);
+  root.style.setProperty('--theme-ui-primary', theme.ui.accent);
   root.style.setProperty('--theme-accent-contrast', getContrastColor(theme.ui.accent));
   root.style.setProperty('--theme-surface-contrast', getContrastColor(theme.ui.surface));
   root.style.setProperty('--theme-surface-glass', hexToRgba(theme.ui.surface, 0.78));
@@ -343,6 +345,10 @@ export function applyThemeToDocument(theme: Theme): void {
   root.style.setProperty('--theme-accent-strong', adjustColor(theme.ui.accent, 0.15));
   root.style.setProperty('--theme-accent-soft', adjustColor(theme.ui.accent, -0.12));
   root.style.setProperty('--theme-bg-muted', adjustColor(theme.colors.background, 0.08));
+  root.style.setProperty('--theme-block-1', theme.colors.blocks[0]);
+  root.style.setProperty('--theme-block-2', theme.colors.blocks[1]);
+  root.style.setProperty('--theme-block-3', theme.colors.blocks[2]);
+  root.style.setProperty('--theme-block-4', theme.colors.blocks[3]);
 
   document.body.style.background = theme.colors.background;
   document.body.style.color = theme.colors.text;
