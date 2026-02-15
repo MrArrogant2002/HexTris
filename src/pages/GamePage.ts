@@ -11,6 +11,8 @@ import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
 import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
   INVULNERABILITY_DURATION,
   LIFE_BONUS_INTERVAL,
   MAX_LIVES,
@@ -449,11 +451,15 @@ export class GamePage extends BasePage {
     // Scale proportionally to canvas size
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseHexWidth = isMobile ? 87 : 65;
-    const hexRadius = baseHexWidth * Math.min(centerX / 400, centerY / 400);
+    const scale = Math.min(
+      this.canvas.element.width / CANVAS_WIDTH,
+      this.canvas.element.height / CANVAS_HEIGHT
+    );
+    const hexRadius = baseHexWidth * scale;
     
     // Create hex with correct parameters (radius, canvasWidth, canvasHeight)
     this.hex = new Hex(hexRadius, this.canvas.element.width, this.canvas.element.height, {
-      scale: 1,
+      scale,
       comboTime: 240
     });
     
@@ -555,7 +561,10 @@ export class GamePage extends BasePage {
     // Original: 340 for desktop, 227 for mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const baseStartDist = isMobile ? 227 : 340;
-    const scale = Math.min(this.canvas.element.width / 800, this.canvas.element.height / 800);
+    const scale = Math.min(
+      this.canvas.element.width / CANVAS_WIDTH,
+      this.canvas.element.height / CANVAS_HEIGHT
+    );
     const startDist = baseStartDist * scale;
     
     // Create block settings (original values)
@@ -607,6 +616,7 @@ export class GamePage extends BasePage {
     
     // Apply rush multiplier to deltaTime (original: dt * rush)
     const dt = deltaTime * this.rushMultiplier * this.powerUpSpeedMultiplier;
+    const scale = this.blockSettings?.scale ?? 1;
     
     this.frameCount++;
     
@@ -624,8 +634,7 @@ export class GamePage extends BasePage {
     this.updateCatchupMultiplier();
     
     // Update physics (falling blocks move toward center and check collision)
-    // Pass scale=1 for now (can be adjusted for screen scaling later)
-    this.physicsSystem.update(this.hex, dt, 1);
+    this.physicsSystem.update(this.hex, dt, scale);
 
     this.powerUpSystem.update(dt);
     this.timeOrbSystem?.update(dt);
@@ -720,7 +729,7 @@ export class GamePage extends BasePage {
         
         // Move unsettled blocks down
         if (!block.settled) {
-          block.distFromHex -= block.iter * dt * 1; // scale = 1
+          block.distFromHex -= block.iter * dt * scale;
         }
       }
     }
