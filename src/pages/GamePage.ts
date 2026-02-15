@@ -11,7 +11,6 @@ import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
 import {
-  CANVAS_HEIGHT,
   CANVAS_WIDTH,
   INVULNERABILITY_DURATION,
   LIFE_BONUS_INTERVAL,
@@ -215,12 +214,8 @@ export class GamePage extends BasePage {
   private getCanvasScale(): number {
     return Math.min(
       this.canvas.element.width / CANVAS_WIDTH,
-      this.canvas.element.height / CANVAS_HEIGHT
+      this.canvas.element.height / CANVAS_WIDTH
     );
-  }
-
-  private isMobileDevice(): boolean {
-    return this.isMobile;
   }
 
   private createBlockSettings(scale: number): {
@@ -230,7 +225,7 @@ export class GamePage extends BasePage {
     creationDt: number;
     startDist: number;
   } {
-    const isMobile = this.isMobileDevice();
+    const isMobile = this.isMobile;
     const baseStartDist = isMobile ? 227 : 340;
     const baseBlockHeight = isMobile ? 20 : 15;
     const creationDt = isMobile ? 60 : 9;
@@ -482,7 +477,7 @@ export class GamePage extends BasePage {
     // hexSideLength is actually the RADIUS (center to vertex), not side length
     // Original Hextris uses 65 for desktop, 87 for mobile
     // Scale proportionally to canvas size
-    const isMobile = this.isMobileDevice();
+    const isMobile = this.isMobile;
     const baseHexWidth = isMobile ? 87 : 65;
     const scale = this.getCanvasScale();
     const hexRadius = baseHexWidth * scale;
