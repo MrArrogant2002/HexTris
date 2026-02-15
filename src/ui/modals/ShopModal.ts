@@ -298,7 +298,6 @@ export class ShopModal {
       itemId === ShopItemId.PULSE ||
       itemId === ShopItemId.TEMPO ||
       itemId === ShopItemId.AEGIS ||
-      itemId === ShopItemId.SHIFT ||
       itemId === ShopItemId.NOVA
     );
   }
@@ -312,17 +311,16 @@ export class ShopModal {
     const wrapper = document.createElement('div');
     wrapper.className = 'flex items-center justify-center w-10 h-10 theme-card-muted rounded-lg';
 
-    const iconMap: Record<ShopItemId, { src?: string; emoji: string; label: string }> = {
+    const iconMap: Partial<Record<ShopItemId, { src?: string; emoji: string; label: string }>> = {
       [ShopItemId.CONTINUE]: { src: '/images/icons/replay.svg', emoji: '🔁', label: 'Continue' },
       [ShopItemId.EXTRA_LIFE]: { src: '/images/icons/extra-life.svg', emoji: '❤️', label: 'Extra Life' },
       [ShopItemId.PULSE]: { emoji: '💫', label: 'Pulse Wave' },
       [ShopItemId.TEMPO]: { emoji: '🌀', label: 'Tempo Break' },
       [ShopItemId.AEGIS]: { emoji: '🛡️', label: 'Aegis Field' },
-      [ShopItemId.SHIFT]: { emoji: '🧭', label: 'Orbit Shift' },
       [ShopItemId.NOVA]: { emoji: '✨', label: 'Nova Spark' },
     };
 
-    const asset = iconMap[itemId];
+    const asset = iconMap[itemId] ?? { emoji: '❔', label: 'Item' };
     if (asset.src) {
       const img = document.createElement('img');
       img.src = asset.src;

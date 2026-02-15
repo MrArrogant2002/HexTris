@@ -2,7 +2,7 @@
  * Power definitions for the redesigned Hextris powers system.
  */
 
-export const POWER_UP_IDS = ['pulse', 'tempo', 'aegis', 'shift', 'nova'] as const;
+export const POWER_UP_IDS = ['pulse', 'tempo', 'aegis', 'nova'] as const;
 export type PowerUpType = typeof POWER_UP_IDS[number];
 
 export interface PowerDefinition {
@@ -42,14 +42,6 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
     cooldownMs: 12000,
     durationMs: 8000,
   },
-  shift: {
-    id: 'shift',
-    name: 'Orbit Shift',
-    icon: '🧭',
-    color: '#fbbf24',
-    description: 'Rotates all settled stacks one lane clockwise to realign colors.',
-    cooldownMs: 11000,
-  },
   nova: {
     id: 'nova',
     name: 'Nova Spark',
@@ -66,7 +58,7 @@ export const POWER_SPAWN_POOL: PowerUpType[] = [
   'tempo',
   'pulse',
   'aegis',
-  'shift',
+  'pulse',
   'nova',
   'tempo',
 ];

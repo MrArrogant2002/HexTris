@@ -26,7 +26,6 @@ export interface UserDocument {
   inventory_pulse?: number;
   inventory_tempo?: number;
   inventory_aegis?: number;
-  inventory_shift?: number;
   inventory_nova?: number;
   $createdAt: string;
   $updatedAt: string;
@@ -90,7 +89,6 @@ export class AppwriteClient {
           inventory_pulse: 0,
           inventory_tempo: 0,
           inventory_aegis: 0,
-          inventory_shift: 0,
           inventory_nova: 0,
         }
       );
@@ -480,7 +478,6 @@ export class AppwriteClient {
       inventory_pulse: inventory[ShopItemId.PULSE] ?? 0,
       inventory_tempo: inventory[ShopItemId.TEMPO] ?? 0,
       inventory_aegis: inventory[ShopItemId.AEGIS] ?? 0,
-      inventory_shift: inventory[ShopItemId.SHIFT] ?? 0,
       inventory_nova: inventory[ShopItemId.NOVA] ?? 0,
     };
   }
@@ -500,7 +497,6 @@ export class AppwriteClient {
       [ShopItemId.PULSE]: document.inventory_pulse ?? base[ShopItemId.PULSE],
       [ShopItemId.TEMPO]: document.inventory_tempo ?? base[ShopItemId.TEMPO],
       [ShopItemId.AEGIS]: document.inventory_aegis ?? base[ShopItemId.AEGIS],
-      [ShopItemId.SHIFT]: document.inventory_shift ?? base[ShopItemId.SHIFT],
       [ShopItemId.NOVA]: document.inventory_nova ?? base[ShopItemId.NOVA],
     };
   }

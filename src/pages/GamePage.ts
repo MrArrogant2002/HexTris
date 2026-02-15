@@ -121,7 +121,6 @@ export class GamePage extends BasePage {
   private slowMoTimerEl: HTMLDivElement | null = null;
   private shieldOverlay: HTMLDivElement | null = null;
   private hammerOverlay: HTMLDivElement | null = null;
-  private shiftOverlay: HTMLDivElement | null = null;
   private novaOverlay: HTMLDivElement | null = null;
   private resonanceOverlay: HTMLDivElement | null = null;
   private syncOverlay: HTMLDivElement | null = null;
@@ -199,9 +198,6 @@ export class GamePage extends BasePage {
     const type = customEvent.detail?.type;
     if (type === 'pulse') {
       this.triggerHammerEffect();
-    }
-    if (type === 'shift') {
-      this.triggerShiftEffect();
     }
   };
 
@@ -769,13 +765,6 @@ export class GamePage extends BasePage {
     this.decayResonance(dt);
     this.decaySync(dt);
     
-    // Check for game over (original: checks if blocks exceed rows setting)
-    if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
-      if (!state.game.isInvulnerable) {
-        this.handleLifeLoss();
-      }
-    }
-
     // Update HUD displays
     const updatedState = stateManager.getState();
     this.scoreDisplay.setScore(updatedState.game.score);
@@ -796,6 +785,13 @@ export class GamePage extends BasePage {
     const isMultiplayer = updatedState.ui.currentGameMode?.startsWith('multiplayer');
     this.timeOrbDisplay.getElement().style.display = isTimer ? 'flex' : 'none';
     this.momentumBar.setVisible(Boolean(isMultiplayer));
+
+    // Check for game over (original: checks if blocks exceed rows setting)
+    if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
+      if (!state.game.isInvulnerable) {
+        this.handleLifeLoss();
+      }
+    }
   }
 
   /**
@@ -1094,10 +1090,6 @@ export class GamePage extends BasePage {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
     }
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
-    }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);
       this.hammerEffectTimeoutId = null;
@@ -1142,9 +1134,6 @@ export class GamePage extends BasePage {
         this.applyShield(durationMs);
         break;
       }
-      case 'shift':
-        this.applyOrbitShift();
-        break;
       case 'nova': {
         const durationMs = definition.durationMs;
         if (!durationMs) {
@@ -1357,41 +1346,6 @@ export class GamePage extends BasePage {
     }
   }
 
-  private applyOrbitShift(): void {
-    const sides = this.hex.sides;
-    if (!sides) return;
-    const angleStep = 360 / sides;
-    const hexRadius = (this.hex.sideLength / 2) * Math.sqrt(3);
-    const shifted: Block[][] = Array.from({ length: sides }, () => []);
-    for (let i = 0; i < sides; i++) {
-      const target = (i - 1 + sides) % sides;
-      const lane = [...this.hex.blocks[i]];
-      shifted[target] = lane;
-      lane.forEach((block, index) => {
-        block.attachedLane = target;
-        block.targetAngle += angleStep;
-        const targetDist = hexRadius + block.height * index;
-        block.distFromHex = this.easeOrbitDistance(block.distFromHex, targetDist);
-        block.settled = true;
-        block.checked = 1;
-        block.removed = false;
-      });
-    }
-    this.hex.blocks = shifted;
-  }
-
-  private easeOrbitDistance(current: number, target: number): number {
-    // 65% interpolation avoids harsh snapping while still re-aligning within a few frames.
-    const orbitEaseFactor = 0.65;
-    // Snap once near target to prevent residual float noise.
-    const snapThreshold = 0.5;
-    const eased = current + (target - current) * orbitEaseFactor;
-    if (Math.abs(target - eased) <= snapThreshold) {
-      return target;
-    }
-    return eased;
-  }
-
   private applyNovaBoost(durationMs: number): void {
     if (this.novaTimeoutId) {
       window.clearTimeout(this.novaTimeoutId);
@@ -1403,25 +1357,6 @@ export class GamePage extends BasePage {
       this.hideNovaEffect();
       this.novaTimeoutId = null;
     }, durationMs);
-  }
-
-  private triggerShiftEffect(): void {
-    if (!this.effectLayer) return;
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
-    }
-    const overlay = document.createElement('div');
-    overlay.className = 'game-effect-shift';
-    overlay.textContent = 'SHIFT';
-    this.effectLayer.appendChild(overlay);
-    this.shiftOverlay = overlay;
-    window.setTimeout(() => {
-      overlay.remove();
-      if (this.shiftOverlay === overlay) {
-        this.shiftOverlay = null;
-      }
-    }, 900);
   }
 
   private showNovaEffect(durationMs: number): void {
@@ -2054,7 +1989,6 @@ export class GamePage extends BasePage {
       ShopItemId.PULSE,
       ShopItemId.TEMPO,
       ShopItemId.AEGIS,
-      ShopItemId.SHIFT,
       ShopItemId.NOVA,
     ];
 
@@ -2277,10 +2211,6 @@ export class GamePage extends BasePage {
     if (this.hammerOverlay) {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
-    }
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
     }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);

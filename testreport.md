@@ -40,9 +40,8 @@ Implemented global depth variables:
 # Module 2: Physics Implementation & Power-Ups
 
 Implemented refinements:
-1. **Orbit Shift** now uses eased orbital radius blending (`easeOrbitDistance`) when lane-shifting settled stacks to avoid hard radial snapping.
-2. **Tempo Break** now clamps dilation input (`0.4 <= multiplier <= 1.0`) and duration (`>=250ms`) to preserve simulation stability under extreme values.
-3. **Collision Safety** in `PhysicsSystem` now includes:
+1. **Tempo Break** now clamps dilation input (`0.4 <= multiplier <= 1.0`) and duration (`>=250ms`) to preserve simulation stability under extreme values.
+2. **Collision Safety** in `PhysicsSystem` now includes:
    - fixed max substep integration (`MAX_PHYSICS_STEP = 1.25` frame-units in the normalized 60 FPS `dt` domain)
    - per-step velocity clamp (`min(iter*dt*scale, block.height*0.9)`)
 
@@ -56,7 +55,7 @@ These changes preserve collision-before-move ordering and reduce tunneling risk 
 |---|---|---|---|
 | Theme ownership | `themesUnlocked` | ✅ Mapped | Synced via `ThemeManager.syncToAppwrite()` and `AppwriteClient.updateThemes()` |
 | Theme selection | `selectedTheme` | ✅ Mapped | Synced via Settings + ThemeManager |
-| Physics power inventory | `inventory_tempo`, `inventory_shift` | ✅ Mapped | Existing power-up inventory schema supports both required powers |
+| Physics power inventory | `inventory_tempo`, `inventory_nova` | ✅ Mapped | Existing power-up inventory schema supports active powers |
 | Runtime physics transient state | N/A persisted by design | ⚠️ Ephemeral | Current architecture treats active physics effects as runtime-only state |
 
 ## Indexing/Integrity Recommendations
@@ -73,7 +72,7 @@ These changes preserve collision-before-move ordering and reduce tunneling risk 
 |---|---|---|---|
 | Theme Contrast | Neon text over bright accents | Medium (accessibility) | Add contrast gates in visual QA pass for buttons/labels |
 | Theme Depth | Rapid block-spam with same hue | Medium | Use generated tint/soft/shade vars for layered block rendering |
-| Orbit Shift | Dense lanes with mixed stack heights | Medium | Eased radius re-targeting + `checked=1` scan prioritization (implemented) |
+| Stack Stability | Dense lanes with mixed stack heights | Medium | Deterministic lane ordering + collision-before-move checks |
 | Tempo Break | Large `dt` spikes under CPU load | High | Substep integration + velocity clamp in physics update (implemented) |
 | Collision | High-speed crossing floor in one frame | High | Preserve collision-before-move with capped per-substep movement (implemented) |
 | DB Sync | Theme unlock + select race | Medium | Continue single payload writes via `updateThemes()` to avoid split writes |
