@@ -56,11 +56,8 @@ export const POWER_DEFINITIONS: Record<PowerUpType, PowerDefinition> = {
 export const POWER_SPAWN_POOL: PowerUpType[] = [
   'pulse',
   'tempo',
-  'pulse',
   'aegis',
-  'pulse',
   'nova',
-  'tempo',
 ];
 
 export function getPowerDefinition(type: PowerUpType): PowerDefinition {

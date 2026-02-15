@@ -311,7 +311,7 @@ export class ShopModal {
     const wrapper = document.createElement('div');
     wrapper.className = 'flex items-center justify-center w-10 h-10 theme-card-muted rounded-lg';
 
-    const iconMap: Partial<Record<ShopItemId, { src?: string; emoji: string; label: string }>> = {
+    const iconMap: Record<ShopItemId, { src?: string; emoji: string; label: string }> = {
       [ShopItemId.CONTINUE]: { src: '/images/icons/replay.svg', emoji: '🔁', label: 'Continue' },
       [ShopItemId.EXTRA_LIFE]: { src: '/images/icons/extra-life.svg', emoji: '❤️', label: 'Extra Life' },
       [ShopItemId.PULSE]: { emoji: '💫', label: 'Pulse Wave' },
@@ -320,7 +320,7 @@ export class ShopModal {
       [ShopItemId.NOVA]: { emoji: '✨', label: 'Nova Spark' },
     };
 
-    const asset = iconMap[itemId] ?? { emoji: '❔', label: 'Item' };
+    const asset = iconMap[itemId];
     if (asset.src) {
       const img = document.createElement('img');
       img.src = asset.src;

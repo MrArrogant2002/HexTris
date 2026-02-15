@@ -218,8 +218,9 @@ The script authenticates with your Appwrite API key and creates the database plu
 17. themePaletteVersion (string, e.g. `2026.02`)
 18. themeSyncAt (string / ISO date)
 
-Optional: inventory (JSON map) if you store all inventory counts in one field.
-Example: `{"pulse": 2, "tempo": 1, "aegis": 0, "nova": 0, "continue": 0, "extraLife": 1}`
+Default implementation uses the individual `inventory_*` columns above.
+Optional compatibility mode: `inventory` (JSON map) if you store all inventory counts in one field.
+Example: `{"continue": 0, "extraLife": 1, "pulse": 2, "tempo": 1, "aegis": 0, "nova": 0}`
 
 ### ThemeProfiles collection (7 columns)
 1. themeId (string, matches `ThemeName`)
