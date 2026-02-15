@@ -42,6 +42,21 @@ export const MODE_GUIDES: ModeGuide[] = [
     ],
   },
   {
+    id: 'crew-battle',
+    name: 'Crew Battle (Multiplayer)',
+    tagline: 'Level-based competitive rooms with live rank pressure.',
+    rules: [
+      'Leader creates room, 5-30 players join, then match starts on shared seed.',
+      'Players complete per-level tasks to earn temporary sabotage charges.',
+      'Each sabotage charge can reduce one opponent by 100 points.',
+    ],
+    strategy: [
+      'Prioritize fast task clears before spending sabotage charges.',
+      'Track live leaderboard jumps to target high-value opponents.',
+      'Stay consistent across levels to win tie-breakers on losses and combo quality.',
+    ],
+  },
+  {
     id: 'timer',
     name: 'Pulse Relay (Timer)',
     tagline: 'Collect relay nodes to extend time and raise tempo.',

@@ -30,6 +30,8 @@ export const POWER_UP_COMBO_THRESHOLD = 10; // Combo required to spawn power-up
 export const MAX_POWER_UP_INVENTORY = 3; // Max power-ups per type
 export const TIME_ORB_GOAL = 4; // Relay nodes needed per timer extension
 export const RESONANCE_SCORE_MULTIPLIER = 1.2;
+export const CREW_BATTLE_MIN_PLAYERS = 5;
+export const CREW_BATTLE_MAX_PLAYERS = 30;
 
 // Combo System
 export const COMBO_BASE_MULTIPLIER = 1.5;
