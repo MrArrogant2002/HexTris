@@ -16,6 +16,7 @@ import type { Group } from '../types/game';
 type View = 'list' | 'create' | 'join';
 
 export class MultiplayerPage extends BasePage {
+  private static readonly REMATCH_VOTE_THRESHOLD = 0.7;
   private groupManager = new GroupManager();
   private currentView: View = 'list';
   private groups: Group[] = [];
@@ -150,6 +151,14 @@ export class MultiplayerPage extends BasePage {
       this.buttons.push(leaderboardBtn);
       actions.appendChild(leaderboardBtn.element);
 
+      const spectatorBtn = new Button('Spectate', {
+        variant: 'outline',
+        size: 'small',
+        onClick: () => this.spectateGroup(group),
+      });
+      this.buttons.push(spectatorBtn);
+      actions.appendChild(spectatorBtn.element);
+
       const playBtn = new Button('Start Sync', {
         variant: 'primary',
         size: 'small',
@@ -157,6 +166,14 @@ export class MultiplayerPage extends BasePage {
       });
       this.buttons.push(playBtn);
       actions.appendChild(playBtn.element);
+
+      const rematchBtn = new Button('Vote Rematch', {
+        variant: 'secondary',
+        size: 'small',
+        onClick: () => this.castRematchVote(group),
+      });
+      this.buttons.push(rematchBtn);
+      actions.appendChild(rematchBtn.element);
 
       const leaveBtn = new Button('Leave', {
         variant: 'ghost',
@@ -229,6 +246,15 @@ export class MultiplayerPage extends BasePage {
 
     this.contentContainer.appendChild(codeInput.container);
 
+    const guardrailWrap = document.createElement('label');
+    guardrailWrap.className = 'flex items-center gap-2 text-xs theme-text-secondary mt-2';
+    const guardrailCheckbox = document.createElement('input');
+    guardrailCheckbox.type = 'checkbox';
+    guardrailCheckbox.checked = true;
+    guardrailWrap.appendChild(guardrailCheckbox);
+    guardrailWrap.append('Enable fair matchmaking guardrails');
+    this.contentContainer.appendChild(guardrailWrap);
+
     const joinBtn = new Button('Join Crew', {
       variant: 'primary',
       size: 'medium',
@@ -238,7 +264,10 @@ export class MultiplayerPage extends BasePage {
         const code = codeInput.getValue().toUpperCase();
 
         try {
-          const group = await this.groupManager.joinGroup(state.player.id, state.player.name, code);
+          const group = await this.groupManager.joinGroupWithOptions(state.player.id, state.player.name, code, {
+            enforceRankBand: guardrailCheckbox.checked,
+            playerHighScore: state.player.highScore,
+          });
             this.showMessage('Joined Crew', `You joined ${group.groupName}`);
           this.currentView = 'list';
           this.renderView();
@@ -263,6 +292,55 @@ export class MultiplayerPage extends BasePage {
     });
 
     modal.open();
+  }
+
+  private async spectateGroup(group: Group): Promise<void> {
+    const scores = await this.groupManager.getGroupLeaderboard(group.$id);
+    const modal = new GroupLeaderboardModal({
+      group,
+      scores,
+      currentUserId: stateManager.getState().player.id,
+    });
+    modal.open();
+  }
+
+  private castRematchVote(group: Group): void {
+    const state = stateManager.getState();
+    if (!state.player.id) {
+      this.showMessage('Sign in required', 'Please log in to vote for rematch.');
+      return;
+    }
+
+    const key = `hextris:rematchVotes:${group.$id}`;
+    let voteState: { voters: string[] } = { voters: [] };
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.voters)) {
+          voteState = { voters: parsed.voters.filter((entry: unknown) => typeof entry === 'string') };
+        }
+      }
+    } catch (_error) {
+      voteState = { voters: [] };
+    }
+
+    if (!voteState.voters.includes(state.player.id)) {
+      voteState.voters.push(state.player.id);
+    }
+    localStorage.setItem(key, JSON.stringify(voteState));
+
+    const requiredVotes = Math.max(1, Math.ceil(group.memberCount * MultiplayerPage.REMATCH_VOTE_THRESHOLD));
+    const currentVotes = voteState.voters.length;
+    if (currentVotes >= requiredVotes) {
+      this.showMessage('Rematch Ready', `Vote target reached (${currentVotes}/${requiredVotes}). Restarting room flow.`);
+      stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
+      Router.getInstance().navigate(ROUTES.DIFFICULTY);
+      localStorage.removeItem(key);
+      return;
+    }
+
+    this.showMessage('Vote Counted', `Rematch votes: ${currentVotes}/${requiredVotes}.`);
   }
 
 

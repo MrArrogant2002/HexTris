@@ -7,6 +7,8 @@ import { ID, Query } from 'appwrite';
 import type { Group, GroupScore } from '../types/game';
 
 export class GroupManager {
+  private static readonly RANK_BAND_LOWER_MULTIPLIER = 0.5;
+  private static readonly RANK_BAND_UPPER_MULTIPLIER = 2;
   private databaseId: string;
   private groupsCollectionId: string;
   private groupScoresCollectionId: string;
@@ -53,6 +55,15 @@ export class GroupManager {
   }
 
   public async joinGroup(userId: string, userName: string, roomCode: string): Promise<Group> {
+    return this.joinGroupWithOptions(userId, userName, roomCode);
+  }
+
+  public async joinGroupWithOptions(
+    userId: string,
+    userName: string,
+    roomCode: string,
+    options?: { enforceRankBand?: boolean; playerHighScore?: number }
+  ): Promise<Group> {
     const response = await databases.listDocuments(
       this.databaseId,
       this.groupsCollectionId,
@@ -64,6 +75,19 @@ export class GroupManager {
     }
 
     const group = response.documents[0] as unknown as Group;
+
+    if (options?.enforceRankBand && typeof options.playerHighScore === 'number') {
+      const leaderboard = await this.getGroupLeaderboard(group.$id);
+      if (leaderboard.length > 0) {
+        const averageBestScore = leaderboard
+          .reduce((total, entry) => total + Math.max(0, entry.bestScore || 0), 0) / leaderboard.length;
+        const lowerBound = averageBestScore * GroupManager.RANK_BAND_LOWER_MULTIPLIER;
+        const upperBound = averageBestScore * GroupManager.RANK_BAND_UPPER_MULTIPLIER;
+        if (averageBestScore > 0 && (options.playerHighScore < lowerBound || options.playerHighScore > upperBound)) {
+          throw new Error('Matchmaking guardrail: score band mismatch. Try a crew closer to your level.');
+        }
+      }
+    }
 
     if (!group.memberIds.includes(userId)) {
       const memberIds = [...group.memberIds, userId];
@@ -249,4 +273,3 @@ export class GroupManager {
     );
   }
 }
-

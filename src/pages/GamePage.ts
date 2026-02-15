@@ -67,6 +67,10 @@ const DESKTOP_BLOCK_TUNING = {
 };
 
 export class GamePage extends BasePage {
+  private static readonly CREW_STREAK_STORAGE_PREFIX = 'hextris:crewStreak';
+  private static readonly CREW_STREAK_TOP_PLACEMENT_THRESHOLD = 3;
+  private static readonly CREW_STREAK_DIAMONDS_PER_STEP = 10;
+  private static readonly CREW_STREAK_MAX_BONUS_DIAMONDS = 120;
   private canvas!: Canvas;
   private gameLoop!: GameLoop;
   private pauseModal: Modal | null = null;
@@ -1938,13 +1942,47 @@ export class GamePage extends BasePage {
 
     const groupId = state.ui.currentGroupId;
     if (groupId && state.player.id) {
-      void this.groupManager.recordGroupScore(
-        state.player.id,
-        state.player.name,
-        groupId,
-        state.game.score,
-        String(state.game.difficulty)
-      );
+      void (async () => {
+        await this.groupManager.recordGroupScore(
+          state.player.id,
+          state.player.name,
+          groupId,
+          state.game.score,
+          String(state.game.difficulty)
+        );
+        await this.applyCrewStreakBonus(groupId, state.player.id, state.game.score);
+      })();
+    }
+  }
+
+  private async applyCrewStreakBonus(groupId: string, playerId: string, score: number): Promise<void> {
+    try {
+      const leaderboard = await this.groupManager.getGroupLeaderboard(groupId);
+      const projected = leaderboard
+        .map((entry) => ({
+          ...entry,
+          bestScore: entry.userId === playerId ? Math.max(entry.bestScore, score) : entry.bestScore,
+        }))
+        .sort((a, b) => b.bestScore - a.bestScore);
+
+      const rank = projected.findIndex((entry) => entry.userId === playerId) + 1;
+      const streakKey = `${GamePage.CREW_STREAK_STORAGE_PREFIX}:${groupId}:${playerId}`;
+      const previous = Number(localStorage.getItem(streakKey) || '0') || 0;
+      const nextStreak = rank > 0 && rank <= GamePage.CREW_STREAK_TOP_PLACEMENT_THRESHOLD ? previous + 1 : 0;
+      localStorage.setItem(streakKey, String(nextStreak));
+
+      if (nextStreak >= 2) {
+        const bonusDiamonds = Math.min(
+          GamePage.CREW_STREAK_MAX_BONUS_DIAMONDS,
+          nextStreak * GamePage.CREW_STREAK_DIAMONDS_PER_STEP
+        );
+        const currentState = stateManager.getState();
+        stateManager.updatePlayer({
+          specialPoints: currentState.player.specialPoints + bonusDiamonds,
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to apply crew streak bonus:', error);
     }
   }
 
