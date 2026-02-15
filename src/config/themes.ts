@@ -1,7 +1,6 @@
-﻿/**
+/**
  * Theme configuration for Hextris
- * Defines visual themes with different color schemes
- * NO PURPLE THEME - replaced with modern alternatives
+ * Data-driven runtime-switchable theme system.
  */
 
 import type { HexColor } from './colors';
@@ -26,6 +25,13 @@ export interface ThemeUI {
   accent: HexColor;
 }
 
+export interface ThemeVisuals {
+  comboFx: HexColor;
+  scoreFx: HexColor;
+  powerFx: HexColor;
+  hudFont: 'Inter' | 'Rajdhani' | 'Exo 2' | 'Orbitron' | 'Poppins';
+}
+
 export interface Theme {
   id: ThemeName;
   name: string;
@@ -35,227 +41,332 @@ export interface Theme {
     background: HexColor;
     hex: HexColor;
     hexStroke: HexColor;
-    blocks: [HexColor, HexColor, HexColor, HexColor]; // 4 block colors
+    blocks: [HexColor, HexColor, HexColor, HexColor];
     text: HexColor;
     textSecondary: HexColor;
   };
   ui: ThemeUI;
+  visuals: ThemeVisuals;
+  accessibility: {
+    highContrast: boolean;
+    colorBlindSafe: boolean;
+  };
 }
 
 export const themes: Record<ThemeName, Theme> = {
   [ThemeName.CLASSIC]: {
     id: ThemeName.CLASSIC,
-    name: 'Retro',
-    description: 'Warm arcade nostalgia with balanced contrast',
+    name: 'Kids Pop Blast',
+    description: 'Bright candy primaries with playful contrast for quick readability.',
     previewShape: 'circle',
     colors: {
-      background: '#1f2a26',
-      hex: '#2a5647',
-      hexStroke: '#458b73',
-      blocks: ['#f26076', '#ff9760', '#ffd150', '#458b73'],
-      text: '#fff9ef',
-      textSecondary: '#f1d9c0',
+      background: '#091833',
+      hex: '#10305f',
+      hexStroke: '#4cc9ff',
+      blocks: ['#ff4d6d', '#ffd60a', '#43f26e', '#4f7cff'],
+      text: '#f8fbff',
+      textSecondary: '#c8dcff',
     },
     ui: {
-      surface: '#27443a',
-      surfaceMuted: '#20392f',
-      border: '#4e7d6d',
-      accent: '#ff9760',
+      surface: '#10284d',
+      surfaceMuted: '#0a1f3c',
+      border: '#3b73b8',
+      accent: '#ffd60a',
+    },
+    visuals: {
+      comboFx: '#ffe066',
+      scoreFx: '#7bf1ff',
+      powerFx: '#ff9e00',
+      hudFont: 'Poppins',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.NEON]: {
     id: ThemeName.NEON,
-    name: 'Neon',
-    description: 'High-energy magenta neon over deep midnight blue',
+    name: 'Candy Sparkle',
+    description: 'Kid-friendly bubblegum neon with high-energy arcade shine.',
     previewShape: 'diamond',
     colors: {
-      background: '#090b1d',
-      hex: '#1a1030',
-      hexStroke: '#5d0e41',
-      blocks: ['#ff204e', '#a0153e', '#5d0e41', '#00224d'],
-      text: '#fef3ff',
-      textSecondary: '#d2b8df',
+      background: '#1a0f34',
+      hex: '#281856',
+      hexStroke: '#7f7dff',
+      blocks: ['#ff7ac8', '#6ef7ff', '#ffe66d', '#8dff6f'],
+      text: '#fef7ff',
+      textSecondary: '#e1cbff',
     },
     ui: {
-      surface: '#160e29',
-      surfaceMuted: '#0f0a1f',
-      border: '#4d265f',
-      accent: '#ff204e',
+      surface: '#23134a',
+      surfaceMuted: '#170d34',
+      border: '#5f58b8',
+      accent: '#ff7ac8',
+    },
+    visuals: {
+      comboFx: '#ffe66d',
+      scoreFx: '#6ef7ff',
+      powerFx: '#ff9ad5',
+      hudFont: 'Poppins',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: false,
     },
   },
   [ThemeName.DARK]: {
     id: ThemeName.DARK,
-    name: 'Dark',
-    description: 'Pure dark theme with aggressive crimson contrast',
+    name: 'Esports Midnight',
+    description: 'Competitive dark palette tuned for clear lane and FX readability.',
     previewShape: 'hex',
     colors: {
-      background: '#000000',
-      hex: '#220000',
-      hexStroke: '#3d0000',
-      blocks: ['#000000', '#3d0000', '#950101', '#ff0000'],
-      text: '#fff5f5',
-      textSecondary: '#f5b1b1',
+      background: '#05070e',
+      hex: '#0b1528',
+      hexStroke: '#35b7ff',
+      blocks: ['#2a3f5f', '#2dd4ff', '#00ffa3', '#ff4d67'],
+      text: '#ecf4ff',
+      textSecondary: '#9db4d8',
     },
     ui: {
-      surface: '#1b0000',
-      surfaceMuted: '#120000',
-      border: '#5c0a0a',
-      accent: '#ff0000',
+      surface: '#0f1e34',
+      surfaceMuted: '#081426',
+      border: '#2e4f7a',
+      accent: '#2dd4ff',
+    },
+    visuals: {
+      comboFx: '#00ffa3',
+      scoreFx: '#35b7ff',
+      powerFx: '#ff4d67',
+      hudFont: 'Rajdhani',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.LIGHT]: {
     id: ThemeName.LIGHT,
-    name: 'Sky',
-    description: 'Sun-bright accents with clear open-sky blues',
+    name: 'Pastel Bloom',
+    description: 'Soft pastel gradient look designed for elegant, cozy sessions.',
     previewShape: 'pill',
     colors: {
-      background: '#e9fdff',
-      hex: '#bcf2f6',
-      hexStroke: '#08c2ff',
-      blocks: ['#fff100', '#006bff', '#08c2ff', '#bcf2f6'],
-      text: '#072447',
-      textSecondary: '#2b5380',
+      background: '#fff4fb',
+      hex: '#ffe7f7',
+      hexStroke: '#ffa9dc',
+      blocks: ['#ffc2e2', '#ffd6a5', '#bde0fe', '#caffbf'],
+      text: '#532543',
+      textSecondary: '#875e78',
     },
     ui: {
-      surface: '#f3feff',
-      surfaceMuted: '#ddf7fb',
-      border: '#9ad5e8',
-      accent: '#006bff',
+      surface: '#fff7fd',
+      surfaceMuted: '#ffeef9',
+      border: '#f5bfdc',
+      accent: '#ff8ccf',
+    },
+    visuals: {
+      comboFx: '#ff9fd8',
+      scoreFx: '#9ad1ff',
+      powerFx: '#caa2ff',
+      hudFont: 'Poppins',
+    },
+    accessibility: {
+      highContrast: false,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.WEB_HERO]: {
     id: ThemeName.WEB_HERO,
-    name: 'Sea',
-    description: 'Ocean-depth gradients with crisp aquatic highlights',
-    previewShape: 'diamond',
+    name: 'Rose Quartz',
+    description: 'Girls-favorite rose and quartz tones with polished soft neon accents.',
+    previewShape: 'spark',
     colors: {
-      background: '#071833',
-      hex: '#0f2854',
-      hexStroke: '#1c4d8d',
-      blocks: ['#0f2854', '#1c4d8d', '#4988c4', '#bde8f5'],
-      text: '#f1fcff',
-      textSecondary: '#b5d9f2',
+      background: '#2b1230',
+      hex: '#3f1a4a',
+      hexStroke: '#ff8ad8',
+      blocks: ['#ff6fcf', '#ffd1f3', '#9ee7ff', '#ffc6b3'],
+      text: '#fff6ff',
+      textSecondary: '#dcb7e7',
     },
     ui: {
-      surface: '#0e2347',
-      surfaceMuted: '#091a34',
-      border: '#2c5d95',
-      accent: '#4988c4',
+      surface: '#3a1844',
+      surfaceMuted: '#2a1132',
+      border: '#7d4f8b',
+      accent: '#ff8ad8',
+    },
+    visuals: {
+      comboFx: '#ffb2e8',
+      scoreFx: '#9ee7ff',
+      powerFx: '#ffd1f3',
+      hudFont: 'Exo 2',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: false,
     },
   },
   [ThemeName.FASHION_PINK]: {
     id: ThemeName.FASHION_PINK,
-    name: 'Pink',
-    description: 'Deep berry pinks with vivid romantic highlights',
-    previewShape: 'spark',
+    name: 'Aurora Silk',
+    description: 'Elegant pink-violet gradients with luminous premium highlights.',
+    previewShape: 'diamond',
     colors: {
-      background: '#2d0415',
-      hex: '#3a0519',
-      hexStroke: '#670d2f',
-      blocks: ['#3a0519', '#670d2f', '#a53860', '#ef88ad'],
-      text: '#fff2f8',
-      textSecondary: '#ebb8ca',
+      background: '#1f1038',
+      hex: '#2d1751',
+      hexStroke: '#c39bff',
+      blocks: ['#ff87d6', '#d2a8ff', '#8ef4ff', '#ffc27a'],
+      text: '#fdf8ff',
+      textSecondary: '#ceb9e8',
     },
     ui: {
-      surface: '#420822',
-      surfaceMuted: '#320618',
-      border: '#7f2c4c',
-      accent: '#ef88ad',
+      surface: '#2d1650',
+      surfaceMuted: '#22103c',
+      border: '#6f5296',
+      accent: '#ff87d6',
+    },
+    visuals: {
+      comboFx: '#d2a8ff',
+      scoreFx: '#8ef4ff',
+      powerFx: '#ffc6f1',
+      hudFont: 'Exo 2',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: false,
     },
   },
   [ThemeName.ARENA_NEON]: {
     id: ThemeName.ARENA_NEON,
-    name: 'Wow-Pink',
-    description: 'Pastel blush layers with candy-pop accent contrast',
+    name: 'Phantom Grid',
+    description: 'Tournament-ready cyber grid with crisp neon lane edges.',
     previewShape: 'hex',
     colors: {
-      background: '#fff6fc',
-      hex: '#ffedfa',
-      hexStroke: '#ffb8e0',
-      blocks: ['#ffedfa', '#ffb8e0', '#ec7fa9', '#be5985'],
-      text: '#5f2948',
-      textSecondary: '#8f4a6a',
+      background: '#030711',
+      hex: '#07142a',
+      hexStroke: '#00d0ff',
+      blocks: ['#1567ff', '#00d0ff', '#00ff9f', '#ff3f6c'],
+      text: '#eaf6ff',
+      textSecondary: '#95b8d9',
     },
     ui: {
-      surface: '#fff7fd',
-      surfaceMuted: '#ffeaf6',
-      border: '#f8c4e2',
-      accent: '#ec7fa9',
+      surface: '#0b1a34',
+      surfaceMuted: '#061024',
+      border: '#275287',
+      accent: '#00d0ff',
+    },
+    visuals: {
+      comboFx: '#00ff9f',
+      scoreFx: '#75e6ff',
+      powerFx: '#ff7f9a',
+      hudFont: 'Rajdhani',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.RETRO_ARCADE]: {
     id: ThemeName.RETRO_ARCADE,
-    name: 'Halloween',
-    description: 'Spooky violet-orange blend with punchy ember glow',
-    previewShape: 'diamond',
+    name: 'Turbo Arcade',
+    description: 'High-energy orange and cyan arcade cabinet vibe.',
+    previewShape: 'spark',
     colors: {
-      background: '#17002c',
-      hex: '#2a004e',
-      hexStroke: '#500073',
-      blocks: ['#2a004e', '#500073', '#c62300', '#f14a00'],
-      text: '#fff3e6',
-      textSecondary: '#f3b68c',
+      background: '#1a1206',
+      hex: '#2f1f0c',
+      hexStroke: '#ff9f1c',
+      blocks: ['#ff6b35', '#ffd166', '#00c2ff', '#9ef01a'],
+      text: '#fff8e8',
+      textSecondary: '#e7cc96',
     },
     ui: {
-      surface: '#28043d',
-      surfaceMuted: '#1f0330',
-      border: '#6f2b77',
-      accent: '#f14a00',
+      surface: '#2c1d0d',
+      surfaceMuted: '#1f1509',
+      border: '#8e5a2e',
+      accent: '#ff9f1c',
+    },
+    visuals: {
+      comboFx: '#ffd166',
+      scoreFx: '#00c2ff',
+      powerFx: '#ff6b35',
+      hudFont: 'Orbitron',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.STARBLOOM]: {
     id: ThemeName.STARBLOOM,
-    name: 'Nature',
-    description: 'Organic earth tones with soft mossy balance',
-    previewShape: 'spark',
+    name: 'Minimal Pulse',
+    description: 'Minimalist grayscale + cyan for futuristic clean focus.',
+    previewShape: 'pill',
     colors: {
-      background: '#f2ecd1',
-      hex: '#f6f0d7',
-      hexStroke: '#c5d89d',
-      blocks: ['#f6f0d7', '#c5d89d', '#9cab84', '#89986d'],
-      text: '#2e3926',
-      textSecondary: '#5d6a4e',
+      background: '#0e1117',
+      hex: '#171d26',
+      hexStroke: '#7f8ea3',
+      blocks: ['#3f4d5f', '#5f7087', '#7ea5cf', '#8ef4ff'],
+      text: '#f4f8ff',
+      textSecondary: '#a8b7c9',
     },
     ui: {
-      surface: '#faf5e1',
-      surfaceMuted: '#e9e3c7',
-      border: '#bfcc98',
-      accent: '#89986d',
+      surface: '#161d28',
+      surfaceMuted: '#0f141d',
+      border: '#4d5f76',
+      accent: '#8ef4ff',
+    },
+    visuals: {
+      comboFx: '#b9f9ff',
+      scoreFx: '#8ef4ff',
+      powerFx: '#c9d6ea',
+      hudFont: 'Inter',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
   [ThemeName.TURBO_FORGE]: {
     id: ThemeName.TURBO_FORGE,
-    name: 'Forest',
-    description: 'Dense woodland tones with deep evergreen shadows',
+    name: 'Zen Circuit',
+    description: 'Futuristic mint-silver interface with low-clutter competitive clarity.',
     previewShape: 'hex',
     colors: {
-      background: '#02090c',
-      hex: '#040d12',
-      hexStroke: '#183d3d',
-      blocks: ['#040d12', '#183d3d', '#5c8374', '#93b1a6'],
-      text: '#eef9f4',
-      textSecondary: '#b7cec5',
+      background: '#061013',
+      hex: '#0c1a1f',
+      hexStroke: '#4fd1c5',
+      blocks: ['#3a5a65', '#4fd1c5', '#88ffd5', '#f1ff9d'],
+      text: '#ebfffb',
+      textSecondary: '#a5cbc3',
     },
     ui: {
-      surface: '#0a1d22',
-      surfaceMuted: '#07161a',
-      border: '#2a5755',
-      accent: '#93b1a6',
+      surface: '#0f2025',
+      surfaceMuted: '#09161a',
+      border: '#35656c',
+      accent: '#4fd1c5',
+    },
+    visuals: {
+      comboFx: '#88ffd5',
+      scoreFx: '#7be5da',
+      powerFx: '#f1ff9d',
+      hudFont: 'Inter',
+    },
+    accessibility: {
+      highContrast: true,
+      colorBlindSafe: true,
     },
   },
 };
 
 export const themePrices: Record<ThemeName, number> = {
   [ThemeName.CLASSIC]: 0,
-  [ThemeName.NEON]: 800,
-  [ThemeName.DARK]: 600,
-  [ThemeName.LIGHT]: 400,
-  [ThemeName.WEB_HERO]: 1200,
-  [ThemeName.FASHION_PINK]: 900,
-  [ThemeName.ARENA_NEON]: 1500,
-  [ThemeName.RETRO_ARCADE]: 1000,
-  [ThemeName.STARBLOOM]: 950,
-  [ThemeName.TURBO_FORGE]: 1300,
+  [ThemeName.NEON]: 700,
+  [ThemeName.DARK]: 900,
+  [ThemeName.LIGHT]: 650,
+  [ThemeName.WEB_HERO]: 850,
+  [ThemeName.FASHION_PINK]: 950,
+  [ThemeName.ARENA_NEON]: 1200,
+  [ThemeName.RETRO_ARCADE]: 1100,
+  [ThemeName.STARBLOOM]: 1000,
+  [ThemeName.TURBO_FORGE]: 1150,
 };
 
 /**
@@ -349,6 +460,12 @@ export function applyThemeToDocument(theme: Theme): void {
   root.style.setProperty('--theme-block-2', theme.colors.blocks[1]);
   root.style.setProperty('--theme-block-3', theme.colors.blocks[2]);
   root.style.setProperty('--theme-block-4', theme.colors.blocks[3]);
+  root.style.setProperty('--theme-combo-fx', theme.visuals.comboFx);
+  root.style.setProperty('--theme-score-fx', theme.visuals.scoreFx);
+  root.style.setProperty('--theme-power-fx', theme.visuals.powerFx);
+  root.style.setProperty('--theme-hud-font', theme.visuals.hudFont);
+  root.style.setProperty('--theme-hex-core', theme.colors.hex);
+  root.style.setProperty('--theme-hex-core-stroke', theme.colors.hexStroke);
   theme.colors.blocks.forEach((color, index) => {
     const id = index + 1;
     root.style.setProperty(`--theme-block-${id}-tint`, adjustColor(color, 0.2));

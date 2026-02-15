@@ -93,6 +93,26 @@
 - Score/sabotage events are server-authoritative and replayable from event log.
 - Late packets are accepted inside a small grace window; out-of-window packets are dropped deterministically.
 
+## 10.1) Live Leaderboard Implementation (In-Match)
+- **Transport**: WebSocket room channel (`/crew-battle/{roomId}`) for low-latency push updates.
+- **Authoritative source**: game server computes all score deltas, sabotage effects, and rank transitions.
+- **Update cadence**:
+  - immediate push on meaningful events (clear, sabotage, level finish, elimination)
+  - fallback heartbeat snapshot every 500ms for drift correction
+- **Leaderboard payload** (delta + snapshot capable):
+  - `seq` (monotonic sequence)
+  - `serverTime`
+  - `rankedPlayers[]` with `{playerId, score, rank, level, status}`
+  - optional `deltaReason` (`match`, `sabotage`, `level_complete`, `sync`)
+- **Client behavior**:
+  - apply only newer `seq` packets
+  - animate rank changes locally, never recalculate authoritative ranks
+  - if packet loss detected (`seq` gap), request full snapshot via `leaderboard_sync` event
+- **Fairness controls**:
+  - all displayed scores are server-signed state
+  - sabotage is shown only after authoritative confirmation
+  - reconnecting player receives latest full snapshot before accepting deltas
+
 ## 11) Additional Competitive Features
 - **Crew Synergy Bonus**: pre-made crew that all finish objectives gets +5% diamonds.
 - **Spectator Mode**: eliminated/inactive players can watch top 3 live boards.
