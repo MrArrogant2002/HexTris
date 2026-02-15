@@ -111,13 +111,7 @@ export class Hex {
     });
 
     const blocksInLane = this.blocks[lane];
-    let lastActiveIndex = -1;
-    for (let i = blocksInLane.length - 1; i >= 0; i--) {
-      if (blocksInLane[i].deleted === 0) {
-        lastActiveIndex = i;
-        break;
-      }
-    }
+    const lastActiveIndex = this.findPreviousActiveIndex(blocksInLane, blocksInLane.length);
 
     // Set block distance = top active block distance + height (or hex radius if none)
     const hexRadius = (this.sideLength / 2) * Math.sqrt(3);
@@ -154,14 +148,8 @@ export class Hex {
       // Uses the provided array and position
       const blocksInLane = arr!;
       
-      let prevBlock: Block | null = null;
-      for (let i = position - 1; i >= 0; i--) {
-        const candidate = blocksInLane[i];
-        if (candidate && candidate.deleted === 0) {
-          prevBlock = candidate;
-          break;
-        }
-      }
+      const prevIndex = this.findPreviousActiveIndex(blocksInLane, position);
+      const prevBlock = prevIndex >= 0 ? blocksInLane[prevIndex] : null;
 
       if (!prevBlock) {
         // First active position - check collision with hex center
@@ -199,14 +187,8 @@ export class Hex {
         // CRITICAL: Original formula uses ADDITION to check if block will PASS THROUGH target
         // Formula: currentDist + movement - targetDist - height <= 0
         // This means: "will the block reach or pass the target after moving?"
-        let topBlock: Block | null = null;
-        for (let i = blocksInLane.length - 1; i >= 0; i--) {
-          const candidate = blocksInLane[i];
-          if (candidate.deleted === 0) {
-            topBlock = candidate;
-            break;
-          }
-        }
+        const topIndex = this.findPreviousActiveIndex(blocksInLane, blocksInLane.length);
+        const topBlock = topIndex >= 0 ? blocksInLane[topIndex] : null;
         if (topBlock) {
           if (block.distFromHex - block.iter * this.dt * this.settings.scale - topBlock.distFromHex - topBlock.height <= 0) {
             block.distFromHex = topBlock.distFromHex + topBlock.height;
@@ -449,5 +431,14 @@ export class Hex {
    */
   public setSettings(settings: any): void {
     this.settings = settings;
+  }
+
+  private findPreviousActiveIndex(blocksInLane: Block[], startIndex: number): number {
+    for (let i = startIndex - 1; i >= 0; i--) {
+      if (blocksInLane[i].deleted === 0) {
+        return i;
+      }
+    }
+    return -1;
   }
 }

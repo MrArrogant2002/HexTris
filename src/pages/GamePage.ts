@@ -464,9 +464,7 @@ export class GamePage extends BasePage {
     
     // Get current theme colors for blocks
     const theme = themes[state.player.selectedTheme] || themes[ThemeName.CLASSIC];
-    const blockColors = [...theme.colors.blocks];
-    this.activeTheme = theme.id;
-    this.blockPalette = blockColors;
+    const blockColors = this.applyThemePalette(theme);
     
     // Initialize game systems
     const difficultyLevel = state.game.difficulty ?? DifficultyLevel.STANDARD;
@@ -592,13 +590,16 @@ export class GamePage extends BasePage {
   private syncThemePalette(themeName: ThemeName): void {
     const theme = themes[themeName] || themes[ThemeName.CLASSIC];
     const nextPalette = [...theme.colors.blocks];
+    if (nextPalette.length === 0) {
+      return;
+    }
     const previousPalette = this.blockPalette.length ? this.blockPalette : nextPalette;
     const resolveColor = (color: string): string => {
       const index = previousPalette.indexOf(color);
       if (index >= 0 && nextPalette[index]) {
         return nextPalette[index];
       }
-      return nextPalette[0];
+      return nextPalette[0] ?? color;
     };
 
     for (const lane of this.hex.blocks) {
@@ -611,9 +612,15 @@ export class GamePage extends BasePage {
       block.color = resolveColor(block.color);
     }
 
-    this.blockPalette = nextPalette;
-    this.activeTheme = theme.id;
+    this.applyThemePalette(theme, nextPalette);
     this.waveSystem?.setColors(nextPalette);
+  }
+
+  private applyThemePalette(theme: Theme, palette?: string[]): string[] {
+    const resolvedPalette = palette ?? [...theme.colors.blocks];
+    this.activeTheme = theme.id;
+    this.blockPalette = resolvedPalette;
+    return resolvedPalette;
   }
 
   /**
