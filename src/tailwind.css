@@ -48,17 +48,6 @@
     --theme-block-4-shade: #3a725e;
   }
 
-  :root[data-theme='classic'] { --theme-block-1: #f26076; --theme-block-2: #ff9760; --theme-block-3: #ffd150; --theme-block-4: #458b73; }
-  :root[data-theme='neon'] { --theme-block-1: #ff204e; --theme-block-2: #a0153e; --theme-block-3: #5d0e41; --theme-block-4: #00224d; }
-  :root[data-theme='web-hero'] { --theme-block-1: #0f2854; --theme-block-2: #1c4d8d; --theme-block-3: #4988c4; --theme-block-4: #bde8f5; }
-  :root[data-theme='light'] { --theme-block-1: #fff100; --theme-block-2: #006bff; --theme-block-3: #08c2ff; --theme-block-4: #bcf2f6; }
-  :root[data-theme='retro-arcade'] { --theme-block-1: #2a004e; --theme-block-2: #500073; --theme-block-3: #c62300; --theme-block-4: #f14a00; }
-  :root[data-theme='fashion-pink'] { --theme-block-1: #3a0519; --theme-block-2: #670d2f; --theme-block-3: #a53860; --theme-block-4: #ef88ad; }
-  :root[data-theme='arena-neon'] { --theme-block-1: #ffedfa; --theme-block-2: #ffb8e0; --theme-block-3: #ec7fa9; --theme-block-4: #be5985; }
-  :root[data-theme='starbloom'] { --theme-block-1: #f6f0d7; --theme-block-2: #c5d89d; --theme-block-3: #9cab84; --theme-block-4: #89986d; }
-  :root[data-theme='turbo-forge'] { --theme-block-1: #040d12; --theme-block-2: #183d3d; --theme-block-3: #5c8374; --theme-block-4: #93b1a6; }
-  :root[data-theme='dark'] { --theme-block-1: #000000; --theme-block-2: #3d0000; --theme-block-3: #950101; --theme-block-4: #ff0000; }
-
   * {
     @apply antialiased;
   }

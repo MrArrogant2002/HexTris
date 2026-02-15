@@ -7,7 +7,10 @@ import { Hex } from '@entities/Hex';
 
 export class PhysicsSystem {
   private fallingBlocks: Block[] = [];
+  // Frame-unit dt cap (1.0 == one 60 FPS frame in this codebase).
   private static readonly MAX_PHYSICS_STEP = 1.25;
+  private static readonly MAX_SAFE_MOVEMENT_RATIO = 0.9;
+  private static readonly MIN_SAFE_MOVEMENT = 0.01;
 
   constructor(_hexRadius: number) {
     // hexRadius kept in constructor signature for API compatibility
@@ -40,7 +43,10 @@ export class PhysicsSystem {
       if (!block.settled) {
         if (!block.initializing) {
           const movement = block.iter * dt * scale;
-          const maxSafeMovement = Math.max(block.height * 0.9, 0.01);
+          const maxSafeMovement = Math.max(
+            block.height * PhysicsSystem.MAX_SAFE_MOVEMENT_RATIO,
+            PhysicsSystem.MIN_SAFE_MOVEMENT
+          );
           block.distFromHex -= Math.min(movement, maxSafeMovement);
         }
       } else if (!block.removed) {

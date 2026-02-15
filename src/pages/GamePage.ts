@@ -1160,9 +1160,18 @@ export class GamePage extends BasePage {
   }
 
   private applySlowMo(multiplier: number, durationMs: number): void {
-    const safeMultiplier = Math.max(0.4, Math.min(1, multiplier));
-    const safeDurationMs = Math.max(250, Math.round(durationMs));
-    const spawnMultiplier = Math.max(0.65, Math.min(1, safeMultiplier + 0.15));
+    const minTempoMultiplier = 0.4;
+    const maxTempoMultiplier = 1;
+    const minTempoDurationMs = 250;
+    // Spawn pacing intentionally recovers slightly faster than movement pacing during slow-mo.
+    const spawnTempoOffset = 0.15;
+    const minSpawnTempoMultiplier = 0.65;
+    const safeMultiplier = Math.max(minTempoMultiplier, Math.min(maxTempoMultiplier, multiplier));
+    const safeDurationMs = Math.max(minTempoDurationMs, Math.round(durationMs));
+    const spawnMultiplier = Math.max(
+      minSpawnTempoMultiplier,
+      Math.min(maxTempoMultiplier, safeMultiplier + spawnTempoOffset)
+    );
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
     }
@@ -1372,8 +1381,12 @@ export class GamePage extends BasePage {
   }
 
   private easeOrbitDistance(current: number, target: number): number {
-    const eased = current + (target - current) * 0.65;
-    if (Math.abs(target - eased) <= 0.5) {
+    // 65% interpolation avoids harsh snapping while still re-aligning within a few frames.
+    const orbitEaseFactor = 0.65;
+    // Snap once near target to prevent residual float noise.
+    const snapThreshold = 0.5;
+    const eased = current + (target - current) * orbitEaseFactor;
+    if (Math.abs(target - eased) <= snapThreshold) {
       return target;
     }
     return eased;

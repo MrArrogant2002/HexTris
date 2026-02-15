@@ -15,6 +15,8 @@
 | Forest | `#040D12 #183D3D #5C8374 #93B1A6` | Per color: `tint(+20%)`, `soft(+10%)`, `shade(-18%)` | Dense woodland with cool depth |
 | Dark | `#000000 #3D0000 #950101 #FF0000` | Per color: `tint(+20%)`, `soft(+10%)`, `shade(-18%)` | Maximum-dark tactical red focus |
 
+Theme runtime IDs remain backward compatible (e.g., `classic`) while displayed names now match requested labels (e.g., `Retro`).
+
 ## CSS `:root` Theme Blocks (Implemented)
 
 ```css
@@ -41,7 +43,7 @@ Implemented refinements:
 1. **Orbit Shift** now uses eased orbital radius blending (`easeOrbitDistance`) when lane-shifting settled stacks to avoid hard radial snapping.
 2. **Tempo Break** now clamps dilation input (`0.4 <= multiplier <= 1.0`) and duration (`>=250ms`) to preserve simulation stability under extreme values.
 3. **Collision Safety** in `PhysicsSystem` now includes:
-   - fixed max substep integration (`MAX_PHYSICS_STEP = 1.25`)
+   - fixed max substep integration (`MAX_PHYSICS_STEP = 1.25` frame-units in the normalized 60 FPS `dt` domain)
    - per-step velocity clamp (`min(iter*dt*scale, block.height*0.9)`)
 
 These changes preserve collision-before-move ordering and reduce tunneling risk during high-speed spikes or time-dilation transitions.
@@ -76,4 +78,3 @@ These changes preserve collision-before-move ordering and reduce tunneling risk 
 | Collision | High-speed crossing floor in one frame | High | Preserve collision-before-move with capped per-substep movement (implemented) |
 | DB Sync | Theme unlock + select race | Medium | Continue single payload writes via `updateThemes()` to avoid split writes |
 | DB Writes | Frequent updates during unstable network | Medium | Keep local state as source-of-truth and retry async sync non-blocking |
-
