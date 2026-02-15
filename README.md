@@ -124,7 +124,7 @@ hextris/
 
 - Orbit Shift remaps only settled lane stacks; it does not rotate the outer hex container.
 - After remap, each shifted block is snapped back to lane spacing with:
-  `distFromHex = hexRadius + (block.height * laneIndex)` to prevent overlaps and micro-gaps.
+  `distFromHex = hexRadius + (laneSpacing * laneIndex)` where `laneSpacing` is each block's radial height.
 - Collision remains collision-before-move, so new falling blocks always test against the shifted stack tops first.
 
 ## ⌨️ Keyboard Shortcuts
