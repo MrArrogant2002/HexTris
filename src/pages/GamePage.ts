@@ -225,10 +225,9 @@ export class GamePage extends BasePage {
     creationDt: number;
     startDist: number;
   } {
-    const isMobile = this.isMobile;
-    const baseStartDist = isMobile ? 227 : 340;
-    const baseBlockHeight = isMobile ? 20 : 15;
-    const creationDt = isMobile ? 60 : 9;
+    const baseStartDist = this.isMobile ? 227 : 340;
+    const baseBlockHeight = this.isMobile ? 20 : 15;
+    const creationDt = this.isMobile ? 60 : 9;
 
     return {
       blockHeight: baseBlockHeight * scale,
