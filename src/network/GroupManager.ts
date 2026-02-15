@@ -139,6 +139,7 @@ export class GroupManager {
     difficulty: string
   ): Promise<void> {
     try {
+      const lastPlayedAt = new Date().toISOString();
       const existing = await this.getGroupScore(userId, groupId);
 
       if (!existing) {
@@ -147,16 +148,17 @@ export class GroupManager {
             this.databaseId,
             this.groupScoresCollectionId,
             ID.unique(),
-            {
-              userId,
-              groupId,
-              userName,
-              bestScore: score,
-              gamesPlayed: 1,
-              difficulty,
-            }
-          );
-          return;
+              {
+                userId,
+                groupId,
+                userName,
+                bestScore: score,
+                gamesPlayed: 1,
+                lastPlayedAt,
+                difficulty,
+              }
+            );
+            return;
         } catch (createError: any) {
           // If document already exists (race condition), fetch it and update
           if (createError.code === 409 || createError.message?.includes('already exists')) {
@@ -170,6 +172,7 @@ export class GroupManager {
                 {
                   bestScore,
                   gamesPlayed: refetched.gamesPlayed + 1,
+                  lastPlayedAt,
                   difficulty,
                 }
               );
@@ -188,6 +191,7 @@ export class GroupManager {
         {
           bestScore,
           gamesPlayed: existing.gamesPlayed + 1,
+          lastPlayedAt,
           difficulty,
         }
       );
@@ -249,4 +253,3 @@ export class GroupManager {
     );
   }
 }
-

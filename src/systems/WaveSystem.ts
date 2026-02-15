@@ -71,6 +71,11 @@ export class WaveSystem {
     this.applyModifiers();
   }
 
+  public setColors(colors: string[]): void {
+    if (!colors.length) return;
+    this.colors = [...colors];
+  }
+
   /**
    * Update wave generation
    * Original: this.dt = (mobile ? 14 : 16.6667) * MainHex.ct
@@ -414,4 +419,3 @@ export class WaveSystem {
     return this.elapsedMs;
   }
 }
-

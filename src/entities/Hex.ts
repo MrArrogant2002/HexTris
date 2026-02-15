@@ -110,12 +110,27 @@ export class Hex {
       magnitude: 4.5 * (window.devicePixelRatio || 1) * this.settings.scale,
     });
 
-    // Set block distance = hexRadius + (blockHeight * number of blocks already in lane)
-    // Original: block.distFromHex = MainHex.sideLength / 2 * Math.sqrt(3) + block.height * this.blocks[lane].length;
-    block.distFromHex = (this.sideLength / 2) * Math.sqrt(3) + block.height * this.blocks[lane].length;
+    const blocksInLane = this.blocks[lane];
+    let lastActiveIndex = -1;
+    for (let i = blocksInLane.length - 1; i >= 0; i--) {
+      if (blocksInLane[i].deleted === 0) {
+        lastActiveIndex = i;
+        break;
+      }
+    }
+
+    // Set block distance = top active block distance + height (or hex radius if none)
+    const hexRadius = (this.sideLength / 2) * Math.sqrt(3);
+    if (lastActiveIndex >= 0) {
+      const topActiveBlock = blocksInLane[lastActiveIndex];
+      block.distFromHex = topActiveBlock.distFromHex + topActiveBlock.height;
+    } else {
+      block.distFromHex = hexRadius;
+    }
     
-    // Add to lane
-    this.blocks[lane].push(block);
+    // Add to lane above last active block (skip over fading blocks)
+    const insertIndex = lastActiveIndex + 1;
+    blocksInLane.splice(insertIndex, 0, block);
     
     // Update block state
     block.attachedLane = lane;
@@ -139,8 +154,17 @@ export class Hex {
       // Uses the provided array and position
       const blocksInLane = arr!;
       
-      if (position <= 0) {
-        // First position - check collision with hex center
+      let prevBlock: Block | null = null;
+      for (let i = position - 1; i >= 0; i--) {
+        const candidate = blocksInLane[i];
+        if (candidate && candidate.deleted === 0) {
+          prevBlock = candidate;
+          break;
+        }
+      }
+
+      if (!prevBlock) {
+        // First active position - check collision with hex center
         const hexRadius = (this.sideLength / 2) * Math.sqrt(3);
         if (block.distFromHex - block.iter * this.dt * this.settings.scale - hexRadius <= 0) {
           block.distFromHex = hexRadius;
@@ -151,9 +175,8 @@ export class Hex {
           block.iter = 1.5 + (this.playThrough / 15) * 3;
         }
       } else {
-        // Check collision with block below in same lane
-        const prevBlock = blocksInLane[position - 1];
-        if (prevBlock && prevBlock.settled && block.distFromHex - block.iter * this.dt * this.settings.scale - prevBlock.distFromHex - prevBlock.height <= 0) {
+        // Check collision with nearest active block below in same lane
+        if (prevBlock.settled && block.distFromHex - block.iter * this.dt * this.settings.scale - prevBlock.distFromHex - prevBlock.height <= 0) {
           block.distFromHex = prevBlock.distFromHex + prevBlock.height;
           block.settled = true;
           block.checked = 1;
@@ -176,10 +199,26 @@ export class Hex {
         // CRITICAL: Original formula uses ADDITION to check if block will PASS THROUGH target
         // Formula: currentDist + movement - targetDist - height <= 0
         // This means: "will the block reach or pass the target after moving?"
-        const topBlock = blocksInLane[blocksInLane.length - 1];
-        if (block.distFromHex - block.iter * this.dt * this.settings.scale - topBlock.distFromHex - topBlock.height <= 0) {
-          block.distFromHex = topBlock.distFromHex + topBlock.height;
-          this.addBlock(block);
+        let topBlock: Block | null = null;
+        for (let i = blocksInLane.length - 1; i >= 0; i--) {
+          const candidate = blocksInLane[i];
+          if (candidate.deleted === 0) {
+            topBlock = candidate;
+            break;
+          }
+        }
+        if (topBlock) {
+          if (block.distFromHex - block.iter * this.dt * this.settings.scale - topBlock.distFromHex - topBlock.height <= 0) {
+            block.distFromHex = topBlock.distFromHex + topBlock.height;
+            this.addBlock(block);
+          }
+        } else {
+          // No active blocks in lane - check collision with hex center
+          const hexRadius = (this.sideLength / 2) * Math.sqrt(3);
+          if (block.distFromHex - block.iter * this.dt * this.settings.scale - hexRadius <= 0) {
+            block.distFromHex = hexRadius;
+            this.addBlock(block);
+          }
         }
       } else {
         // No blocks in lane - check collision with hex center
@@ -412,4 +451,3 @@ export class Hex {
     this.settings = settings;
   }
 }
-

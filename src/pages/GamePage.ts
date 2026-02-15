@@ -28,7 +28,7 @@ import { MatchingSystem } from '@systems/MatchingSystem';
 import { PowerUpSystem } from '@systems/PowerUpSystem';
 import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import { getInputManager } from '@utils/input';
-import { themes, ThemeName } from '@config/themes';
+import { themes, ThemeName, type Theme } from '@config/themes';
 import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
 import type { DifficultyConfig, AdaptiveAssistConfig } from '@config/difficulty';
 import { appwriteClient } from '@network/AppwriteClient';
@@ -99,6 +99,8 @@ export class GamePage extends BasePage {
   private nextLifeBonusScore: number = LIFE_BONUS_INTERVAL;
   private blockSettings: any;
   private canvasScale: number = 1;
+  private activeTheme: ThemeName = ThemeName.CLASSIC;
+  private blockPalette: string[] = [];
   private dailyChallenge: DailyChallengeSystem | null = null;
   private dailyChallengeModal: DailyChallengeModal | null = null;
   private timerAttack: TimerAttackMode | null = null;
@@ -379,7 +381,7 @@ export class GamePage extends BasePage {
     this.canvas = new Canvas(container);
 
     // Add border and shadow styles
-    this.canvas.element.className = 'border-4 border-black rounded-lg shadow-2xl';
+    this.canvas.element.className = 'border-4 theme-border rounded-lg shadow-2xl';
 
     // Create HUD overlay container
     const hudContainer = document.createElement('div');
@@ -462,7 +464,9 @@ export class GamePage extends BasePage {
     
     // Get current theme colors for blocks
     const theme = themes[state.player.selectedTheme] || themes[ThemeName.CLASSIC];
-    const blockColors = theme.colors.blocks;
+    const blockColors = [...theme.colors.blocks];
+    this.activeTheme = theme.id;
+    this.blockPalette = blockColors;
     
     // Initialize game systems
     const difficultyLevel = state.game.difficulty ?? DifficultyLevel.STANDARD;
@@ -585,6 +589,33 @@ export class GamePage extends BasePage {
     this.physicsSystem.addFallingBlock(block);
   }
 
+  private syncThemePalette(themeName: ThemeName): void {
+    const theme = themes[themeName] || themes[ThemeName.CLASSIC];
+    const nextPalette = [...theme.colors.blocks];
+    const previousPalette = this.blockPalette.length ? this.blockPalette : nextPalette;
+    const resolveColor = (color: string): string => {
+      const index = previousPalette.indexOf(color);
+      if (index >= 0 && nextPalette[index]) {
+        return nextPalette[index];
+      }
+      return nextPalette[0];
+    };
+
+    for (const lane of this.hex.blocks) {
+      for (const block of lane) {
+        block.color = resolveColor(block.color);
+      }
+    }
+
+    for (const block of this.physicsSystem.getFallingBlocks()) {
+      block.color = resolveColor(block.color);
+    }
+
+    this.blockPalette = nextPalette;
+    this.activeTheme = theme.id;
+    this.waveSystem?.setColors(nextPalette);
+  }
+
   /**
    * Start game loop
    */
@@ -608,8 +639,14 @@ export class GamePage extends BasePage {
     const state = stateManager.getState();
     if (state.status !== GameStatus.PLAYING) return;
     
+    const selectedTheme = state.player.selectedTheme;
+    if (selectedTheme !== this.activeTheme) {
+      this.syncThemePalette(selectedTheme);
+    }
+
     // Apply rush multiplier to deltaTime (original: dt * rush)
-    const dt = deltaTime * this.rushMultiplier * this.powerUpSpeedMultiplier;
+    const renderDt = deltaTime * this.rushMultiplier;
+    const dt = renderDt * this.powerUpSpeedMultiplier;
     
     this.frameCount++;
     
@@ -716,6 +753,7 @@ export class GamePage extends BasePage {
     for (let i = 0; i < this.hex.blocks.length; i++) {
       for (let j = 0; j < this.hex.blocks[i].length; j++) {
         const block = this.hex.blocks[i][j];
+        block.dt = renderDt;
         
         // Check collision to settle block
         this.hex.doesBlockCollide(block, j, this.hex.blocks[i]);
@@ -726,16 +764,22 @@ export class GamePage extends BasePage {
         }
       }
     }
+
+    for (const block of this.physicsSystem.getFallingBlocks()) {
+      block.dt = renderDt;
+    }
     
     // Update floating texts
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
       const text = this.floatingTexts[i];
-      const alive = text.update(dt);
+      const alive = text.update(renderDt);
       if (!alive) {
         this.floatingTexts.splice(i, 1);
       }
     }
     
+    this.hex.dt = renderDt;
+
     // Increment hex frame counter
     this.hex.ct += dt;
 
@@ -806,7 +850,7 @@ export class GamePage extends BasePage {
     const rows = 8; // Maximum rows before game over
     const blockHeight = this.blockSettings?.blockHeight || 20;
     const outerRadius = (rows * blockHeight) * (2 / Math.sqrt(3)) + this.hex.sideLength;
-    this.drawOuterHexagon(ctx, outerRadius);
+    this.drawOuterHexagon(ctx, outerRadius, themeConfig);
     
     // Draw combo timer on outer hexagon (original Hextris feature)
     this.drawComboTimer(ctx, outerRadius);
@@ -894,12 +938,14 @@ export class GamePage extends BasePage {
    * Draw outer hexagon boundary ring (shows game-over limit)
    * Uses SAME formula as inner hex - pointy-top orientation with fixed (non-rotating) angle
    */
-  private drawOuterHexagon(ctx: CanvasRenderingContext2D, radius: number): void {
+  private drawOuterHexagon(ctx: CanvasRenderingContext2D, radius: number, theme: Theme): void {
     const centerX = this.canvas.element.width / 2;
     const centerY = this.canvas.element.height / 2;
     
     ctx.save();
-    ctx.strokeStyle = '#cbd5e1';
+    const borderColor = theme.ui.border || theme.colors.hexStroke;
+    const cornerColor = theme.colors.hexStroke || borderColor;
+    ctx.strokeStyle = borderColor;
     ctx.fillStyle = 'transparent';
     ctx.lineWidth = 3;
     ctx.globalAlpha = 0.7;
@@ -927,7 +973,7 @@ export class GamePage extends BasePage {
     
     // Draw corner circles for better visibility
     ctx.globalAlpha = 0.5;
-    ctx.fillStyle = '#cbd5e1';
+    ctx.fillStyle = cornerColor;
     for (let i = 0; i < 6; i++) {
       const vertexAngle = (baseAngle + (i * 360 / 6)) * (Math.PI / 180);
       const x = centerX - radius * Math.sin(vertexAngle);
