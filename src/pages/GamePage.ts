@@ -11,6 +11,7 @@ import { stateManager } from '@core/StateManager';
 import { GameLoop } from '@core/GameLoop';
 import { Canvas } from '@core/Canvas';
 import {
+  CANVAS_WIDTH,
   INVULNERABILITY_DURATION,
   LIFE_BONUS_INTERVAL,
   MAX_LIVES,
@@ -52,6 +53,18 @@ import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 import { type PowerUpType, getPowerDefinition } from '@config/powers';
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
+
+const MOBILE_BLOCK_TUNING = {
+  startDist: 227,
+  blockHeight: 20,
+  creationDt: 60,
+};
+
+const DESKTOP_BLOCK_TUNING = {
+  startDist: 340,
+  blockHeight: 15,
+  creationDt: 9,
+};
 
 export class GamePage extends BasePage {
   private canvas!: Canvas;
@@ -140,6 +153,7 @@ export class GamePage extends BasePage {
   private syncBoostActive = false;
   private activeMutators = new Set<string>();
   private noShieldActive = false;
+  private readonly isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
   };
@@ -208,6 +222,31 @@ export class GamePage extends BasePage {
       stateManager.updateGame({ timeOrbCount: nextCount });
     }
   };
+
+  private getCanvasScale(): number {
+    return Math.min(
+      this.canvas.element.width / CANVAS_WIDTH,
+      this.canvas.element.height / CANVAS_WIDTH
+    );
+  }
+
+  private createBlockSettings(scale: number): {
+    blockHeight: number;
+    scale: number;
+    prevScale: number;
+    creationDt: number;
+    startDist: number;
+  } {
+    const tuning = this.isMobile ? MOBILE_BLOCK_TUNING : DESKTOP_BLOCK_TUNING;
+
+    return {
+      blockHeight: tuning.blockHeight * scale,
+      scale,
+      prevScale: scale,
+      creationDt: tuning.creationDt,
+      startDist: tuning.startDist * scale,
+    };
+  }
 
   private applyMutators(mutators: string[]): void {
     this.activeMutators = new Set(mutators);
@@ -447,15 +486,17 @@ export class GamePage extends BasePage {
     // hexSideLength is actually the RADIUS (center to vertex), not side length
     // Original Hextris uses 65 for desktop, 87 for mobile
     // Scale proportionally to canvas size
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobile = this.isMobile;
     const baseHexWidth = isMobile ? 87 : 65;
-    const hexRadius = baseHexWidth * Math.min(centerX / 400, centerY / 400);
+    const scale = this.getCanvasScale();
+    const hexRadius = baseHexWidth * scale;
     
     // Create hex with correct parameters (radius, canvasWidth, canvasHeight)
     this.hex = new Hex(hexRadius, this.canvas.element.width, this.canvas.element.height, {
-      scale: 1,
+      scale,
       comboTime: 240
     });
+    this.blockSettings = this.createBlockSettings(scale);
     
     // Get current theme colors for blocks
     const theme = themes[state.player.selectedTheme] || themes[ThemeName.CLASSIC];
@@ -553,21 +594,9 @@ export class GamePage extends BasePage {
     
     // Calculate starting distance from hex (spawn off-screen)
     // Original: 340 for desktop, 227 for mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const baseStartDist = isMobile ? 227 : 340;
-    const scale = Math.min(this.canvas.element.width / 800, this.canvas.element.height / 800);
-    const startDist = baseStartDist * scale;
-    
-    // Create block settings (original values)
-    const baseBlockHeight = isMobile ? 20 : 15;
-    const creationDt = isMobile ? 60 : 9;
-    this.blockSettings = {
-      blockHeight: baseBlockHeight * scale,
-      scale: scale,
-      prevScale: scale,
-      creationDt: creationDt,
-      startDist,
-    };
+    const scale = this.getCanvasScale();
+    this.blockSettings = this.createBlockSettings(scale);
+    const startDist = this.blockSettings.startDist;
     
     // Pass hex reference for shake effects
     const block = new Block(
@@ -607,6 +636,7 @@ export class GamePage extends BasePage {
     
     // Apply rush multiplier to deltaTime (original: dt * rush)
     const dt = deltaTime * this.rushMultiplier * this.powerUpSpeedMultiplier;
+    const scale = this.blockSettings.scale;
     
     this.frameCount++;
     
@@ -624,8 +654,7 @@ export class GamePage extends BasePage {
     this.updateCatchupMultiplier();
     
     // Update physics (falling blocks move toward center and check collision)
-    // Pass scale=1 for now (can be adjusted for screen scaling later)
-    this.physicsSystem.update(this.hex, dt, 1);
+    this.physicsSystem.update(this.hex, dt, scale);
 
     this.powerUpSystem.update(dt);
     this.timeOrbSystem?.update(dt);
@@ -720,7 +749,7 @@ export class GamePage extends BasePage {
         
         // Move unsettled blocks down
         if (!block.settled) {
-          block.distFromHex -= block.iter * dt * 1; // scale = 1
+          block.distFromHex -= block.iter * dt * scale;
         }
       }
     }
