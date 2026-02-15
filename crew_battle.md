@@ -58,7 +58,12 @@
 - Persist results for leaderboard, rewards, and anti-cheat review.
 
 ## 8) Live Scoreboard (Socket Design)
-- Use **WebSocket** (Socket.IO or native WS) for live score updates so everyone sees rank changes in near real-time.
+- **Best option for game flow:** use **Socket.IO (WebSocket transport)** with server-authoritative scoring.
+- Why this is best for Crew Battle:
+  - Low-latency rank movement (smooth “race” feeling during active clears).
+  - Built-in reconnect/heartbeat behavior improves match continuity on mobile networks.
+  - Room-based broadcasts map directly to room-code gameplay.
+  - Graceful downgrade path to polling when real-time transport is unstable.
 - Each room subscribes to a channel key like: `crew:{roomCode}:scoreboard`.
 - Server is authoritative: clients send score events, server validates and then broadcasts.
 - Recommended event flow:
