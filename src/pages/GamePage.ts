@@ -587,19 +587,22 @@ export class GamePage extends BasePage {
     this.physicsSystem.addFallingBlock(block);
   }
 
+  /**
+   * Update existing blocks to match the specified theme's color palette while preserving color mapping.
+   * @param themeName - The theme identifier to sync.
+   */
   private syncThemePalette(themeName: ThemeName): void {
     const theme = themes[themeName] || themes[ThemeName.CLASSIC];
     const nextPalette = [...theme.colors.blocks];
-    if (nextPalette.length === 0) {
-      return;
-    }
-    const previousPalette = this.blockPalette.length ? this.blockPalette : nextPalette;
+    const defaultPalette = [...themes[ThemeName.CLASSIC].colors.blocks];
+    const previousPalette = this.blockPalette.length ? this.blockPalette : defaultPalette;
+    const resolvedPalette = nextPalette.length ? nextPalette : previousPalette;
     const resolveColor = (color: string): string => {
       const index = previousPalette.indexOf(color);
-      if (index >= 0 && nextPalette[index]) {
-        return nextPalette[index];
+      if (index >= 0 && resolvedPalette[index] !== undefined) {
+        return resolvedPalette[index];
       }
-      return nextPalette[0] ?? color;
+      return resolvedPalette[0];
     };
 
     for (const lane of this.hex.blocks) {
@@ -612,10 +615,16 @@ export class GamePage extends BasePage {
       block.color = resolveColor(block.color);
     }
 
-    this.applyThemePalette(theme, nextPalette);
-    this.waveSystem?.setColors(nextPalette);
+    this.applyThemePalette(theme, resolvedPalette);
+    this.waveSystem?.setColors(resolvedPalette);
   }
 
+  /**
+   * Apply and cache the active theme palette, returning the resolved block colors.
+   * @param theme - The theme configuration to apply.
+   * @param palette - Optional palette override to store.
+   * @returns The resolved palette stored for future theme syncs.
+   */
   private applyThemePalette(theme: Theme, palette?: string[]): string[] {
     const resolvedPalette = palette ?? [...theme.colors.blocks];
     this.activeTheme = theme.id;
@@ -652,8 +661,8 @@ export class GamePage extends BasePage {
     }
 
     // Apply rush multiplier to deltaTime (original: dt * rush)
-    const renderDt = deltaTime * this.rushMultiplier;
-    const dt = renderDt * this.powerUpSpeedMultiplier;
+    const rushAdjustedDt = deltaTime * this.rushMultiplier;
+    const dt = rushAdjustedDt * this.powerUpSpeedMultiplier;
     
     this.frameCount++;
     
@@ -760,7 +769,7 @@ export class GamePage extends BasePage {
     for (let i = 0; i < this.hex.blocks.length; i++) {
       for (let j = 0; j < this.hex.blocks[i].length; j++) {
         const block = this.hex.blocks[i][j];
-        block.dt = renderDt;
+        block.dt = rushAdjustedDt;
         
         // Check collision to settle block
         this.hex.doesBlockCollide(block, j, this.hex.blocks[i]);
@@ -773,19 +782,19 @@ export class GamePage extends BasePage {
     }
 
     for (const block of this.physicsSystem.getFallingBlocks()) {
-      block.dt = renderDt;
+      block.dt = rushAdjustedDt;
     }
     
     // Update floating texts
     for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
       const text = this.floatingTexts[i];
-      const alive = text.update(renderDt);
+      const alive = text.update(rushAdjustedDt);
       if (!alive) {
         this.floatingTexts.splice(i, 1);
       }
     }
     
-    this.hex.dt = renderDt;
+    this.hex.dt = rushAdjustedDt;
 
     // Increment hex frame counter
     this.hex.ct += dt;

@@ -433,6 +433,13 @@ export class Hex {
     this.settings = settings;
   }
 
+  /**
+   * Finds the index of the nearest active block (where deleted === 0) before the given startIndex.
+   * Active blocks are those still visible (deleted === 0).
+   * @param blocksInLane - The lane array to search.
+   * @param startIndex - The starting position to search backwards from (exclusive).
+   * @returns The nearest active block index, or -1 if none exists.
+   */
   private findPreviousActiveIndex(blocksInLane: Block[], startIndex: number): number {
     for (let i = startIndex - 1; i >= 0; i--) {
       if (blocksInLane[i].deleted === 0) {
