@@ -298,7 +298,6 @@ export class ShopModal {
       itemId === ShopItemId.PULSE ||
       itemId === ShopItemId.TEMPO ||
       itemId === ShopItemId.AEGIS ||
-      itemId === ShopItemId.SHIFT ||
       itemId === ShopItemId.NOVA
     );
   }
@@ -318,7 +317,6 @@ export class ShopModal {
       [ShopItemId.PULSE]: { emoji: '💫', label: 'Pulse Wave' },
       [ShopItemId.TEMPO]: { emoji: '🌀', label: 'Tempo Break' },
       [ShopItemId.AEGIS]: { emoji: '🛡️', label: 'Aegis Field' },
-      [ShopItemId.SHIFT]: { emoji: '🧭', label: 'Orbit Shift' },
       [ShopItemId.NOVA]: { emoji: '✨', label: 'Nova Spark' },
     };
 

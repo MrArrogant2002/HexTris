@@ -78,7 +78,6 @@ export class InventoryUI {
       pulse: { emoji: '💫', label: 'Pulse Wave' },
       tempo: { emoji: '🌀', label: 'Tempo Break' },
       aegis: { emoji: '🛡️', label: 'Aegis Field' },
-      shift: { emoji: '🧭', label: 'Orbit Shift' },
       nova: { emoji: '✨', label: 'Nova Spark' },
     };
     return map[type] || { emoji: '❓', label: 'Unknown' };
