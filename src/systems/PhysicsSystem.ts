@@ -7,6 +7,10 @@ import { Hex } from '@entities/Hex';
 
 export class PhysicsSystem {
   private fallingBlocks: Block[] = [];
+  // Frame-unit dt cap (1.0 == one 60 FPS frame in this codebase).
+  private static readonly MAX_PHYSICS_STEP = 1.25;
+  private static readonly MAX_SAFE_MOVEMENT_RATIO = 0.9;
+  private static readonly MIN_SAFE_MOVEMENT = 0.01;
 
   constructor(_hexRadius: number) {
     // hexRadius kept in constructor signature for API compatibility
@@ -24,29 +28,32 @@ export class PhysicsSystem {
    * Original from update.js: CHECK COLLISION FIRST, THEN MOVE
    */
   public update(hex: Hex, deltaTime: number, scale: number): void {
-    // dt is already in frame units from game loop (deltaTime / 16.666)
-    const dt = deltaTime;
-    
-    // Update each falling block (iterate backwards to safely remove)
+    let remainingDt = Math.max(0, deltaTime);
+    while (remainingDt > 0) {
+      const dt = Math.min(PhysicsSystem.MAX_PHYSICS_STEP, remainingDt);
+      this.stepFallingBlocks(hex, dt, scale);
+      remainingDt -= dt;
+    }
+  }
+
+  private stepFallingBlocks(hex: Hex, dt: number, scale: number): void {
     for (let i = this.fallingBlocks.length - 1; i >= 0; i--) {
       const block = this.fallingBlocks[i];
-      
-      // STEP 1: Check collision BEFORE movement (original order)
       hex.doesBlockCollide(block);
-      
-      // STEP 2: Move block toward hex center (original formula)
-      // Original: if (!blocks[i].settled) { if (!blocks[i].initializing) blocks[i].distFromHex -= blocks[i].iter * dt * settings.scale; }
       if (!block.settled) {
         if (!block.initializing) {
-          block.distFromHex -= block.iter * dt * scale;
+          const movement = block.iter * dt * scale;
+          const maxSafeMovement = Math.max(
+            block.height * PhysicsSystem.MAX_SAFE_MOVEMENT_RATIO,
+            PhysicsSystem.MIN_SAFE_MOVEMENT
+          );
+          block.distFromHex -= Math.min(movement, maxSafeMovement);
         }
       } else if (!block.removed) {
-        // Block just settled - mark for removal
         block.removed = true;
       }
     }
-    
-    // Remove blocks that settled (iterate backwards)
+
     for (let i = this.fallingBlocks.length - 1; i >= 0; i--) {
       if (this.fallingBlocks[i].removed) {
         this.fallingBlocks.splice(i, 1);
@@ -162,4 +169,3 @@ export class PhysicsSystem {
     }
   }
 }
-

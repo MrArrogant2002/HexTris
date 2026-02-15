@@ -1160,16 +1160,28 @@ export class GamePage extends BasePage {
   }
 
   private applySlowMo(multiplier: number, durationMs: number): void {
+    const minTempoMultiplier = 0.4;
+    const maxTempoMultiplier = 1;
+    const minTempoDurationMs = 250;
+    // Spawn pacing intentionally recovers slightly faster than movement pacing during slow-mo.
+    const spawnTempoOffset = 0.15;
+    const minSpawnTempoMultiplier = 0.65;
+    const safeMultiplier = Math.max(minTempoMultiplier, Math.min(maxTempoMultiplier, multiplier));
+    const safeDurationMs = Math.max(minTempoDurationMs, Math.round(durationMs));
+    const spawnMultiplier = Math.max(
+      minSpawnTempoMultiplier,
+      Math.min(maxTempoMultiplier, safeMultiplier + spawnTempoOffset)
+    );
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
     }
     this.clearSlowMoEffect();
-    this.powerUpSpeedMultiplier = multiplier;
+    this.powerUpSpeedMultiplier = safeMultiplier;
     this.tempoActive = true;
-    this.powerUpSpawnMultiplier = 0.85;
+    this.powerUpSpawnMultiplier = spawnMultiplier;
     this.applyWaveTuning();
     this.syncTempoLevel();
-    this.showSlowMoEffect(durationMs);
+    this.showSlowMoEffect(safeDurationMs);
     this.slowMoTimeoutId = window.setTimeout(() => {
       this.powerUpSpeedMultiplier = 1;
       this.tempoActive = false;
@@ -1178,7 +1190,7 @@ export class GamePage extends BasePage {
       this.applyWaveTuning();
       this.syncTempoLevel();
       this.slowMoTimeoutId = null;
-    }, durationMs);
+    }, safeDurationMs);
   }
 
   private applyShield(durationMs: number): void {
@@ -1358,13 +1370,26 @@ export class GamePage extends BasePage {
       lane.forEach((block, index) => {
         block.attachedLane = target;
         block.targetAngle += angleStep;
-        block.distFromHex = hexRadius + block.height * index;
+        const targetDist = hexRadius + block.height * index;
+        block.distFromHex = this.easeOrbitDistance(block.distFromHex, targetDist);
         block.settled = true;
         block.checked = 1;
         block.removed = false;
       });
     }
     this.hex.blocks = shifted;
+  }
+
+  private easeOrbitDistance(current: number, target: number): number {
+    // 65% interpolation avoids harsh snapping while still re-aligning within a few frames.
+    const orbitEaseFactor = 0.65;
+    // Snap once near target to prevent residual float noise.
+    const snapThreshold = 0.5;
+    const eased = current + (target - current) * orbitEaseFactor;
+    if (Math.abs(target - eased) <= snapThreshold) {
+      return target;
+    }
+    return eased;
   }
 
   private applyNovaBoost(durationMs: number): void {

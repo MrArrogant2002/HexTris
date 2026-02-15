@@ -30,6 +30,22 @@
     --theme-accent-strong: #3b4a64;
     --theme-accent-soft: #1f2b3f;
     --theme-bg-muted: #f5f7fa;
+    --theme-block-1: #f26076;
+    --theme-block-2: #ff9760;
+    --theme-block-3: #ffd150;
+    --theme-block-4: #458b73;
+    --theme-block-1-tint: #f58c9e;
+    --theme-block-1-soft: #f47689;
+    --theme-block-1-shade: #c74e61;
+    --theme-block-2-tint: #ffac80;
+    --theme-block-2-soft: #ffa173;
+    --theme-block-2-shade: #d47c4f;
+    --theme-block-3-tint: #ffdc73;
+    --theme-block-3-soft: #ffd862;
+    --theme-block-3-shade: #d1ab42;
+    --theme-block-4-tint: #6da18f;
+    --theme-block-4-soft: #589681;
+    --theme-block-4-shade: #3a725e;
   }
 
   * {
