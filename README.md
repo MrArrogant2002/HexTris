@@ -192,6 +192,18 @@ VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
 ```
 
+### Schema Automation
+
+After updating `.env` (ensure `APPWRITE_API_KEY`, database, and collection IDs are present), run:
+
+```bash
+pnpm setup:collections
+# or
+pnpm setup:appwrite
+```
+
+The script authenticates with your Appwrite API key and creates the database plus collections described below. It is idempotent, so rerun it whenever the schema changes.
+
 ## 🗄️ Appwrite Database Schema (Theme Sync Redesign)
 
 ### Users collection (19 columns + optional inventory map)
