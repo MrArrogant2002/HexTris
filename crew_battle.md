@@ -56,3 +56,29 @@
 - Broadcast checkpoints: room_created, member_joined, member_left, match_started, stage_changed, task_spawned, task_completed, score_attack_applied, match_finished.
 - Keep deterministic gameplay by sharing seed + synchronized stage timeline.
 - Persist results for leaderboard, rewards, and anti-cheat review.
+
+## 8) Live Scoreboard (Socket Design)
+- Use **WebSocket** (Socket.IO or native WS) for live score updates so everyone sees rank changes in near real-time.
+- Each room subscribes to a channel key like: `crew:{roomCode}:scoreboard`.
+- Server is authoritative: clients send score events, server validates and then broadcasts.
+- Recommended event flow:
+  - `score_update_client` `{ playerId, score, combo, timestamp }`
+  - `score_update_server` `{ playerId, validatedScore, rankDelta, roomSeq }`
+  - `score_attack_applied` `{ attackerId, targetId, amount, targetNewScore, roomSeq }`
+  - `scoreboard_snapshot` `{ topPlayers, yourRank, remainingTime, roomSeq }`
+- Update cadence:
+  - Push incremental updates on every valid scoring action.
+  - Push full snapshot every **2 seconds** on WS/SSE modes for consistency recovery.
+- Connection reliability:
+  - On disconnect, client attempts reconnect with room token.
+  - After reconnect, client requests latest `scoreboard_snapshot` and resumes delta stream.
+- Fallback when WebSocket is unavailable:
+  - If WS handshake fails or reconnect exceeds 10 seconds, switch to **SSE**.
+  - If SSE stream fails 2 consecutive times, switch to short polling (every 2 seconds).
+  - In polling mode, polling responses act as the snapshot source (no extra snapshot push loop).
+  - Keep background WS retry every 15 seconds; upgrade back to WS when healthy.
+- Security and fairness:
+  - Reject impossible score jumps and stale timestamps server-side.
+  - Sequence-number events **per room stream** (`roomSeq`); expected value is consecutive integers.
+  - Client logic: if `incoming.roomSeq <= lastRoomSeq` ignore as stale; if `incoming.roomSeq > lastRoomSeq + 1`, request immediate `scoreboard_snapshot`.
+  - Keep a short audit log of score-changing actions for anti-cheat review.
