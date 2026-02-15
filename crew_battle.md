@@ -8,6 +8,14 @@
 5. **Level Progression**: Players run identical solo simulations (same spawn logic, difficulty, and physics).
 6. **Results Phase**: Rankings calculated, sabotage audit applied, rewards granted, rematch vote opens.
 
+### Recommended Best Game Flow
+1. **30s Prep Window**: show objectives, sabotage rules, and level count before countdown.
+2. **Synchronized 5s Countdown**: lock input to avoid early-start drift and display shared match seed hash.
+3. **Per-Level Loop**: short level intro (1.5s) -> active play -> 2s results pulse (rank delta + task status).
+4. **Mid-Match Visibility**: always-on compact leaderboard with rank-change animations and sabotage feed.
+5. **Final Results**: freeze leaderboard, apply tie-breakers server-side, then reveal diamond payouts.
+6. **Retention Step**: one-tap rematch vote + next-match readiness indicator in the same room.
+
 ## 2) Room Lifecycle & Failure Handling
 - **States**: `CREATED -> OPEN -> LOCKED -> IN_MATCH -> RESULTS -> CLOSED`.
 - **Leader disconnect in OPEN**: leadership migrates to oldest connected player.
