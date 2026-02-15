@@ -1160,16 +1160,19 @@ export class GamePage extends BasePage {
   }
 
   private applySlowMo(multiplier: number, durationMs: number): void {
+    const safeMultiplier = Math.max(0.4, Math.min(1, multiplier));
+    const safeDurationMs = Math.max(250, Math.round(durationMs));
+    const spawnMultiplier = Math.max(0.65, Math.min(1, safeMultiplier + 0.15));
     if (this.slowMoTimeoutId) {
       window.clearTimeout(this.slowMoTimeoutId);
     }
     this.clearSlowMoEffect();
-    this.powerUpSpeedMultiplier = multiplier;
+    this.powerUpSpeedMultiplier = safeMultiplier;
     this.tempoActive = true;
-    this.powerUpSpawnMultiplier = 0.85;
+    this.powerUpSpawnMultiplier = spawnMultiplier;
     this.applyWaveTuning();
     this.syncTempoLevel();
-    this.showSlowMoEffect(durationMs);
+    this.showSlowMoEffect(safeDurationMs);
     this.slowMoTimeoutId = window.setTimeout(() => {
       this.powerUpSpeedMultiplier = 1;
       this.tempoActive = false;
@@ -1178,7 +1181,7 @@ export class GamePage extends BasePage {
       this.applyWaveTuning();
       this.syncTempoLevel();
       this.slowMoTimeoutId = null;
-    }, durationMs);
+    }, safeDurationMs);
   }
 
   private applyShield(durationMs: number): void {
@@ -1358,13 +1361,22 @@ export class GamePage extends BasePage {
       lane.forEach((block, index) => {
         block.attachedLane = target;
         block.targetAngle += angleStep;
-        block.distFromHex = hexRadius + block.height * index;
+        const targetDist = hexRadius + block.height * index;
+        block.distFromHex = this.easeOrbitDistance(block.distFromHex, targetDist);
         block.settled = true;
         block.checked = 1;
         block.removed = false;
       });
     }
     this.hex.blocks = shifted;
+  }
+
+  private easeOrbitDistance(current: number, target: number): number {
+    const eased = current + (target - current) * 0.65;
+    if (Math.abs(target - eased) <= 0.5) {
+      return target;
+    }
+    return eased;
   }
 
   private applyNovaBoost(durationMs: number): void {
