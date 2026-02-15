@@ -33,6 +33,8 @@ export class PhysicsSystem {
       hex.doesBlockCollide(block);
       if (!block.settled) {
         if (!block.initializing) {
+          // Keep legacy Hextris kinematics: collision is checked before movement and
+          // movement uses raw iter * dt * scale so all systems stay synchronized.
           block.distFromHex -= block.iter * dt * scale;
         }
       } else if (!block.removed) {

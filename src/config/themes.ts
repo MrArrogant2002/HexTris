@@ -65,7 +65,7 @@ export const themes: Record<ThemeName, Theme> = {
   [ThemeName.NEON]: {
     id: ThemeName.NEON,
     name: 'Neon Circuit',
-    description: 'Electric nightlife energy for high-focus sessions.',
+    description: 'Electric high-energy neon aesthetic for high-focus sessions.',
     previewShape: 'diamond',
     colors: {
       background: '#070b1f',
@@ -145,7 +145,7 @@ export const themes: Record<ThemeName, Theme> = {
   [ThemeName.FASHION_PINK]: {
     id: ThemeName.FASHION_PINK,
     name: 'Princess Bloom',
-    description: 'Girls-favorite pink and rose palette with rich depth.',
+    description: 'Favorite pink and rose palette for girls with rich depth.',
     previewShape: 'spark',
     colors: {
       background: '#2b0c23',
@@ -165,7 +165,7 @@ export const themes: Record<ThemeName, Theme> = {
   [ThemeName.ARENA_NEON]: {
     id: ThemeName.ARENA_NEON,
     name: 'Candy Party',
-    description: 'Kids-favorite candy tones with soft pastel contrast.',
+    description: 'Favorite candy tones for kids with soft pastel contrast.',
     previewShape: 'hex',
     colors: {
       background: '#fff7fd',
