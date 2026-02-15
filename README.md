@@ -185,9 +185,9 @@ VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
 ```
 
-## 🗄️ Appwrite Database Schema
+## 🗄️ Appwrite Database Schema (Theme Sync Redesign)
 
-### Users collection (17 columns + optional inventory map)
+### Users collection (19 columns + optional inventory map)
 1. userId (string)
 2. name (string)
 3. email (string)
@@ -205,9 +205,18 @@ VITE_APPWRITE_PROJECT_ID=your_project_id
 15. inventory_aegis (number)
 16. inventory_shift (number)
 17. inventory_nova (number)
+18. themePaletteVersion (string, e.g. `2026.02`)
+19. themeSyncAt (string / ISO date)
 
 Optional: inventory (JSON map) if you store all inventory counts in one field.
 Example: `{"pulse": 2, "tempo": 1, "aegis": 0, "shift": 1, "nova": 0, "continue": 0, "extraLife": 1}`
+
+### ThemeProfiles collection (5 columns)
+1. themeId (string, matches `ThemeName`)
+2. themeName (string)
+3. blockColors (string[] of 4 hex colors)
+4. accentColor (string hex)
+5. buttonGradient (string[] start/end hex colors)
 
 ### Groups collection (6 columns)
 1. roomCode (string)

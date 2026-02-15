@@ -125,8 +125,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.WEB_HERO]: {
     id: ThemeName.WEB_HERO,
-    name: 'Web Hero',
-    description: 'Bold red and blue with heroic contrast',
+    name: 'Spiderman',
+    description: 'Bold red and blue webs with heroic contrast',
     previewShape: 'diamond',
     colors: {
       background: '#050a1a',
@@ -145,8 +145,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.FASHION_PINK]: {
     id: ThemeName.FASHION_PINK,
-    name: 'Fashion Pink',
-    description: 'Playful pinks with a glossy finish',
+    name: 'Barbie',
+    description: 'Playful pink glamour with a glossy finish',
     previewShape: 'spark',
     colors: {
       background: '#fff3f8',
@@ -165,8 +165,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.ARENA_NEON]: {
     id: ThemeName.ARENA_NEON,
-    name: 'Arena Neon',
-    description: 'Esports-inspired neon on deep slate',
+    name: 'Avengers',
+    description: 'Heroic neon energy on a deep tactical slate',
     previewShape: 'hex',
     colors: {
       background: '#03040f',
@@ -205,8 +205,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.STARBLOOM]: {
     id: ThemeName.STARBLOOM,
-    name: 'Starbloom',
-    description: 'Candy skies with celestial sparkles',
+    name: 'Cyndrilla',
+    description: 'Dreamy candy skies with royal sparkles',
     previewShape: 'spark',
     colors: {
       background: '#fff5fa',
