@@ -1349,14 +1349,19 @@ export class GamePage extends BasePage {
     const sides = this.hex.sides;
     if (!sides) return;
     const angleStep = 360 / sides;
+    const hexRadius = (this.hex.sideLength / 2) * Math.sqrt(3);
     const shifted: Block[][] = Array.from({ length: sides }, () => []);
     for (let i = 0; i < sides; i++) {
-      const target = (i + 1) % sides;
-      const lane = this.hex.blocks[i];
+      const target = (i - 1 + sides) % sides;
+      const lane = [...this.hex.blocks[i]];
       shifted[target] = lane;
-      lane.forEach((block) => {
+      lane.forEach((block, index) => {
         block.attachedLane = target;
-        block.targetAngle -= angleStep;
+        block.targetAngle += angleStep;
+        block.distFromHex = hexRadius + block.height * index;
+        block.settled = true;
+        block.checked = 1;
+        block.removed = false;
       });
     }
     this.hex.blocks = shifted;

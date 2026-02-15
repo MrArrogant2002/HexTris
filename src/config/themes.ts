@@ -45,8 +45,8 @@ export interface Theme {
 export const themes: Record<ThemeName, Theme> = {
   [ThemeName.CLASSIC]: {
     id: ThemeName.CLASSIC,
-    name: 'Classic',
-    description: 'Original Hextris color scheme',
+    name: 'Batman',
+    description: 'Noir shadows with high-contrast tactical highlights',
     previewShape: 'circle',
     colors: {
       background: '#e9eef2',
@@ -65,8 +65,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.NEON]: {
     id: ThemeName.NEON,
-    name: 'Neon',
-    description: 'Vibrant neon colors on dark background',
+    name: 'Galaxy',
+    description: 'Cosmic neon glow across a deep-space backdrop',
     previewShape: 'diamond',
     colors: {
       background: '#05070f',
@@ -85,8 +85,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.DARK]: {
     id: ThemeName.DARK,
-    name: 'Dark',
-    description: 'Sleek dark mode with muted tones',
+    name: 'Cyberpunk',
+    description: 'Urban night palette with electric edge lighting',
     previewShape: 'hex',
     colors: {
       background: '#111827',
@@ -105,8 +105,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.LIGHT]: {
     id: ThemeName.LIGHT,
-    name: 'Light',
-    description: 'Clean light theme with soft pastels',
+    name: 'Cinderella',
+    description: 'Soft royal pastels with bright glass accents',
     previewShape: 'pill',
     colors: {
       background: '#f8fafc',
@@ -125,8 +125,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.WEB_HERO]: {
     id: ThemeName.WEB_HERO,
-    name: 'Web Hero',
-    description: 'Bold red and blue with heroic contrast',
+    name: 'Spiderman',
+    description: 'Bold red and blue webs with heroic contrast',
     previewShape: 'diamond',
     colors: {
       background: '#050a1a',
@@ -145,8 +145,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.FASHION_PINK]: {
     id: ThemeName.FASHION_PINK,
-    name: 'Fashion Pink',
-    description: 'Playful pinks with a glossy finish',
+    name: 'Barbie',
+    description: 'Playful pink glamour with a glossy finish',
     previewShape: 'spark',
     colors: {
       background: '#fff3f8',
@@ -165,8 +165,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.ARENA_NEON]: {
     id: ThemeName.ARENA_NEON,
-    name: 'Arena Neon',
-    description: 'Esports-inspired neon on deep slate',
+    name: 'Avengers',
+    description: 'Heroic neon energy on a deep tactical slate',
     previewShape: 'hex',
     colors: {
       background: '#03040f',
@@ -185,8 +185,8 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.RETRO_ARCADE]: {
     id: ThemeName.RETRO_ARCADE,
-    name: 'Retro Arcade',
-    description: 'Arcade glow with punchy contrast',
+    name: 'Retro',
+    description: 'Arcade glow with punchy old-school contrast',
     previewShape: 'diamond',
     colors: {
       background: '#070a1b',
@@ -205,28 +205,28 @@ export const themes: Record<ThemeName, Theme> = {
   },
   [ThemeName.STARBLOOM]: {
     id: ThemeName.STARBLOOM,
-    name: 'Starbloom',
-    description: 'Candy skies with celestial sparkles',
+    name: 'Jungle',
+    description: 'Leafy saturation with warm tropical highlights',
     previewShape: 'spark',
     colors: {
-      background: '#fff5fa',
-      hex: '#fde5f2',
-      hexStroke: '#ff7bbd',
-      blocks: ['#ff9ac8', '#ffd166', '#c1f6ff', '#ff7ab8'],
-      text: '#5b1534',
-      textSecondary: '#98506e',
+      background: '#0b1f14',
+      hex: '#163424',
+      hexStroke: '#65a30d',
+      blocks: ['#65a30d', '#22c55e', '#facc15', '#14532d'],
+      text: '#ecfdf5',
+      textSecondary: '#bbf7d0',
     },
     ui: {
-      surface: '#fff9fc',
-      surfaceMuted: '#ffe8f4',
-      border: '#fbc0d5',
-      accent: '#ff7ab8',
+      surface: '#123123',
+      surfaceMuted: '#0d261a',
+      border: '#2f5d3f',
+      accent: '#84cc16',
     },
   },
   [ThemeName.TURBO_FORGE]: {
     id: ThemeName.TURBO_FORGE,
-    name: 'Turbo Forge',
-    description: 'Steel blues with molten energy for speed runners',
+    name: 'Ocean',
+    description: 'Cool tides and marine blues with bright crest accents',
     previewShape: 'hex',
     colors: {
       background: '#070e1b',
@@ -326,12 +326,14 @@ export function applyThemeToDocument(theme: Theme): void {
 
   const root = document.documentElement;
   root.style.setProperty('--theme-bg', theme.colors.background);
+  root.style.setProperty('--theme-background', theme.colors.background);
   root.style.setProperty('--theme-surface', theme.ui.surface);
   root.style.setProperty('--theme-surface-muted', theme.ui.surfaceMuted);
   root.style.setProperty('--theme-border', theme.ui.border);
   root.style.setProperty('--theme-text', theme.colors.text);
   root.style.setProperty('--theme-text-secondary', theme.colors.textSecondary);
   root.style.setProperty('--theme-accent', theme.ui.accent);
+  root.style.setProperty('--theme-ui-primary', theme.ui.accent);
   root.style.setProperty('--theme-accent-contrast', getContrastColor(theme.ui.accent));
   root.style.setProperty('--theme-surface-contrast', getContrastColor(theme.ui.surface));
   root.style.setProperty('--theme-surface-glass', hexToRgba(theme.ui.surface, 0.78));
@@ -343,6 +345,10 @@ export function applyThemeToDocument(theme: Theme): void {
   root.style.setProperty('--theme-accent-strong', adjustColor(theme.ui.accent, 0.15));
   root.style.setProperty('--theme-accent-soft', adjustColor(theme.ui.accent, -0.12));
   root.style.setProperty('--theme-bg-muted', adjustColor(theme.colors.background, 0.08));
+  root.style.setProperty('--theme-block-1', theme.colors.blocks[0]);
+  root.style.setProperty('--theme-block-2', theme.colors.blocks[1]);
+  root.style.setProperty('--theme-block-3', theme.colors.blocks[2]);
+  root.style.setProperty('--theme-block-4', theme.colors.blocks[3]);
 
   document.body.style.background = theme.colors.background;
   document.body.style.color = theme.colors.text;
