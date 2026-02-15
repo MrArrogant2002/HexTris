@@ -229,5 +229,8 @@ export class MatchingSystem {
   public isComboActive(currentFrame: number): boolean {
     return currentFrame - this.lastComboFrame < this.comboTime;
   }
-}
 
+  public setCreationSpeedModifier(value: number): void {
+    this.creationSpeedModifier = value > 0 ? value : 1;
+  }
+}

@@ -491,13 +491,14 @@ export class GamePage extends BasePage {
     
     // Update physics (falling blocks move toward center and check collision)
     // Pass scale=1 for now (can be adjusted for screen scaling later)
-    this.physicsSystem.update(this.hex, dt, 1);
+    this.physicsSystem.update(this.hex, dt, this.blockSettings.scale);
 
     this.powerUpSystem.update(dt);
     this.timeOrbSystem?.update(dt);
     
     // Check for matches on newly settled blocks (checked=1)
     // Original: for each block, if (block.checked == 1) consolidateBlocks(...)
+    this.matchingSystem.setCreationSpeedModifier(this.waveSystem.getCreationSpeedModifier());
     const matchResults = this.matchingSystem.checkAllMatches(this.hex, this.frameCount);
     let runningScore = state.game.score;
     let diamondsToAdd = 0;
@@ -587,7 +588,7 @@ export class GamePage extends BasePage {
         
         // Move unsettled blocks down
         if (!block.settled) {
-          block.distFromHex -= block.iter * dt * 1; // scale = 1
+          block.distFromHex -= block.iter * dt * this.blockSettings.scale;
         }
       }
     }
@@ -1901,5 +1902,4 @@ export class GamePage extends BasePage {
     return inventory[itemId] ?? 0;
   }
 }
-
 

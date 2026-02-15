@@ -401,6 +401,10 @@ export class WaveSystem {
     return this.nextGen;
   }
 
+  public getCreationSpeedModifier(): number {
+    return this.creationSpeedModifier;
+  }
+
   public isSurgeActive(): boolean {
     return this.surgeActive;
   }
@@ -414,4 +418,3 @@ export class WaveSystem {
     return this.elapsedMs;
   }
 }
-
