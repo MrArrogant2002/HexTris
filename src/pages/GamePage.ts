@@ -54,6 +54,18 @@ import { type PowerUpType, getPowerDefinition } from '@config/powers';
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
 
+const MOBILE_BLOCK_TUNING = {
+  startDist: 227,
+  blockHeight: 20,
+  creationDt: 60,
+};
+
+const DESKTOP_BLOCK_TUNING = {
+  startDist: 340,
+  blockHeight: 15,
+  creationDt: 9,
+};
+
 export class GamePage extends BasePage {
   private canvas!: Canvas;
   private gameLoop!: GameLoop;
@@ -225,16 +237,14 @@ export class GamePage extends BasePage {
     creationDt: number;
     startDist: number;
   } {
-    const baseStartDist = this.isMobile ? 227 : 340;
-    const baseBlockHeight = this.isMobile ? 20 : 15;
-    const creationDt = this.isMobile ? 60 : 9;
+    const tuning = this.isMobile ? MOBILE_BLOCK_TUNING : DESKTOP_BLOCK_TUNING;
 
     return {
-      blockHeight: baseBlockHeight * scale,
+      blockHeight: tuning.blockHeight * scale,
       scale,
       prevScale: scale,
-      creationDt,
-      startDist: baseStartDist * scale,
+      creationDt: tuning.creationDt,
+      startDist: tuning.startDist * scale,
     };
   }
 
