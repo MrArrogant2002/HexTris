@@ -142,6 +142,7 @@ export class GamePage extends BasePage {
   private syncBoostActive = false;
   private activeMutators = new Set<string>();
   private noShieldActive = false;
+  private readonly isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
   };
@@ -219,7 +220,7 @@ export class GamePage extends BasePage {
   }
 
   private isMobileDevice(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return this.isMobile;
   }
 
   private createBlockSettings(scale: number): {
@@ -229,9 +230,10 @@ export class GamePage extends BasePage {
     creationDt: number;
     startDist: number;
   } {
-    const baseStartDist = this.isMobileDevice() ? 227 : 340;
-    const baseBlockHeight = this.isMobileDevice() ? 20 : 15;
-    const creationDt = this.isMobileDevice() ? 60 : 9;
+    const isMobile = this.isMobileDevice();
+    const baseStartDist = isMobile ? 227 : 340;
+    const baseBlockHeight = isMobile ? 20 : 15;
+    const creationDt = isMobile ? 60 : 9;
 
     return {
       blockHeight: baseBlockHeight * scale,
