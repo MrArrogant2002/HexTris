@@ -130,3 +130,120 @@
 - Users: `userId` (unique), `singlePlayerHighScore` (desc for global leaderboard)
 - Groups: `roomCode` (unique), `memberIds` (contains, acceptable for current max 30 members per room), `$createdAt` (desc)
 - Group Scores: `(groupId, bestScore desc)`, `(userId, groupId)` for upsert/query efficiency
+
+## 10) Backend Socket.io Modular Structure (Implemented)
+
+### Exact File Tree
+```text
+backend/
+├── server.js
+└── src/
+    └── sockets/
+        ├── index.js
+        └── handlers/
+            └── battleHandler.js
+```
+
+### `server.js`
+```js
+import http from 'node:http';
+import express from 'express';
+import { initSockets } from './src/sockets/index.js';
+import { emitBattleUpdate } from './src/sockets/handlers/battleHandler.js';
+
+const app = express();
+app.use(express.json());
+
+app.get('/health', (_req, res) => {
+  res.json({ ok: true });
+});
+
+const server = http.createServer(app);
+
+// Main server only delegates socket wiring to a single init call.
+const { io } = initSockets(server);
+
+// Example REST endpoint that can push a real-time battle update.
+app.post('/api/battles/:battleId/state', (req, res) => {
+  const { battleId } = req.params;
+  const { state } = req.body ?? {};
+  if (!battleId || typeof battleId !== 'string') {
+    res.status(400).json({ error: 'battleId is required' });
+    return;
+  }
+
+  emitBattleUpdate(io, battleId, {
+    source: 'rest',
+    state: state ?? {},
+    updatedAt: new Date().toISOString(),
+  });
+
+  res.status(202).json({ accepted: true, battleId });
+});
+```
+
+### `sockets/index.js`
+```js
+import { Server } from 'socket.io';
+import { registerBattleHandlers } from './handlers/battleHandler.js';
+
+export function initSockets(httpServer) {
+  const allowedOrigins = (process.env.SOCKET_ALLOWED_ORIGINS || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const io = new Server(httpServer, {
+    cors: {
+      origin: allowedOrigins,
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
+  });
+
+  io.on('connection', (socket) => {
+    socket.emit('socket:connected', { socketId: socket.id });
+  });
+
+  registerBattleHandlers(io);
+  return { io };
+}
+```
+
+### `sockets/handlers/battleHandler.js`
+```js
+const battleStateByRoom = new Map();
+
+function getBattleState(battleId) {
+  if (!battleStateByRoom.has(battleId)) {
+    battleStateByRoom.set(battleId, { battleId, players: new Map(), lastEventAt: Date.now() });
+  }
+  return battleStateByRoom.get(battleId);
+}
+
+function buildStatePayload(state) {
+  return {
+    battleId: state.battleId,
+    players: Array.from(state.players.values()).sort((a, b) => b.hp - a.hp),
+    updatedAt: new Date(state.lastEventAt).toISOString(),
+  };
+}
+
+export function emitBattleUpdate(io, battleId, payload = {}) {
+  io.to(battleId).emit('battle:update', { battleId, ...payload });
+}
+
+export function registerBattleHandlers(io) {
+  io.on('connection', (socket) => {
+    socket.on('joinBattle', ({ battleId, playerId, name }) => { /* validate + join room */ });
+    socket.on('attack', ({ battleId, attackerId, targetId, damage }) => { /* apply damage + emit state */ });
+    socket.on('broadcastState', ({ battleId }) => { /* emit room state */ });
+    socket.on('disconnect', () => { /* cleanup disconnected player */ });
+  });
+}
+```
+
+### Triggering battle update from REST controller
+- Capture `io` from `initSockets(server)` in `server.js` and pass it to REST modules/services as needed.
+- Call `emitBattleUpdate(io, battleId, payload)` from your REST controller after DB writes.
+- This keeps HTTP and socket paths decoupled while sharing the same room-scoped event contract.
