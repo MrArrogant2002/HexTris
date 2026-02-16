@@ -59,10 +59,11 @@ export interface UIState {
     | 'timerAttack'
     | 'multiplayerRace'
     | 'multiplayerSabotage'
-    | 'multiplayerSync';
+    | 'multiplayerSync'
+    | 'multiplayerCrewBattle';
   timerDuration?: number;
   currentGroupId?: string;
-  multiplayerMode?: 'race' | 'sabotage' | 'sync';
+  multiplayerMode?: 'race' | 'sabotage' | 'sync' | 'crewBattle';
   prestigeMutators?: string[];
 }
 
@@ -111,4 +112,3 @@ export type StateEvent =
   | 'powerUpUsed';
 
 export type StateListener = (data?: any) => void;
-

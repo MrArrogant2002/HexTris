@@ -15,6 +15,8 @@ import {
   INVULNERABILITY_DURATION,
   LIFE_BONUS_INTERVAL,
   MAX_LIVES,
+  CREW_BATTLE_MIN_PLAYERS,
+  CREW_BATTLE_MAX_PLAYERS,
   ROUTES,
   GameStatus,
   RESONANCE_SCORE_MULTIPLIER,
@@ -43,6 +45,8 @@ import {
   PointsDisplay, 
   ScoreDisplay, 
   InventoryUI,
+  LeaderboardUI,
+  type LeaderboardEntry as CrewLeaderboardEntry,
   StrategyStatusHUD,
   ComboHeatMeter,
   MomentumBar,
@@ -66,6 +70,17 @@ const DESKTOP_BLOCK_TUNING = {
   creationDt: 9,
 };
 
+const CREW_BATTLE_LEVEL_INTERVAL_SECONDS = 45;
+const CREW_BATTLE_BOT_PACE_NORMAL = 14;
+const CREW_BATTLE_BOT_PACE_FINAL = 22;
+const CREW_BATTLE_BOT_JITTER_MAX = 24;
+const CREW_BATTLE_SABOTAGE_COOLDOWN_MS = 2000;
+const CREW_BATTLE_SABOTAGE_PENALTY = 100;
+const CREW_BATTLE_TASK_GOAL_BASE = 2;
+const CREW_BATTLE_TASK_GOAL_MAX = 5;
+const CREW_BATTLE_TASK_MIN_BLOCKS = 3;
+const CREW_BATTLE_SYNERGY_BONUS_MULTIPLIER = 0.05;
+
 export class GamePage extends BasePage {
   private canvas!: Canvas;
   private gameLoop!: GameLoop;
@@ -86,6 +101,7 @@ export class GamePage extends BasePage {
   private comboHeatMeter!: ComboHeatMeter;
   private momentumBar!: MomentumBar;
   private timeOrbDisplay!: TimeOrbDisplay;
+  private crewLeaderboardUI: LeaderboardUI | null = null;
   
   // Game entities and systems
   private hex!: Hex;
@@ -121,7 +137,6 @@ export class GamePage extends BasePage {
   private slowMoTimerEl: HTMLDivElement | null = null;
   private shieldOverlay: HTMLDivElement | null = null;
   private hammerOverlay: HTMLDivElement | null = null;
-  private shiftOverlay: HTMLDivElement | null = null;
   private novaOverlay: HTMLDivElement | null = null;
   private resonanceOverlay: HTMLDivElement | null = null;
   private syncOverlay: HTMLDivElement | null = null;
@@ -153,6 +168,15 @@ export class GamePage extends BasePage {
   private syncBoostActive = false;
   private activeMutators = new Set<string>();
   private noShieldActive = false;
+  private crewBattleEntries: CrewLeaderboardEntry[] = [];
+  private crewBattleTaskProgress = 0;
+  private crewBattleTaskGoal = 3;
+  private crewBattleCharges = 0;
+  private crewBattlePlayerCount = 5;
+  private crewBattleLevel = 1;
+  private crewBattleMaxLevels = 5;
+  private crewBattleLastTick = 0;
+  private crewBattleLastSabotageAt = 0;
   private readonly isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
@@ -199,9 +223,6 @@ export class GamePage extends BasePage {
     const type = customEvent.detail?.type;
     if (type === 'pulse') {
       this.triggerHammerEffect();
-    }
-    if (type === 'shift') {
-      this.triggerShiftEffect();
     }
   };
 
@@ -465,6 +486,7 @@ export class GamePage extends BasePage {
     this.comboHeatMeter.mount(hudContainer);
     this.momentumBar.mount(hudContainer);
     this.timeOrbDisplay.mount(hudContainer);
+    this.setupCrewBattleHUD(hudContainer);
 
     // Add pause button
     const pauseButton = document.createElement('button');
@@ -698,6 +720,7 @@ export class GamePage extends BasePage {
 
       this.waveSystem.onBlocksDestroyed();
       this.addSyncCharge(result.blocksCleared);
+      this.progressCrewBattleTask(result.blocksCleared);
     }
 
     if (matchResults.length > 0) {
@@ -769,13 +792,6 @@ export class GamePage extends BasePage {
     this.decayResonance(dt);
     this.decaySync(dt);
     
-    // Check for game over (original: checks if blocks exceed rows setting)
-    if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
-      if (!state.game.isInvulnerable) {
-        this.handleLifeLoss();
-      }
-    }
-
     // Update HUD displays
     const updatedState = stateManager.getState();
     this.scoreDisplay.setScore(updatedState.game.score);
@@ -786,6 +802,7 @@ export class GamePage extends BasePage {
     this.comboHeatMeter.setHeat(updatedState.game.comboHeat ?? 0, updatedState.game.comboTier ?? 0);
     this.timeOrbDisplay.setCount(updatedState.game.timeOrbCount ?? 0, updatedState.game.timeOrbGoal ?? TIME_ORB_GOAL);
     this.momentumBar.setValue(updatedState.game.momentumValue ?? 0);
+    this.updateCrewBattleState(runningScore);
     this.strategyStatusHUD.setStatus({
       phase: updatedState.game.strategyPhase,
       tempoLevel: updatedState.game.tempoLevel,
@@ -796,6 +813,13 @@ export class GamePage extends BasePage {
     const isMultiplayer = updatedState.ui.currentGameMode?.startsWith('multiplayer');
     this.timeOrbDisplay.getElement().style.display = isTimer ? 'flex' : 'none';
     this.momentumBar.setVisible(Boolean(isMultiplayer));
+
+    // Check for game over (original: checks if blocks exceed rows setting)
+    if (this.hex.isGameOver(8)) { // Original uses settings.rows which is typically 7-8
+      if (!state.game.isInvulnerable) {
+        this.handleLifeLoss();
+      }
+    }
   }
 
   /**
@@ -1094,10 +1118,6 @@ export class GamePage extends BasePage {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
     }
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
-    }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);
       this.hammerEffectTimeoutId = null;
@@ -1116,6 +1136,31 @@ export class GamePage extends BasePage {
     }
     this.gameLoop.stop();
     Router.getInstance().navigate(ROUTES.MENU);
+  }
+
+  private showMessageModal(title: string, message: string): void {
+    const modal = new Modal({
+      title,
+      closeOnBackdrop: true,
+      closeOnEscape: true,
+    });
+    const content = document.createElement('div');
+    content.className = 'space-y-4';
+
+    const text = document.createElement('pre');
+    text.className = 'text-sm theme-text-secondary whitespace-pre-wrap leading-6';
+    text.textContent = message;
+    content.appendChild(text);
+
+    const closeBtn = new Button('Close', {
+      variant: 'primary',
+      size: 'small',
+      fullWidth: true,
+      onClick: () => modal.close(),
+    });
+    content.appendChild(closeBtn.element);
+    modal.setContent(content);
+    modal.open();
   }
 
   private activatePower(type: PowerUpType): void {
@@ -1142,9 +1187,6 @@ export class GamePage extends BasePage {
         this.applyShield(durationMs);
         break;
       }
-      case 'shift':
-        this.applyOrbitShift();
-        break;
       case 'nova': {
         const durationMs = definition.durationMs;
         if (!durationMs) {
@@ -1357,41 +1399,6 @@ export class GamePage extends BasePage {
     }
   }
 
-  private applyOrbitShift(): void {
-    const sides = this.hex.sides;
-    if (!sides) return;
-    const angleStep = 360 / sides;
-    const hexRadius = (this.hex.sideLength / 2) * Math.sqrt(3);
-    const shifted: Block[][] = Array.from({ length: sides }, () => []);
-    for (let i = 0; i < sides; i++) {
-      const target = (i - 1 + sides) % sides;
-      const lane = [...this.hex.blocks[i]];
-      shifted[target] = lane;
-      lane.forEach((block, index) => {
-        block.attachedLane = target;
-        block.targetAngle += angleStep;
-        const targetDist = hexRadius + block.height * index;
-        block.distFromHex = this.easeOrbitDistance(block.distFromHex, targetDist);
-        block.settled = true;
-        block.checked = 1;
-        block.removed = false;
-      });
-    }
-    this.hex.blocks = shifted;
-  }
-
-  private easeOrbitDistance(current: number, target: number): number {
-    // 65% interpolation avoids harsh snapping while still re-aligning within a few frames.
-    const orbitEaseFactor = 0.65;
-    // Snap once near target to prevent residual float noise.
-    const snapThreshold = 0.5;
-    const eased = current + (target - current) * orbitEaseFactor;
-    if (Math.abs(target - eased) <= snapThreshold) {
-      return target;
-    }
-    return eased;
-  }
-
   private applyNovaBoost(durationMs: number): void {
     if (this.novaTimeoutId) {
       window.clearTimeout(this.novaTimeoutId);
@@ -1403,25 +1410,6 @@ export class GamePage extends BasePage {
       this.hideNovaEffect();
       this.novaTimeoutId = null;
     }, durationMs);
-  }
-
-  private triggerShiftEffect(): void {
-    if (!this.effectLayer) return;
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
-    }
-    const overlay = document.createElement('div');
-    overlay.className = 'game-effect-shift';
-    overlay.textContent = 'SHIFT';
-    this.effectLayer.appendChild(overlay);
-    this.shiftOverlay = overlay;
-    window.setTimeout(() => {
-      overlay.remove();
-      if (this.shiftOverlay === overlay) {
-        this.shiftOverlay = null;
-      }
-    }, 900);
   }
 
   private showNovaEffect(durationMs: number): void {
@@ -1809,6 +1797,139 @@ export class GamePage extends BasePage {
     }
   }
 
+  private isCrewBattleMode(): boolean {
+    return stateManager.getState().ui.currentGameMode === 'multiplayerCrewBattle';
+  }
+
+  private setupCrewBattleHUD(parent: HTMLElement): void {
+    if (!this.isCrewBattleMode()) return;
+
+    const playersParam = Number(this.params.players ?? '');
+    const boundedPlayers = Number.isFinite(playersParam) && playersParam > 0
+      ? Math.max(CREW_BATTLE_MIN_PLAYERS, Math.min(CREW_BATTLE_MAX_PLAYERS, Math.floor(playersParam)))
+      : CREW_BATTLE_MIN_PLAYERS;
+    this.crewBattlePlayerCount = boundedPlayers;
+    this.crewBattleMaxLevels = this.resolveCrewBattleLevels(this.crewBattlePlayerCount);
+    this.crewBattleLevel = 1;
+    this.crewBattleTaskProgress = 0;
+    this.crewBattleCharges = 0;
+    this.crewBattleLastTick = 0;
+    this.crewBattleLastSabotageAt = 0;
+    this.crewBattleTaskGoal = 3;
+
+    this.crewLeaderboardUI = new LeaderboardUI(this.crewBattlePlayerCount);
+    this.crewLeaderboardUI.mount(parent);
+    this.crewLeaderboardUI.setVisible(true);
+
+    const state = stateManager.getState();
+    this.crewBattleEntries = [{
+      userId: state.player.id || 'you',
+      userName: state.player.name || 'You',
+      score: 0,
+      isCurrentPlayer: true,
+    }];
+    for (let i = 1; i < this.crewBattlePlayerCount; i++) {
+      this.crewBattleEntries.push({
+        userId: `crew-bot-${i}`,
+        userName: `Opponent ${i}`,
+        score: 0,
+      });
+    }
+    this.crewLeaderboardUI.updateEntries(this.crewBattleEntries);
+    this.currentPhaseName = `Crew L${this.crewBattleLevel}/${this.crewBattleMaxLevels}`;
+    stateManager.updateGame({ strategyPhase: this.currentPhaseName });
+  }
+
+  private resolveCrewBattleLevels(playerCount: number): number {
+    if (playerCount <= 8) return 5;
+    if (playerCount <= 12) return 6;
+    if (playerCount <= 16) return 7;
+    if (playerCount <= 22) return 8;
+    return 9;
+  }
+
+  private progressCrewBattleTask(blocksCleared: number): void {
+    if (!this.isCrewBattleMode()) return;
+    if (blocksCleared < CREW_BATTLE_TASK_MIN_BLOCKS) return;
+
+    this.crewBattleTaskProgress += 1;
+    if (this.crewBattleTaskProgress < this.crewBattleTaskGoal) return;
+    this.crewBattleTaskProgress = 0;
+    this.crewBattleCharges += 1;
+    this.floatingTexts.push(FloatingText.createMessage(
+      this.canvas.element.width / 2,
+      this.canvas.element.height / 2 - 90,
+      'TASK COMPLETE +1 SABOTAGE',
+      '#fca5a5'
+    ));
+  }
+
+  private updateCrewBattleState(playerScore: number): void {
+    if (!this.isCrewBattleMode()) return;
+    if (!this.crewLeaderboardUI) return;
+
+    const now = Date.now();
+    if (now - this.crewBattleLastTick > 1000) {
+      this.crewBattleEntries = this.crewBattleEntries.map((entry) => {
+        if (entry.isCurrentPlayer) {
+          return { ...entry, score: playerScore };
+        }
+        const pace = this.crewBattleLevel >= this.crewBattleMaxLevels
+          ? CREW_BATTLE_BOT_PACE_FINAL
+          : CREW_BATTLE_BOT_PACE_NORMAL;
+        const jitter = Math.floor(Math.random() * CREW_BATTLE_BOT_JITTER_MAX);
+        return { ...entry, score: Math.max(0, entry.score + pace + jitter) };
+      });
+      this.crewBattleLastTick = now;
+    }
+
+    const seconds = this.hex.ct / 60;
+    const nextLevel = Math.min(
+      this.crewBattleMaxLevels,
+      Math.max(1, Math.floor(seconds / CREW_BATTLE_LEVEL_INTERVAL_SECONDS) + 1)
+    );
+    if (nextLevel !== this.crewBattleLevel) {
+      this.crewBattleLevel = nextLevel;
+      this.currentPhaseName = `Crew L${this.crewBattleLevel}/${this.crewBattleMaxLevels}`;
+      stateManager.updateGame({ strategyPhase: this.currentPhaseName });
+      this.crewBattleTaskGoal = Math.min(
+        CREW_BATTLE_TASK_GOAL_MAX,
+        CREW_BATTLE_TASK_GOAL_BASE + this.crewBattleLevel
+      );
+      this.floatingTexts.push(FloatingText.createMessage(
+        this.canvas.element.width / 2,
+        this.canvas.element.height / 2 - 130,
+        `LEVEL ${this.crewBattleLevel}`,
+        '#93c5fd'
+      ));
+    }
+
+    // Apply one charge per cooldown window to maintain readable and fair sabotage timing in the live HUD.
+    if (this.crewBattleCharges > 0 && now - this.crewBattleLastSabotageAt >= CREW_BATTLE_SABOTAGE_COOLDOWN_MS) {
+      this.applyCrewBattleSabotage();
+      this.crewBattleCharges -= 1;
+      this.crewBattleLastSabotageAt = now;
+    }
+
+    this.crewLeaderboardUI.updateEntries(this.crewBattleEntries);
+  }
+
+  private applyCrewBattleSabotage(): void {
+    const rivals = this.crewBattleEntries.filter((entry) => !entry.isCurrentPlayer);
+    if (rivals.length === 0) return;
+    const target = rivals.reduce((best, current) => (current.score > best.score ? current : best), rivals[0]);
+    this.crewBattleEntries = this.crewBattleEntries.map((entry) => {
+      if (entry.userId !== target.userId) return entry;
+      return { ...entry, score: Math.max(0, entry.score - CREW_BATTLE_SABOTAGE_PENALTY) };
+    });
+    this.floatingTexts.push(FloatingText.createMessage(
+      this.canvas.element.width / 2,
+      this.canvas.element.height / 2 - 60,
+      `${target.userName.toUpperCase()} -${CREW_BATTLE_SABOTAGE_PENALTY}`,
+      '#f87171'
+    ));
+  }
+
   private applyLifeBonus(score: number): void {
     const state = stateManager.getState();
     if (state.game.lives >= MAX_LIVES) {
@@ -1951,6 +2072,24 @@ export class GamePage extends BasePage {
     });
     content.appendChild(playAgainBtn.element);
 
+    if (uiState.currentGameMode === 'multiplayerCrewBattle') {
+      const rematchBtn = new Button('Instant Rematch Vote', {
+        variant: 'secondary',
+        size: 'medium',
+        fullWidth: true,
+        onClick: () => this.startCrewBattleRematch(),
+      });
+      content.appendChild(rematchBtn.element);
+
+      const spectateBtn = new Button('Spectate Top 3', {
+        variant: 'outline',
+        size: 'small',
+        fullWidth: true,
+        onClick: () => this.showCrewBattleSpectator(),
+      });
+      content.appendChild(spectateBtn.element);
+    }
+
     const continueCount = this.getInventoryCount(ShopItemId.CONTINUE);
     const canContinue = !this.hasContinued && continueCount > 0;
     const continueBtn = new Button(`Continue (${continueCount})`, {
@@ -2011,6 +2150,13 @@ export class GamePage extends BasePage {
         String(state.game.difficulty)
       );
     }
+
+    if (uiState.currentGameMode === 'multiplayerCrewBattle') {
+      const synergyBonus = Math.floor(state.game.score * CREW_BATTLE_SYNERGY_BONUS_MULTIPLIER);
+      if (synergyBonus > 0 && this.crewBattleLevel >= this.crewBattleMaxLevels) {
+        stateManager.updatePlayer({ specialPoints: state.player.specialPoints + synergyBonus });
+      }
+    }
   }
 
   /**
@@ -2024,6 +2170,26 @@ export class GamePage extends BasePage {
     this.hasContinued = false;
     stateManager.resetGame();
     this.startGameLoop();
+  }
+
+  private startCrewBattleRematch(): void {
+    if (this.gameOverModal) {
+      this.gameOverModal.close();
+      this.gameOverModal = null;
+    }
+    stateManager.resetGame();
+    stateManager.updateUI({ currentGameMode: 'multiplayerCrewBattle', multiplayerMode: 'crewBattle' });
+    this.startGameLoop();
+  }
+
+  private showCrewBattleSpectator(): void {
+    if (!this.crewBattleEntries.length) return;
+    const top3 = [...this.crewBattleEntries]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((entry, index) => `${index + 1}. ${entry.userName} — ${entry.score}`)
+      .join('\n');
+    this.showMessageModal('Top 3 Live Boards', top3);
   }
 
   private continueGame(): void {
@@ -2054,7 +2220,6 @@ export class GamePage extends BasePage {
       ShopItemId.PULSE,
       ShopItemId.TEMPO,
       ShopItemId.AEGIS,
-      ShopItemId.SHIFT,
       ShopItemId.NOVA,
     ];
 
@@ -2278,10 +2443,6 @@ export class GamePage extends BasePage {
       this.hammerOverlay.remove();
       this.hammerOverlay = null;
     }
-    if (this.shiftOverlay) {
-      this.shiftOverlay.remove();
-      this.shiftOverlay = null;
-    }
     if (this.hammerEffectTimeoutId) {
       window.clearTimeout(this.hammerEffectTimeoutId);
       this.hammerEffectTimeoutId = null;
@@ -2307,6 +2468,11 @@ export class GamePage extends BasePage {
       window.clearTimeout(this.syncBoostTimeoutId);
       this.syncBoostTimeoutId = null;
     }
+    if (this.crewLeaderboardUI) {
+      this.crewLeaderboardUI.unmount();
+      this.crewLeaderboardUI = null;
+    }
+    this.crewBattleEntries = [];
     if (this.invulnerabilityTimeoutId) {
       window.clearTimeout(this.invulnerabilityTimeoutId);
       this.invulnerabilityTimeoutId = null;

@@ -9,7 +9,7 @@ import { Modal } from '@ui/components/Modal';
 import { GroupLeaderboardModal } from '@ui/modals/GroupLeaderboardModal';
 import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
-import { ROUTES } from '@core/constants';
+import { ROUTES, CREW_BATTLE_MIN_PLAYERS, CREW_BATTLE_MAX_PLAYERS } from '@core/constants';
 import { GroupManager } from '@network/GroupManager';
 import type { Group } from '../types/game';
 
@@ -158,6 +158,14 @@ export class MultiplayerPage extends BasePage {
       this.buttons.push(playBtn);
       actions.appendChild(playBtn.element);
 
+      const crewBattleBtn = new Button('Start Crew Battle', {
+        variant: 'secondary',
+        size: 'small',
+        onClick: () => this.playCrewBattle(group),
+      });
+      this.buttons.push(crewBattleBtn);
+      actions.appendChild(crewBattleBtn.element);
+
       const leaveBtn = new Button('Leave', {
         variant: 'ghost',
         size: 'small',
@@ -269,6 +277,22 @@ export class MultiplayerPage extends BasePage {
   private playGroup(group: Group): void {
     stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
     Router.getInstance().navigate(ROUTES.DIFFICULTY);
+  }
+
+  private playCrewBattle(group: Group): void {
+    if (group.memberCount < CREW_BATTLE_MIN_PLAYERS || group.memberCount > CREW_BATTLE_MAX_PLAYERS) {
+      this.showMessage(
+        'Crew Battle Unavailable',
+        `Crew Battle requires ${CREW_BATTLE_MIN_PLAYERS} to ${CREW_BATTLE_MAX_PLAYERS} players in the group.`
+      );
+      return;
+    }
+    stateManager.updateUI({
+      currentGroupId: group.$id,
+      currentGameMode: 'multiplayerCrewBattle',
+      multiplayerMode: 'crewBattle',
+    });
+    Router.getInstance().navigate(ROUTES.DIFFICULTY, { multiplayerMode: 'crewBattle', players: String(group.memberCount) });
   }
 
   private confirmLeaveGroup(group: Group): void {

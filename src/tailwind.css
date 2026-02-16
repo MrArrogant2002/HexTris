@@ -416,21 +416,6 @@
     mix-blend-mode: screen;
   }
 
-  .game-effect-shift {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0.6rem 1.2rem;
-    border-radius: 9999px;
-    background: rgba(15, 23, 42, 0.6);
-    color: #fde68a;
-    font-weight: 700;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    animation: shiftPop 0.9s ease-out forwards;
-  }
-
   .game-effect-nova,
   .game-effect-resonance,
   .game-effect-sync {
@@ -710,21 +695,6 @@
   }
   100% {
     opacity: 0.6;
-  }
-}
-
-@keyframes shiftPop {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.7);
-  }
-  60% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.05);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1);
   }
 }
 

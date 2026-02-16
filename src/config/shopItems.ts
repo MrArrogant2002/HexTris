@@ -9,7 +9,6 @@ export enum ShopItemId {
   PULSE = 'pulse',
   TEMPO = 'tempo',
   AEGIS = 'aegis',
-  SHIFT = 'shift',
   NOVA = 'nova',
 }
 
@@ -74,16 +73,6 @@ export const shopItems: Record<ShopItemId, ShopItem> = {
     maxQuantity: 3,
     effect: 'Grants invulnerability while the field is active.',
   },
-  [ShopItemId.SHIFT]: {
-    id: ShopItemId.SHIFT,
-    name: 'Orbit Shift',
-    description: 'Re-align every stack',
-    cost: 240,
-    icon: 'SHIFT',
-    category: 'powerup',
-    maxQuantity: 3,
-    effect: 'Rotates all settled stacks one lane clockwise.',
-  },
   [ShopItemId.NOVA]: {
     id: ShopItemId.NOVA,
     name: 'Nova Spark',
@@ -134,7 +123,6 @@ export function createEmptyInventory(): Record<ShopItemId, number> {
     [ShopItemId.PULSE]: 0,
     [ShopItemId.TEMPO]: 0,
     [ShopItemId.AEGIS]: 0,
-    [ShopItemId.SHIFT]: 0,
     [ShopItemId.NOVA]: 0,
   };
 }

@@ -14,7 +14,7 @@ mode strategies, powers, and controls.
 - **Game Modes**: Resonance Drift, Sync Link, Pulse Relay, Hexforge Trials
 - **Special Points System**: In-game currency for power-ups and continues
 - **Life System**: 3 lives with bonus lives at milestones
-- **Powers**: Pulse Wave, Tempo Break, Aegis Field, Orbit Shift, Nova Spark
+- **Powers**: Pulse Wave, Tempo Break, Aegis Field, Nova Spark
 - **Cloud Saves**: Appwrite integration for persistent data
 - **Multiplayer**: Group-based leaderboards synced via Appwrite
 
@@ -117,15 +117,7 @@ hextris/
 | **Pulse Wave** | Clears the outermost ring of blocks across every lane. | 8s |
 | **Tempo Break** | Slows block fall and spawn rhythm briefly. | 10s |
 | **Aegis Field** | Grants invulnerability while the field is active. | 12s |
-| **Orbit Shift** | Rotates all settled stacks one lane clockwise. | 11s |
 | **Nova Spark** | Boosts scoring output for the next clears. | 14s |
-
-### Orbit Shift physics note
-
-- Orbit Shift remaps only settled lane stacks; it does not rotate the outer hex container.
-- After remap, each shifted block is snapped back to lane spacing with:
-  `distFromHex = hexRadius + (laneSpacing * laneIndex)` where `laneSpacing = block.height` (the fixed radial thickness of one block layer).
-- Collision remains collision-before-move, so new falling blocks always test against the shifted stack tops first.
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -206,7 +198,7 @@ The script authenticates with your Appwrite API key and creates the database plu
 
 ## 🗄️ Appwrite Database Schema (Theme Sync Redesign)
 
-### Users collection (19 columns + optional inventory map)
+### Users collection (18 columns + optional inventory map)
 1. userId (string)
 2. name (string)
 3. email (string)
@@ -222,13 +214,13 @@ The script authenticates with your Appwrite API key and creates the database plu
 13. inventory_pulse (number)
 14. inventory_tempo (number)
 15. inventory_aegis (number)
-16. inventory_shift (number)
-17. inventory_nova (number)
-18. themePaletteVersion (string, e.g. `2026.02`)
-19. themeSyncAt (string / ISO date)
+16. inventory_nova (number)
+17. themePaletteVersion (string, e.g. `2026.02`)
+18. themeSyncAt (string / ISO date)
 
-Optional: inventory (JSON map) if you store all inventory counts in one field.
-Example: `{"pulse": 2, "tempo": 1, "aegis": 0, "shift": 1, "nova": 0, "continue": 0, "extraLife": 1}`
+Default implementation uses the individual `inventory_*` columns above.
+Optional compatibility mode: `inventory` (JSON map) if you store all inventory counts in one field.
+Example: `{"continue": 0, "extraLife": 1, "pulse": 2, "tempo": 1, "aegis": 0, "nova": 0}`
 
 ### ThemeProfiles collection (7 columns)
 1. themeId (string, matches `ThemeName`)
