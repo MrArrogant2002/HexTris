@@ -328,7 +328,7 @@ export class MultiplayerPage extends BasePage {
     const difficulty = normalizePlayableDifficulty(selectedDifficulty);
     const payload: MatchInvitationPayload = {
       groupId: group.$id,
-      battleId: `${group.$id}-${Date.now()}`,
+      battleId: `${group.$id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       leaderId: state.player.id,
       leaderName: state.player.name,
       difficulty,

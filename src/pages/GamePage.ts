@@ -72,6 +72,7 @@ const DESKTOP_BLOCK_TUNING = {
 };
 
 const CREW_BATTLE_SYNERGY_BONUS_MULTIPLIER = 0.05;
+const CREW_BATTLE_SCORE_SYNC_THROTTLE_MS = 150;
 
 export class GamePage extends BasePage {
   private canvas!: Canvas;
@@ -1811,7 +1812,7 @@ export class GamePage extends BasePage {
     this.crewBattleLevel = 1;
     this.crewBattleLastScoreSyncAt = 0;
     this.latestLeaderboardSeq = 0;
-    this.battleId = String(this.params.battleId ?? stateManager.getState().ui.currentGroupId ?? '');
+    this.battleId = String(this.params.battleId ?? stateManager.getState().ui.currentGroupId ?? '').trim() || null;
 
     this.crewLeaderboardUI = new LeaderboardUI(this.crewBattlePlayerCount);
     this.crewLeaderboardUI.mount(parent);
@@ -1849,7 +1850,7 @@ export class GamePage extends BasePage {
     const state = stateManager.getState();
     if (!state.player.id || !this.battleId) return;
     const now = Date.now();
-    if (now - this.crewBattleLastScoreSyncAt < 150) return;
+    if (now - this.crewBattleLastScoreSyncAt < CREW_BATTLE_SCORE_SYNC_THROTTLE_MS) return;
     this.crewBattleLastScoreSyncAt = now;
     void syncSocket.updateBattleScore(this.battleId, state.player.id, playerScore);
   }

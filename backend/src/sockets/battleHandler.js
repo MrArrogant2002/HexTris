@@ -8,6 +8,11 @@ const battleStates = new Map();
 const BATTLE_STALE_TTL_MS = 10 * 60 * 1000;
 const SCORE_UPDATE_THROTTLE_MS = 150;
 const ROUND_DURATION_MS = 20000;
+const ROUND_DURATION_BY_DIFFICULTY = {
+  easy: 25000,
+  standard: 20000,
+  fierce: 16000,
+};
 const TASK_OBJECTIVES = [
   'Clear 10 blocks',
   'Trigger a combo x3',
@@ -25,20 +30,23 @@ function pruneStaleBattles() {
 }
 
 function ensureBattleState(battleId, difficulty = 'standard') {
+  const normalizedDifficulty = String(difficulty || 'standard').toLowerCase();
+  const roundDurationMs = ROUND_DURATION_BY_DIFFICULTY[normalizedDifficulty] || ROUND_DURATION_MS;
   if (!battleStates.has(battleId)) {
     battleStates.set(battleId, {
       battleId,
       seq: 0,
       round: 1,
       taskObjective: TASK_OBJECTIVES[0],
-      nextRoundAt: Date.now() + ROUND_DURATION_MS,
+      nextRoundAt: Date.now() + roundDurationMs,
       players: new Map(),
       winnerId: null,
       lastEventAt: Date.now(),
     });
   }
   const state = battleStates.get(battleId);
-  state.difficulty = difficulty;
+  state.difficulty = normalizedDifficulty;
+  state.roundDurationMs = roundDurationMs;
   return state;
 }
 
@@ -72,11 +80,15 @@ function emitTask(io, state) {
   });
 }
 
+function getTaskObjectiveForRound(round) {
+  return TASK_OBJECTIVES[(Math.max(1, Number(round) || 1) - 1) % TASK_OBJECTIVES.length];
+}
+
 function maybeAdvanceRound(io, state) {
   const now = Date.now();
   if (state.winnerId || now < state.nextRoundAt) return;
 
-  const active = Array.from(state.players.entries()).filter(([, p]) => !p.eliminated);
+  const active = Array.from(state.players.entries()).filter(([, player]) => !player.eliminated);
   if (active.length <= 1) {
     const winner = active[0];
     if (winner) {
@@ -102,8 +114,8 @@ function maybeAdvanceRound(io, state) {
     io.to(state.battleId).emit('crew:winner', { playerId: remaining[0][0], userName: remaining[0][1].userName });
   } else {
     state.round += 1;
-    state.taskObjective = TASK_OBJECTIVES[(state.round - 1) % TASK_OBJECTIVES.length];
-    state.nextRoundAt = now + ROUND_DURATION_MS;
+    state.taskObjective = getTaskObjectiveForRound(state.round);
+    state.nextRoundAt = now + (state.roundDurationMs || ROUND_DURATION_MS);
     emitTask(io, state);
   }
 
