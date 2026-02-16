@@ -7,10 +7,6 @@ import { Hex } from '@entities/Hex';
 
 export class PhysicsSystem {
   private fallingBlocks: Block[] = [];
-  // Frame-unit dt cap (1.0 == one 60 FPS frame in this codebase).
-  private static readonly MAX_PHYSICS_STEP = 1.25;
-  private static readonly MAX_SAFE_MOVEMENT_RATIO = 0.9;
-  private static readonly MIN_SAFE_MOVEMENT = 0.01;
 
   constructor(_hexRadius: number) {
     // hexRadius kept in constructor signature for API compatibility
@@ -28,12 +24,7 @@ export class PhysicsSystem {
    * Original from update.js: CHECK COLLISION FIRST, THEN MOVE
    */
   public update(hex: Hex, deltaTime: number, scale: number): void {
-    let remainingDt = Math.max(0, deltaTime);
-    while (remainingDt > 0) {
-      const dt = Math.min(PhysicsSystem.MAX_PHYSICS_STEP, remainingDt);
-      this.stepFallingBlocks(hex, dt, scale);
-      remainingDt -= dt;
-    }
+    this.stepFallingBlocks(hex, Math.max(0, deltaTime), scale);
   }
 
   private stepFallingBlocks(hex: Hex, dt: number, scale: number): void {
@@ -42,12 +33,9 @@ export class PhysicsSystem {
       hex.doesBlockCollide(block);
       if (!block.settled) {
         if (!block.initializing) {
-          const movement = block.iter * dt * scale;
-          const maxSafeMovement = Math.max(
-            block.height * PhysicsSystem.MAX_SAFE_MOVEMENT_RATIO,
-            PhysicsSystem.MIN_SAFE_MOVEMENT
-          );
-          block.distFromHex -= Math.min(movement, maxSafeMovement);
+          // Keep legacy Hextris kinematics: collision is checked before movement and
+          // movement uses raw iter * dt * scale so all systems stay synchronized.
+          block.distFromHex -= block.iter * dt * scale;
         }
       } else if (!block.removed) {
         block.removed = true;

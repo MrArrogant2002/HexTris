@@ -67,7 +67,7 @@ export const MODE_GUIDES: ModeGuide[] = [
     ],
     strategy: [
       'Read the objective before you start.',
-      'Use Orbit Shift to hit rotation targets quickly.',
+      'Use Tempo Break to stabilize difficult objective spikes.',
       'Secure your streaks for bonus rewards.',
     ],
   },
