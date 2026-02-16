@@ -10,9 +10,8 @@ const API_CONFIG = {
   
   // Production - Render deployment
   prod: {
-    // Replace with your Render URL after deployment
-    baseURL: 'https://YOUR-SERVICE-NAME.onrender.com',
-    socketURL: 'https://YOUR-SERVICE-NAME.onrender.com'
+    baseURL: 'https://hextris-backend.onrender.com',
+    socketURL: 'https://hextris-backend.onrender.com'
   }
 };
 
@@ -41,4 +40,3 @@ export const CONNECTION_STATUS = {
 
 console.log(`Network Config: ${isDevelopment ? 'Development' : 'Production'}`);
 console.log(`Backend URL: ${API_URL}`);
-

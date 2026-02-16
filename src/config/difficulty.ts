@@ -64,11 +64,9 @@ export interface DifficultyConfig {
 }
 
 export const difficultyOrder: DifficultyLevel[] = [
-  DifficultyLevel.DISCOVERY,
   DifficultyLevel.EASY,
   DifficultyLevel.STANDARD,
   DifficultyLevel.FIERCE,
-  DifficultyLevel.APEX,
 ];
 
 export const difficultyConfigs: Record<DifficultyLevel, DifficultyConfig> = {
@@ -143,7 +141,7 @@ export const difficultyConfigs: Record<DifficultyLevel, DifficultyConfig> = {
   },
   [DifficultyLevel.STANDARD]: {
     level: DifficultyLevel.STANDARD,
-    name: 'Standard',
+    name: 'Medium',
     description: 'Baseline leaderboard difficulty with balanced hazard mix.',
     blockSpeed: 95,
     rotationSpeed: 9,
@@ -178,7 +176,7 @@ export const difficultyConfigs: Record<DifficultyLevel, DifficultyConfig> = {
   },
   [DifficultyLevel.FIERCE]: {
     level: DifficultyLevel.FIERCE,
-    name: 'Fierce',
+    name: 'Hard',
     description: 'Advanced pacing with counter-rotating waves and shield-breakers.',
     blockSpeed: 130,
     rotationSpeed: 11,
@@ -258,4 +256,3 @@ export function getDifficultyConfig(level: DifficultyLevel): DifficultyConfig {
 }
 
 export const DEFAULT_DIFFICULTY = DifficultyLevel.STANDARD;
-
