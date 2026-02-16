@@ -8,5 +8,5 @@
 
 // Server Configuration
 (window as any).serverConfig = {
-  url: 'https://hextris-backend.onrender.com'
+  url: import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
 };

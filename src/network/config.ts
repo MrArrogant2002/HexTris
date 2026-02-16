@@ -1,6 +1,9 @@
 ﻿// Network Configuration
 // Auto-detects environment and uses appropriate backend URL
 
+const prodBaseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const prodSocketURL = import.meta.env.VITE_BACKEND_SOCKET_URL || prodBaseURL;
+
 const API_CONFIG = {
   // Development - Local backend
   dev: {
@@ -8,10 +11,10 @@ const API_CONFIG = {
     socketURL: 'http://localhost:3000'
   },
   
-  // Production - Render deployment
+  // Production - Environment-configured backend
   prod: {
-    baseURL: 'https://hextris-backend.onrender.com',
-    socketURL: 'https://hextris-backend.onrender.com'
+    baseURL: prodBaseURL,
+    socketURL: prodSocketURL
   }
 };
 
