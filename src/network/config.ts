@@ -11,8 +11,8 @@ const API_CONFIG = {
   // Production - Render deployment
   prod: {
     // Replace with your Render URL after deployment
-    baseURL: 'https://YOUR-SERVICE-NAME.onrender.com',
-    socketURL: 'https://YOUR-SERVICE-NAME.onrender.com'
+    baseURL: 'https://hextris-backend.onrender.com',
+    socketURL: 'https://hextris-backend.onrender.com'
   }
 };
 
