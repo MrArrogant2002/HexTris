@@ -19,6 +19,7 @@ import { stateManager } from '@core/StateManager';
 import { ThemeName, getThemeOrDefault, normalizeThemesUnlocked } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
 import { themeManager } from '@/managers/ThemeManager';
+import { client } from '@lib/appwrite';
 
 /**
  * Restore user session if exists
@@ -66,9 +67,22 @@ async function restoreSession(): Promise<boolean> {
 }
 
 /**
+ * Ping Appwrite once on startup to verify connectivity
+ */
+async function verifyAppwriteConnection(): Promise<void> {
+  try {
+    await client.ping();
+    console.log('Appwrite ping successful');
+  } catch (error) {
+    console.error('Appwrite ping failed:', error);
+  }
+}
+
+/**
  * Initialize the application
  */
 async function init(): Promise<void> {
+  void verifyAppwriteConnection();
   // Get app container
   const appContainer = document.getElementById('app');
   
