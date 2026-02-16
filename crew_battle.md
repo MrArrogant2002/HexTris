@@ -87,3 +87,46 @@
   - Sequence-number events **per room stream** (`roomSeq`); expected value is consecutive integers.
   - Client logic: if `incoming.roomSeq <= lastRoomSeq` ignore as stale; if `incoming.roomSeq > lastRoomSeq + 1`, request immediate `scoreboard_snapshot`.
   - Keep a short audit log of score-changing actions for anti-cheat review.
+
+## 9) Appwrite Database Schema (Required Attributes)
+
+### Users Collection (`VITE_APPWRITE_USERS_COLLECTION_ID`)
+- `userId` (string, required, unique)
+- `name` (string, required)
+- `email` (Appwrite Email attribute type, required, unique)
+- `singlePlayerHighScore` (integer, required, default `0`)
+- `totalDiamonds` (integer, required, default `500`)
+- `gamesPlayed` (integer, required, default `0`)
+- `totalPlayTime` (integer, required, default `0`)
+- `themesUnlocked` (string array, required, default `["classic"]`)
+- `selectedTheme` (string, required, default `"classic"`)
+- `timerAttackBest` (integer, required, default `0`)
+- `inventory_continue` (integer, required, default `0`)
+- `inventory_extraLife` (integer, required, default `0`)
+- `inventory_pulse` (integer, required, default `0`)
+- `inventory_tempo` (integer, required, default `0`)
+- `inventory_aegis` (integer, required, default `0`)
+- `inventory_nova` (integer, required, default `0`)
+- `inventory_shift` (integer, optional legacy field; keep for existing deployments, may be omitted in new deployments)
+
+### Groups Collection (`VITE_APPWRITE_GROUPS_COLLECTION_ID`)
+- `roomCode` (string, required, unique)
+- `groupName` (string, required)
+- `createdBy` (string, required)
+- `memberIds` (string array, required)
+- `memberCount` (integer, required)
+- `isActive` (boolean, required, default `true`)
+
+### Group Scores Collection (`VITE_APPWRITE_GROUPSCORES_COLLECTION_ID`)
+- `userId` (string, required)
+- `groupId` (string, required)
+- `userName` (string, required)
+- `bestScore` (integer, required, default `0`)
+- `gamesPlayed` (integer, required, default `0`)
+- `difficulty` (string, required)
+- `lastPlayedAt` (Appwrite DateTime attribute type, optional)
+
+### Recommended Indexes
+- Users: `userId` (unique), `singlePlayerHighScore` (desc for global leaderboard)
+- Groups: `roomCode` (unique), `memberIds` (contains, acceptable for current max 30 members per room), `$createdAt` (desc)
+- Group Scores: `(groupId, bestScore desc)`, `(userId, groupId)` for upsert/query efficiency
