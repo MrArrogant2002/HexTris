@@ -5,8 +5,8 @@
 
 import { Client, Account, Databases } from 'appwrite';
 
-const appwriteEndpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
-const appwriteProjectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '69909628003aaf679156';
+const appwriteEndpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || '';
+const appwriteProjectId = import.meta.env.VITE_APPWRITE_PROJECT_ID || '';
 
 // Initialize Appwrite client
 const client = new Client()
