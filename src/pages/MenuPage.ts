@@ -16,7 +16,6 @@ import { ShopModal } from '@ui/modals/ShopModal';
 import { authService } from '@services/AuthService';
 import { GroupLeaderboardModal } from '@ui/modals/GroupLeaderboardModal';
 import type { Group } from '@/types/game';
-import { DifficultyLevel } from '@config/difficulty';
 
 export class MenuPage extends BasePage {
   private buttons: Button[] = [];
@@ -136,44 +135,24 @@ export class MenuPage extends BasePage {
     };
 
     // Single Player
-    const singlePlayerBtn = new Button('RESONANCE DRIFT', {
+    const singlePlayerBtn = new Button('SINGLE PLAYER', {
       variant: 'primary',
       size: 'large',
       fullWidth: true,
       onClick: () => Router.getInstance().navigate(ROUTES.DIFFICULTY),
     });
     this.buttons.push(singlePlayerBtn);
-    modesGrid.appendChild(createModeCard(singlePlayerBtn, 'Build resonance with every clear.'));
+    modesGrid.appendChild(createModeCard(singlePlayerBtn, 'Pick a difficulty and climb the leaderboard.'));
 
     // Multiplayer
-    const multiplayerBtn = new Button('SYNC LINK', {
+    const multiplayerBtn = new Button('CREW PLAYER', {
       variant: 'secondary',
       size: 'large',
       fullWidth: true,
       onClick: () => Router.getInstance().navigate(ROUTES.MULTIPLAYER),
     });
     this.buttons.push(multiplayerBtn);
-    modesGrid.appendChild(createModeCard(multiplayerBtn, 'Charge sync bursts with your crew.'));
-
-    // Daily Challenge
-    const dailyChallengeBtn = new Button('HEXFORGE TRIALS', {
-      variant: 'primary',
-      size: 'large',
-      fullWidth: true,
-      onClick: () => this.startDailyChallenge(),
-    });
-    this.buttons.push(dailyChallengeBtn);
-    modesGrid.appendChild(createModeCard(dailyChallengeBtn, 'Complete the daily objective remix.'));
-
-    // Timer Attack
-    const timerAttackBtn = new Button('PULSE RELAY', {
-      variant: 'secondary',
-      size: 'large',
-      fullWidth: true,
-      onClick: () => this.startTimerAttack(),
-    });
-    this.buttons.push(timerAttackBtn);
-    modesGrid.appendChild(createModeCard(timerAttackBtn, 'Stack relay nodes to extend time.'));
+    modesGrid.appendChild(createModeCard(multiplayerBtn, 'Join your crew and start synced matches.'));
 
     modesSection.appendChild(modesGrid);
     container.appendChild(modesSection);
@@ -257,93 +236,6 @@ export class MenuPage extends BasePage {
       },
     });
     this.shopModal.open();
-  }
-
-  /**
-   * Start daily challenge mode
-   */
-  private startDailyChallenge(): void {
-    stateManager.updateGame({ difficulty: DifficultyLevel.STANDARD });
-    stateManager.updateUI({ currentGameMode: 'dailyChallenge', timerDuration: undefined });
-    Router.getInstance().navigate(ROUTES.GAME, { mode: 'daily' });
-  }
-
-  /**
-   * Start timer attack mode
-   */
-  private async startTimerAttack(): Promise<void> {
-    const duration = await this.showTimerDurationSelector();
-    if (!duration) return;
-
-    const mappedDifficulty = this.mapDurationToDifficulty(duration);
-    stateManager.updateGame({ difficulty: mappedDifficulty });
-    stateManager.updateUI({ currentGameMode: 'timerAttack', timerDuration: duration });
-    Router.getInstance().navigate(ROUTES.GAME, { mode: 'timer', difficulty: mappedDifficulty });
-  }
-
-  private showTimerDurationSelector(): Promise<number | null> {
-    return new Promise((resolve) => {
-       const modal = new Modal({
-         title: 'PULSE RELAY',
-         closeOnBackdrop: true,
-         closeOnEscape: true,
-       });
-
-      const content = document.createElement('div');
-      content.className = 'space-y-3 py-2';
-
-      const subtitle = document.createElement('p');
-      subtitle.className = 'text-sm theme-text-secondary text-center';
-       subtitle.textContent = 'Choose your relay window';
-      content.appendChild(subtitle);
-
-       const durations = [45, 75, 105];
-      durations.forEach((seconds) => {
-        const label = `${seconds} SECONDS - ${this.describeTimerDifficulty(seconds)}`;
-        const button = new Button(label, {
-          variant: 'primary',
-          size: 'medium',
-          fullWidth: true,
-          onClick: () => {
-            modal.close();
-            resolve(seconds);
-          },
-        });
-        content.appendChild(button.element);
-      });
-
-      const cancelButton = new Button('Cancel', {
-        variant: 'ghost',
-        size: 'small',
-        fullWidth: true,
-        onClick: () => {
-          modal.close();
-          resolve(null);
-        },
-      });
-      content.appendChild(cancelButton.element);
-
-      modal.setContent(content);
-      modal.open();
-    });
-  }
-
-  private mapDurationToDifficulty(duration: number): DifficultyLevel {
-    if (duration <= 45) return DifficultyLevel.FIERCE;
-    if (duration <= 75) return DifficultyLevel.STANDARD;
-    return DifficultyLevel.EASY;
-  }
-
-  private describeTimerDifficulty(duration: number): string {
-    const difficulty = this.mapDurationToDifficulty(duration);
-    switch (difficulty) {
-      case DifficultyLevel.FIERCE:
-        return 'Sprint Relay';
-      case DifficultyLevel.STANDARD:
-        return 'Core Relay';
-      default:
-        return 'Extended Relay';
-    }
   }
 
   public onUnmount(): void {

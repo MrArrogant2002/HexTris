@@ -25,8 +25,10 @@ export class LeaderboardUI {
     // Container
     const container = document.createElement('div');
     container.className = `
-      fixed top-16 right-4 z-20
-      w-64 max-h-96
+      fixed bottom-2 left-1/2 -translate-x-1/2 z-20
+      w-[min(95vw,22rem)] max-h-72
+      sm:top-16 sm:bottom-auto sm:left-auto sm:right-4 sm:translate-x-0
+      sm:w-64 sm:max-h-96
       bg-white/90 backdrop-blur-md
       border-2 border-gray-900
       rounded-lg shadow-xl
@@ -207,4 +209,3 @@ export class LeaderboardUI {
     return this.element;
   }
 }
-

@@ -11,6 +11,8 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES, CREW_BATTLE_MIN_PLAYERS, CREW_BATTLE_MAX_PLAYERS } from '@core/constants';
 import { GroupManager } from '@network/GroupManager';
+import { syncSocket, type MatchInvitationPayload } from '@network/SyncSocket';
+import { DifficultyLevel, normalizePlayableDifficulty } from '@config/difficulty';
 import type { Group } from '../types/game';
 
 type View = 'list' | 'create' | 'join';
@@ -21,6 +23,7 @@ export class MultiplayerPage extends BasePage {
   private groups: Group[] = [];
   private contentContainer!: HTMLDivElement;
   private buttons: Button[] = [];
+  private invitationHandler?: (payload: MatchInvitationPayload) => void;
 
   public render(): void {
     const container = this.initPageLayout({
@@ -108,6 +111,7 @@ export class MultiplayerPage extends BasePage {
     if (!state.player.id) return;
 
     this.groups = await this.groupManager.getUserGroups(state.player.id);
+    this.subscribeToCrewInvitations();
     this.contentContainer.innerHTML = '';
 
     if (this.groups.length === 0) {
@@ -150,16 +154,8 @@ export class MultiplayerPage extends BasePage {
       this.buttons.push(leaderboardBtn);
       actions.appendChild(leaderboardBtn.element);
 
-      const playBtn = new Button('Start Sync', {
-        variant: 'primary',
-        size: 'small',
-        onClick: () => this.playGroup(group),
-      });
-      this.buttons.push(playBtn);
-      actions.appendChild(playBtn.element);
-
       const crewBattleBtn = new Button('Start Crew Battle', {
-        variant: 'secondary',
+        variant: 'primary',
         size: 'small',
         onClick: () => this.playCrewBattle(group),
       });
@@ -273,13 +269,9 @@ export class MultiplayerPage extends BasePage {
     modal.open();
   }
 
-
-  private playGroup(group: Group): void {
-    stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
-    Router.getInstance().navigate(ROUTES.DIFFICULTY);
-  }
-
   private playCrewBattle(group: Group): void {
+    const state = stateManager.getState();
+    if (!state.player.id) return;
     if (group.memberCount < CREW_BATTLE_MIN_PLAYERS || group.memberCount > CREW_BATTLE_MAX_PLAYERS) {
       this.showMessage(
         'Crew Battle Unavailable',
@@ -287,12 +279,168 @@ export class MultiplayerPage extends BasePage {
       );
       return;
     }
+
+    if (group.createdBy !== state.player.id) {
+      this.showMessage('Leader Only', 'Only crew leaders can start synced matches.');
+      return;
+    }
+
+    this.showDifficultySelector(group);
+  }
+
+  private showDifficultySelector(group: Group): void {
+    const modal = new Modal({
+      title: 'Start Synced Match',
+      closeOnBackdrop: true,
+      closeOnEscape: true,
+    });
+    const content = document.createElement('div');
+    content.className = 'space-y-2';
+
+    const options: Array<{ label: string; value: DifficultyLevel }> = [
+      { label: 'Easy', value: DifficultyLevel.EASY },
+      { label: 'Medium', value: DifficultyLevel.STANDARD },
+      { label: 'Hard', value: DifficultyLevel.FIERCE },
+    ];
+
+    options.forEach((option) => {
+      const btn = new Button(option.label, {
+        variant: 'primary',
+        size: 'medium',
+        fullWidth: true,
+        onClick: async () => {
+          modal.close();
+          await this.broadcastMatchInvitation(group, option.value);
+        },
+      });
+      this.buttons.push(btn);
+      content.appendChild(btn.element);
+    });
+
+    modal.setContent(content);
+    modal.open();
+  }
+
+  private async broadcastMatchInvitation(group: Group, selectedDifficulty: DifficultyLevel): Promise<void> {
+    const state = stateManager.getState();
+    if (!state.player.id) return;
+
+    const difficulty = normalizePlayableDifficulty(selectedDifficulty);
+    const payload: MatchInvitationPayload = {
+      groupId: group.$id,
+      battleId: `${group.$id}-${Date.now()}`,
+      leaderId: state.player.id,
+      leaderName: state.player.name,
+      difficulty,
+      memberCount: group.memberCount,
+    };
+    const result = await syncSocket.sendMatchInvitation(payload);
+    if (!result.ok) {
+      this.showMessage('Invite Failed', result.error || 'Unable to broadcast invitation.');
+      return;
+    }
+
+    stateManager.updateGame({ difficulty });
     stateManager.updateUI({
       currentGroupId: group.$id,
       currentGameMode: 'multiplayerCrewBattle',
       multiplayerMode: 'crewBattle',
     });
-    Router.getInstance().navigate(ROUTES.DIFFICULTY, { multiplayerMode: 'crewBattle', players: String(group.memberCount) });
+    Router.getInstance().navigate(ROUTES.GAME, {
+      difficulty,
+      multiplayerMode: 'crewBattle',
+      players: String(group.memberCount),
+      battleId: payload.battleId,
+    });
+  }
+
+  private subscribeToCrewInvitations(): void {
+    const state = stateManager.getState();
+    if (!state.player.id) return;
+
+    this.groups.forEach((group) => {
+      void syncSocket.joinCrew(group.$id, state.player.id!, state.player.name);
+    });
+
+    if (this.invitationHandler) {
+      syncSocket.off('crew:matchInvitation', this.invitationHandler);
+    }
+
+    this.invitationHandler = (payload: MatchInvitationPayload) => {
+      if (payload.leaderId === state.player.id) return;
+      const difficulty = normalizePlayableDifficulty(payload.difficulty);
+      this.showInvitationModal(payload, difficulty);
+    };
+    syncSocket.on('crew:matchInvitation', this.invitationHandler);
+  }
+
+  private showInvitationModal(payload: MatchInvitationPayload, difficulty: DifficultyLevel): void {
+    const modal = new Modal({
+      title: 'Crew Match Invite',
+      closeOnBackdrop: false,
+      closeOnEscape: false,
+    });
+
+    const content = document.createElement('div');
+    content.className = 'space-y-3';
+    const text = document.createElement('p');
+    text.className = 'text-sm theme-text-secondary';
+    text.textContent = `${payload.leaderName} started a ${difficulty.toUpperCase()} synced match. Join now?`;
+    content.appendChild(text);
+
+    const acceptBtn = new Button('Accept', {
+      variant: 'primary',
+      size: 'small',
+      fullWidth: true,
+      onClick: async () => {
+        const state = stateManager.getState();
+        if (!state.player.id) return;
+        await syncSocket.respondToInvitation({
+          groupId: payload.groupId,
+          battleId: payload.battleId,
+          playerId: state.player.id,
+          accepted: true,
+        });
+        modal.close();
+        stateManager.updateGame({ difficulty });
+        stateManager.updateUI({
+          currentGroupId: payload.groupId,
+          currentGameMode: 'multiplayerCrewBattle',
+          multiplayerMode: 'crewBattle',
+        });
+        Router.getInstance().navigate(ROUTES.GAME, {
+          difficulty,
+          multiplayerMode: 'crewBattle',
+          players: String(payload.memberCount),
+          battleId: payload.battleId,
+        });
+      },
+    });
+    this.buttons.push(acceptBtn);
+    content.appendChild(acceptBtn.element);
+
+    const declineBtn = new Button('Decline', {
+      variant: 'ghost',
+      size: 'small',
+      fullWidth: true,
+      onClick: async () => {
+        const state = stateManager.getState();
+        if (state.player.id) {
+          await syncSocket.respondToInvitation({
+            groupId: payload.groupId,
+            battleId: payload.battleId,
+            playerId: state.player.id,
+            accepted: false,
+          });
+        }
+        modal.close();
+      },
+    });
+    this.buttons.push(declineBtn);
+    content.appendChild(declineBtn.element);
+
+    modal.setContent(content);
+    modal.open();
   }
 
   private confirmLeaveGroup(group: Group): void {
@@ -375,6 +523,10 @@ export class MultiplayerPage extends BasePage {
   }
 
   public onUnmount(): void {
+    if (this.invitationHandler) {
+      syncSocket.off('crew:matchInvitation', this.invitationHandler);
+      this.invitationHandler = undefined;
+    }
     this.buttons.forEach((btn) => btn.destroy());
     this.buttons = [];
   }

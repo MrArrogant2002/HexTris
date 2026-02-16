@@ -7,7 +7,7 @@ import { BasePage } from './BasePage';
 import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
-import { DifficultyLevel, difficultyConfigs, difficultyOrder } from '@config/difficulty';
+import { DifficultyLevel, difficultyConfigs, difficultyOrder, normalizePlayableDifficulty } from '@config/difficulty';
 import { Button } from '@ui/components/Button';
 
 export class DifficultyPage extends BasePage {
@@ -225,11 +225,12 @@ export class DifficultyPage extends BasePage {
    * Start game with selected difficulty
    */
   private startGame(): void {
+    const difficulty = normalizePlayableDifficulty(this.selectedDifficulty);
     // Update game state with selected difficulty
-    stateManager.updateGame({ difficulty: this.selectedDifficulty });
+    stateManager.updateGame({ difficulty });
     
     // Navigate to game page
-    Router.getInstance().navigate(ROUTES.GAME, { difficulty: this.selectedDifficulty });
+    Router.getInstance().navigate(ROUTES.GAME, { difficulty });
   }
 
   public onMount(): void {
@@ -242,4 +243,3 @@ export class DifficultyPage extends BasePage {
     this.buttons = [];
   }
 }
-

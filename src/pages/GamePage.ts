@@ -32,7 +32,7 @@ import { PowerUpSystem } from '@systems/PowerUpSystem';
 import { SpecialPointsSystem } from '@systems/SpecialPointsSystem';
 import { getInputManager } from '@utils/input';
 import { themes, ThemeName } from '@config/themes';
-import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
+import { getDifficultyConfig, normalizePlayableDifficulty } from '@config/difficulty';
 import type { DifficultyConfig, AdaptiveAssistConfig } from '@config/difficulty';
 import { appwriteClient } from '@network/AppwriteClient';
 import { GroupManager } from '@network/GroupManager';
@@ -57,6 +57,7 @@ import { createEmptyInventory, ShopItemId } from '@config/shopItems';
 import { type PowerUpType, getPowerDefinition } from '@config/powers';
 import { TimeOrbSystem } from '@systems/TimeOrbSystem';
 import { getChallengeScriptForDate, type ChallengeScript } from '@config/challengeSeeds';
+import { syncSocket } from '@network/SyncSocket';
 
 const MOBILE_BLOCK_TUNING = {
   startDist: 227,
@@ -70,15 +71,6 @@ const DESKTOP_BLOCK_TUNING = {
   creationDt: 9,
 };
 
-const CREW_BATTLE_LEVEL_INTERVAL_SECONDS = 45;
-const CREW_BATTLE_BOT_PACE_NORMAL = 14;
-const CREW_BATTLE_BOT_PACE_FINAL = 22;
-const CREW_BATTLE_BOT_JITTER_MAX = 24;
-const CREW_BATTLE_SABOTAGE_COOLDOWN_MS = 2000;
-const CREW_BATTLE_SABOTAGE_PENALTY = 100;
-const CREW_BATTLE_TASK_GOAL_BASE = 2;
-const CREW_BATTLE_TASK_GOAL_MAX = 5;
-const CREW_BATTLE_TASK_MIN_BLOCKS = 3;
 const CREW_BATTLE_SYNERGY_BONUS_MULTIPLIER = 0.05;
 
 export class GamePage extends BasePage {
@@ -169,14 +161,21 @@ export class GamePage extends BasePage {
   private activeMutators = new Set<string>();
   private noShieldActive = false;
   private crewBattleEntries: CrewLeaderboardEntry[] = [];
-  private crewBattleTaskProgress = 0;
-  private crewBattleTaskGoal = 3;
-  private crewBattleCharges = 0;
   private crewBattlePlayerCount = 5;
   private crewBattleLevel = 1;
   private crewBattleMaxLevels = 5;
-  private crewBattleLastTick = 0;
-  private crewBattleLastSabotageAt = 0;
+  private crewBattleLastScoreSyncAt = 0;
+  private battleId: string | null = null;
+  private activeTaskObjective = '';
+  private latestLeaderboardSeq = 0;
+  private crewLeaderboardHandler?: (payload: {
+    seq?: number;
+    round?: number;
+    entries?: Array<{ userId: string; userName: string; score: number; eliminated?: boolean }>;
+  }) => void;
+  private crewTaskHandler?: (payload: { objective?: string; round?: number }) => void;
+  private crewEliminatedHandler?: (payload: { playerId?: string; userName?: string }) => void;
+  private crewWinnerHandler?: (payload: { playerId?: string; userName?: string }) => void;
   private readonly isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   private handleGameOverSfx = (): void => {
     audioManager.playSfx('gameOver');
@@ -525,7 +524,7 @@ export class GamePage extends BasePage {
     const blockColors = theme.colors.blocks;
     
     // Initialize game systems
-    const difficultyLevel = state.game.difficulty ?? DifficultyLevel.STANDARD;
+    const difficultyLevel = normalizePlayableDifficulty(state.game.difficulty);
     const difficultyConfig = getDifficultyConfig(difficultyLevel);
     this.activeDifficultyConfig = difficultyConfig;
     this.currentPhaseName = null;
@@ -720,7 +719,6 @@ export class GamePage extends BasePage {
 
       this.waveSystem.onBlocksDestroyed();
       this.addSyncCharge(result.blocksCleared);
-      this.progressCrewBattleTask(result.blocksCleared);
     }
 
     if (matchResults.length > 0) {
@@ -1811,11 +1809,9 @@ export class GamePage extends BasePage {
     this.crewBattlePlayerCount = boundedPlayers;
     this.crewBattleMaxLevels = this.resolveCrewBattleLevels(this.crewBattlePlayerCount);
     this.crewBattleLevel = 1;
-    this.crewBattleTaskProgress = 0;
-    this.crewBattleCharges = 0;
-    this.crewBattleLastTick = 0;
-    this.crewBattleLastSabotageAt = 0;
-    this.crewBattleTaskGoal = 3;
+    this.crewBattleLastScoreSyncAt = 0;
+    this.latestLeaderboardSeq = 0;
+    this.battleId = String(this.params.battleId ?? stateManager.getState().ui.currentGroupId ?? '');
 
     this.crewLeaderboardUI = new LeaderboardUI(this.crewBattlePlayerCount);
     this.crewLeaderboardUI.mount(parent);
@@ -1828,16 +1824,10 @@ export class GamePage extends BasePage {
       score: 0,
       isCurrentPlayer: true,
     }];
-    for (let i = 1; i < this.crewBattlePlayerCount; i++) {
-      this.crewBattleEntries.push({
-        userId: `crew-bot-${i}`,
-        userName: `Opponent ${i}`,
-        score: 0,
-      });
-    }
     this.crewLeaderboardUI.updateEntries(this.crewBattleEntries);
     this.currentPhaseName = `Crew L${this.crewBattleLevel}/${this.crewBattleMaxLevels}`;
     stateManager.updateGame({ strategyPhase: this.currentPhaseName });
+    this.subscribeToCrewBattleSocket();
   }
 
   private resolveCrewBattleLevels(playerCount: number): number {
@@ -1848,86 +1838,100 @@ export class GamePage extends BasePage {
     return 9;
   }
 
-  private progressCrewBattleTask(blocksCleared: number): void {
-    if (!this.isCrewBattleMode()) return;
-    if (blocksCleared < CREW_BATTLE_TASK_MIN_BLOCKS) return;
-
-    this.crewBattleTaskProgress += 1;
-    if (this.crewBattleTaskProgress < this.crewBattleTaskGoal) return;
-    this.crewBattleTaskProgress = 0;
-    this.crewBattleCharges += 1;
-    this.floatingTexts.push(FloatingText.createMessage(
-      this.canvas.element.width / 2,
-      this.canvas.element.height / 2 - 90,
-      'TASK COMPLETE +1 SABOTAGE',
-      '#fca5a5'
-    ));
-  }
-
   private updateCrewBattleState(playerScore: number): void {
     if (!this.isCrewBattleMode()) return;
     if (!this.crewLeaderboardUI) return;
 
-    const now = Date.now();
-    if (now - this.crewBattleLastTick > 1000) {
-      this.crewBattleEntries = this.crewBattleEntries.map((entry) => {
-        if (entry.isCurrentPlayer) {
-          return { ...entry, score: playerScore };
-        }
-        const pace = this.crewBattleLevel >= this.crewBattleMaxLevels
-          ? CREW_BATTLE_BOT_PACE_FINAL
-          : CREW_BATTLE_BOT_PACE_NORMAL;
-        const jitter = Math.floor(Math.random() * CREW_BATTLE_BOT_JITTER_MAX);
-        return { ...entry, score: Math.max(0, entry.score + pace + jitter) };
-      });
-      this.crewBattleLastTick = now;
-    }
-
-    const seconds = this.hex.ct / 60;
-    const nextLevel = Math.min(
-      this.crewBattleMaxLevels,
-      Math.max(1, Math.floor(seconds / CREW_BATTLE_LEVEL_INTERVAL_SECONDS) + 1)
+    this.crewBattleEntries = this.crewBattleEntries.map((entry) =>
+      entry.isCurrentPlayer ? { ...entry, score: playerScore } : entry
     );
-    if (nextLevel !== this.crewBattleLevel) {
-      this.crewBattleLevel = nextLevel;
-      this.currentPhaseName = `Crew L${this.crewBattleLevel}/${this.crewBattleMaxLevels}`;
+    this.crewLeaderboardUI.updateEntries(this.crewBattleEntries);
+    const state = stateManager.getState();
+    if (!state.player.id || !this.battleId) return;
+    const now = Date.now();
+    if (now - this.crewBattleLastScoreSyncAt < 150) return;
+    this.crewBattleLastScoreSyncAt = now;
+    void syncSocket.updateBattleScore(this.battleId, state.player.id, playerScore);
+  }
+
+  private subscribeToCrewBattleSocket(): void {
+    const state = stateManager.getState();
+    if (!state.player.id || !this.battleId) return;
+
+    void syncSocket.joinBattle({
+      battleId: this.battleId,
+      playerId: state.player.id,
+      userName: state.player.name,
+      difficulty: String(normalizePlayableDifficulty(state.game.difficulty)),
+    });
+
+    if (this.crewLeaderboardHandler) syncSocket.off('crew:leaderboard', this.crewLeaderboardHandler);
+    if (this.crewTaskHandler) syncSocket.off('crew:task', this.crewTaskHandler);
+    if (this.crewEliminatedHandler) syncSocket.off('crew:eliminated', this.crewEliminatedHandler);
+    if (this.crewWinnerHandler) syncSocket.off('crew:winner', this.crewWinnerHandler);
+
+    this.crewLeaderboardHandler = (payload: {
+      seq?: number;
+      round?: number;
+      entries?: Array<{ userId: string; userName: string; score: number; eliminated?: boolean }>;
+    }) => {
+      const seq = payload.seq ?? 0;
+      if (seq <= this.latestLeaderboardSeq) return;
+      this.latestLeaderboardSeq = seq;
+      this.crewBattleLevel = Math.max(1, payload.round ?? 1);
+      this.crewBattleEntries = (payload.entries ?? []).map((entry) => ({
+        userId: entry.userId,
+        userName: entry.userName,
+        score: entry.score,
+        isCurrentPlayer: entry.userId === state.player.id,
+      }));
+      this.crewLeaderboardUI?.updateEntries(this.crewBattleEntries);
+      this.currentPhaseName = `Crew L${Math.min(this.crewBattleLevel, this.crewBattleMaxLevels)}/${this.crewBattleMaxLevels}`;
       stateManager.updateGame({ strategyPhase: this.currentPhaseName });
-      this.crewBattleTaskGoal = Math.min(
-        CREW_BATTLE_TASK_GOAL_MAX,
-        CREW_BATTLE_TASK_GOAL_BASE + this.crewBattleLevel
-      );
+    };
+    syncSocket.on('crew:leaderboard', this.crewLeaderboardHandler);
+
+    this.crewTaskHandler = (payload: { objective?: string; round?: number }) => {
+      this.activeTaskObjective = payload.objective ?? '';
+      if (!this.activeTaskObjective) return;
       this.floatingTexts.push(FloatingText.createMessage(
         this.canvas.element.width / 2,
         this.canvas.element.height / 2 - 130,
-        `LEVEL ${this.crewBattleLevel}`,
+        `TASK: ${this.activeTaskObjective.toUpperCase()}`,
         '#93c5fd'
       ));
-    }
+      if (payload.round) {
+        this.currentPhaseName = `Crew L${Math.min(payload.round, this.crewBattleMaxLevels)}/${this.crewBattleMaxLevels}`;
+        stateManager.updateGame({ strategyPhase: this.currentPhaseName });
+      }
+    };
+    syncSocket.on('crew:task', this.crewTaskHandler);
 
-    // Apply one charge per cooldown window to maintain readable and fair sabotage timing in the live HUD.
-    if (this.crewBattleCharges > 0 && now - this.crewBattleLastSabotageAt >= CREW_BATTLE_SABOTAGE_COOLDOWN_MS) {
-      this.applyCrewBattleSabotage();
-      this.crewBattleCharges -= 1;
-      this.crewBattleLastSabotageAt = now;
-    }
+    this.crewEliminatedHandler = (payload: { playerId?: string; userName?: string }) => {
+      if (!payload.playerId) return;
+      this.floatingTexts.push(FloatingText.createMessage(
+        this.canvas.element.width / 2,
+        this.canvas.element.height / 2 - 90,
+        `${(payload.userName || 'Player').toUpperCase()} ELIMINATED`,
+        '#f87171'
+      ));
+      if (payload.playerId === state.player.id) {
+        stateManager.updateGame({ lives: 0 });
+        stateManager.setState('status', GameStatus.GAME_OVER);
+        stateManager.emit('gameOver', { score: stateManager.getState().game.score, reason: 'elimination' });
+      }
+    };
+    syncSocket.on('crew:eliminated', this.crewEliminatedHandler);
 
-    this.crewLeaderboardUI.updateEntries(this.crewBattleEntries);
-  }
-
-  private applyCrewBattleSabotage(): void {
-    const rivals = this.crewBattleEntries.filter((entry) => !entry.isCurrentPlayer);
-    if (rivals.length === 0) return;
-    const target = rivals.reduce((best, current) => (current.score > best.score ? current : best), rivals[0]);
-    this.crewBattleEntries = this.crewBattleEntries.map((entry) => {
-      if (entry.userId !== target.userId) return entry;
-      return { ...entry, score: Math.max(0, entry.score - CREW_BATTLE_SABOTAGE_PENALTY) };
-    });
-    this.floatingTexts.push(FloatingText.createMessage(
-      this.canvas.element.width / 2,
-      this.canvas.element.height / 2 - 60,
-      `${target.userName.toUpperCase()} -${CREW_BATTLE_SABOTAGE_PENALTY}`,
-      '#f87171'
-    ));
+    this.crewWinnerHandler = (payload: { playerId?: string; userName?: string }) => {
+      this.showMessageModal('Winner', `${payload.userName || 'A player'} wins the crew match.`);
+      if (payload.playerId && payload.playerId !== state.player.id) {
+        stateManager.updateGame({ lives: 0 });
+        stateManager.setState('status', GameStatus.GAME_OVER);
+        stateManager.emit('gameOver', { score: stateManager.getState().game.score, reason: 'winner_declared' });
+      }
+    };
+    syncSocket.on('crew:winner', this.crewWinnerHandler);
   }
 
   private applyLifeBonus(score: number): void {
@@ -2472,7 +2476,25 @@ export class GamePage extends BasePage {
       this.crewLeaderboardUI.unmount();
       this.crewLeaderboardUI = null;
     }
+    if (this.crewLeaderboardHandler) {
+      syncSocket.off('crew:leaderboard', this.crewLeaderboardHandler);
+      this.crewLeaderboardHandler = undefined;
+    }
+    if (this.crewTaskHandler) {
+      syncSocket.off('crew:task', this.crewTaskHandler);
+      this.crewTaskHandler = undefined;
+    }
+    if (this.crewEliminatedHandler) {
+      syncSocket.off('crew:eliminated', this.crewEliminatedHandler);
+      this.crewEliminatedHandler = undefined;
+    }
+    if (this.crewWinnerHandler) {
+      syncSocket.off('crew:winner', this.crewWinnerHandler);
+      this.crewWinnerHandler = undefined;
+    }
     this.crewBattleEntries = [];
+    this.activeTaskObjective = '';
+    this.battleId = null;
     if (this.invulnerabilityTimeoutId) {
       window.clearTimeout(this.invulnerabilityTimeoutId);
       this.invulnerabilityTimeoutId = null;
