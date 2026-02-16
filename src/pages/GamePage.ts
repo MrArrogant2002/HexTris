@@ -34,6 +34,7 @@ import { DifficultyLevel, getDifficultyConfig } from '@config/difficulty';
 import type { DifficultyConfig, AdaptiveAssistConfig } from '@config/difficulty';
 import { appwriteClient } from '@network/AppwriteClient';
 import { GroupManager } from '@network/GroupManager';
+import { syncBattleClient } from '@network/SyncBattleClient';
 import { DailyChallengeSystem } from '@modes/DailyChallengeMode';
 import { TimerAttackMode } from '@modes/TimerAttackMode';
 import { DailyChallengeModal } from '@ui/modals/DailyChallengeModal';
@@ -144,6 +145,7 @@ export class GamePage extends BasePage {
   private tempoActive = false;
   private challengeScript: ChallengeScript | null = null;
   private challengePhaseIndex = 0;
+  private syncScoreIntervalId: number | null = null;
   private timerRampStage = 0;
   private timerRampSpeedMultiplier = 1;
   private timerRampSpawnMultiplier = 1;
@@ -162,6 +164,38 @@ export class GamePage extends BasePage {
   };
   private handleBlockLandSfx = (): void => {
     audioManager.playSfx('blockLand');
+  };
+
+  private handleSyncTaskObjective = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ battleId?: string; task?: { label?: string } }>;
+    const battleId = customEvent.detail?.battleId;
+    const taskLabel = customEvent.detail?.task?.label;
+    const state = stateManager.getState();
+    if (!battleId || battleId !== state.ui.currentGroupId || !taskLabel) return;
+    stateManager.updateGame({ strategyPhase: `Task: ${taskLabel}` });
+  };
+
+  private handleSyncElimination = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ battleId?: string; playerId?: string }>;
+    const battleId = customEvent.detail?.battleId;
+    const eliminatedPlayerId = customEvent.detail?.playerId;
+    const state = stateManager.getState();
+    if (!battleId || battleId !== state.ui.currentGroupId) return;
+    if (!eliminatedPlayerId || eliminatedPlayerId !== state.player.id) return;
+    if (state.status !== GameStatus.PLAYING) return;
+    stateManager.updateGame({ lives: 0 });
+    stateManager.setState('status', GameStatus.GAME_OVER);
+    stateManager.emit('gameOver', { score: state.game.score });
+  };
+
+  private handleSyncWinner = (event: Event): void => {
+    const customEvent = event as CustomEvent<{ battleId?: string }>;
+    const battleId = customEvent.detail?.battleId;
+    const state = stateManager.getState();
+    if (!battleId || battleId !== state.ui.currentGroupId) return;
+    if (state.status !== GameStatus.PLAYING) return;
+    stateManager.setState('status', GameStatus.GAME_OVER);
+    stateManager.emit('gameOver', { score: state.game.score });
   };
   private handlePowerUpCollectedSfx = (): void => {
     audioManager.playSfx('powerUpCollect');
@@ -2097,6 +2131,7 @@ export class GamePage extends BasePage {
     audioManager.playGameMusic();
 
     const uiState = stateManager.getState().ui;
+    const currentState = stateManager.getState();
     audioManager.setMusicMuted(uiState.isMusicMuted);
     audioManager.setSfxMuted(uiState.isSfxMuted);
     audioManager.setMusicVolume(uiState.musicVolume);
@@ -2107,6 +2142,15 @@ export class GamePage extends BasePage {
     
     this.initCanvas();
     this.startGameLoop();
+
+    if (uiState.currentGameMode?.startsWith('multiplayer') && currentState.player.id && uiState.currentGroupId) {
+      syncBattleClient.joinBattles([uiState.currentGroupId], currentState.player.id, currentState.player.name);
+      this.syncScoreIntervalId = window.setInterval(() => {
+        const state = stateManager.getState();
+        if (!state.player.id || !state.ui.currentGroupId) return;
+        syncBattleClient.reportScore(state.ui.currentGroupId, state.player.id, state.game.score);
+      }, 1200);
+    }
 
     if (uiState.currentGameMode === 'dailyChallenge') {
       if (!this.dailyChallenge) {
@@ -2167,7 +2211,8 @@ export class GamePage extends BasePage {
       }
     });
     inputManager.on('speedUp', (pressed) => {
-      this.rushMultiplier = pressed ? 4 : 1;
+      const isMultiplayer = stateManager.getState().ui.currentGameMode?.startsWith('multiplayer');
+      this.rushMultiplier = isMultiplayer ? 1 : (pressed ? 4 : 1);
     });
     inputManager.on('pause', (pressed) => {
       if (pressed) {
@@ -2219,6 +2264,9 @@ export class GamePage extends BasePage {
     window.addEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
     window.addEventListener('powerUpCooldown', this.handlePowerUpCooldown as EventListener);
     window.addEventListener('blockLand', this.handleBlockLandSfx as EventListener);
+    window.addEventListener('syncTaskObjective', this.handleSyncTaskObjective as EventListener);
+    window.addEventListener('syncPlayerEliminated', this.handleSyncElimination as EventListener);
+    window.addEventListener('syncWinnerDeclared', this.handleSyncWinner as EventListener);
   }
 
   public onUnmount(): void {
@@ -2240,6 +2288,14 @@ export class GamePage extends BasePage {
     window.removeEventListener('powerUpEffect', this.handlePowerUpEffect as EventListener);
     window.removeEventListener('powerUpCooldown', this.handlePowerUpCooldown as EventListener);
     window.removeEventListener('blockLand', this.handleBlockLandSfx as EventListener);
+    window.removeEventListener('syncTaskObjective', this.handleSyncTaskObjective as EventListener);
+    window.removeEventListener('syncPlayerEliminated', this.handleSyncElimination as EventListener);
+    window.removeEventListener('syncWinnerDeclared', this.handleSyncWinner as EventListener);
+
+    if (this.syncScoreIntervalId) {
+      window.clearInterval(this.syncScoreIntervalId);
+      this.syncScoreIntervalId = null;
+    }
 
     this.clearSlowMoEffect();
     this.hideShieldEffect();

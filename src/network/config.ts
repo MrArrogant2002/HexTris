@@ -1,6 +1,9 @@
 ﻿// Network Configuration
 // Auto-detects environment and uses appropriate backend URL
 
+const prodBaseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const prodSocketURL = import.meta.env.VITE_BACKEND_SOCKET_URL || prodBaseURL;
+
 const API_CONFIG = {
   // Development - Local backend
   dev: {
@@ -8,11 +11,10 @@ const API_CONFIG = {
     socketURL: 'http://localhost:3000'
   },
   
-  // Production - Render deployment
+  // Production - Environment-configured backend
   prod: {
-    // Replace with your Render URL after deployment
-    baseURL: 'https://YOUR-SERVICE-NAME.onrender.com',
-    socketURL: 'https://YOUR-SERVICE-NAME.onrender.com'
+    baseURL: prodBaseURL,
+    socketURL: prodSocketURL
   }
 };
 
@@ -41,4 +43,3 @@ export const CONNECTION_STATUS = {
 
 console.log(`Network Config: ${isDevelopment ? 'Development' : 'Production'}`);
 console.log(`Backend URL: ${API_URL}`);
-

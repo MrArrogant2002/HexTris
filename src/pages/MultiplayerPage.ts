@@ -11,6 +11,8 @@ import { Router } from '@/router';
 import { stateManager } from '@core/StateManager';
 import { ROUTES } from '@core/constants';
 import { GroupManager } from '@network/GroupManager';
+import { syncBattleClient, type SyncInvitationPayload, type SyncMatchStartedPayload } from '@network/SyncBattleClient';
+import { DifficultyLevel } from '@config/difficulty';
 import type { Group } from '../types/game';
 
 type View = 'list' | 'create' | 'join';
@@ -22,6 +24,8 @@ export class MultiplayerPage extends BasePage {
   private groups: Group[] = [];
   private contentContainer!: HTMLDivElement;
   private buttons: Button[] = [];
+  private invitationListener: ((event: Event) => void) | null = null;
+  private matchStartedListener: ((event: Event) => void) | null = null;
 
   public render(): void {
     const container = this.initPageLayout({
@@ -109,6 +113,7 @@ export class MultiplayerPage extends BasePage {
     if (!state.player.id) return;
 
     this.groups = await this.groupManager.getUserGroups(state.player.id);
+    syncBattleClient.joinBattles(this.groups.map((group) => group.$id), state.player.id, state.player.name);
     this.contentContainer.innerHTML = '';
 
     if (this.groups.length === 0) {
@@ -344,9 +349,18 @@ export class MultiplayerPage extends BasePage {
   }
 
 
-  private playGroup(group: Group): void {
-    stateManager.updateUI({ currentGroupId: group.$id, currentGameMode: 'multiplayerRace', multiplayerMode: 'race' });
-    Router.getInstance().navigate(ROUTES.DIFFICULTY);
+  private async playGroup(group: Group): Promise<void> {
+    const state = stateManager.getState();
+    if (!state.player.id) {
+      this.showMessage('Sign in required', 'Please log in to start a sync match.');
+      return;
+    }
+
+    const difficulty = await this.promptSyncDifficulty();
+    if (!difficulty) return;
+
+    syncBattleClient.startSyncInvitation(group.$id, state.player.id, state.player.name, difficulty);
+    this.showMessage('Invitation Sent', `Crew invitation sent with ${difficulty.toUpperCase()} difficulty.`);
   }
 
   private confirmLeaveGroup(group: Group): void {
@@ -428,7 +442,136 @@ export class MultiplayerPage extends BasePage {
     modal.open();
   }
 
+  private promptSyncDifficulty(): Promise<'easy' | 'medium' | 'hard' | null> {
+    return new Promise((resolve) => {
+      const modal = new Modal({
+        title: 'Select Sync Difficulty',
+        closeOnBackdrop: true,
+        closeOnEscape: true,
+      });
+
+      const content = document.createElement('div');
+      content.className = 'space-y-3';
+      const difficulties: Array<'easy' | 'medium' | 'hard'> = ['easy', 'medium', 'hard'];
+      difficulties.forEach((difficulty) => {
+        const button = new Button(difficulty.toUpperCase(), {
+          variant: 'primary',
+          size: 'medium',
+          fullWidth: true,
+          onClick: () => {
+            modal.close();
+            resolve(difficulty);
+          },
+        });
+        this.buttons.push(button);
+        content.appendChild(button.element);
+      });
+
+      const cancelBtn = new Button('Cancel', {
+        variant: 'ghost',
+        size: 'small',
+        fullWidth: true,
+        onClick: () => {
+          modal.close();
+          resolve(null);
+        },
+      });
+      this.buttons.push(cancelBtn);
+      content.appendChild(cancelBtn.element);
+
+      modal.setContent(content);
+      modal.open();
+    });
+  }
+
+  private handleSyncInvitation(payload: SyncInvitationPayload): void {
+    const state = stateManager.getState();
+    if (!state.player.id) return;
+    if (payload.leaderId === state.player.id) return;
+    if (!this.groups.some((group) => group.$id === payload.battleId)) return;
+
+    const modal = new Modal({
+      title: 'Sync Match Invitation',
+      closeOnBackdrop: false,
+      closeOnEscape: false,
+    });
+
+    const content = document.createElement('div');
+    content.className = 'space-y-4';
+
+    const text = document.createElement('p');
+    text.className = 'text-sm theme-text-secondary';
+    text.textContent = `${payload.leaderName || 'Crew leader'} started a ${payload.difficulty.toUpperCase()} sync match.`;
+    content.appendChild(text);
+
+    const acceptBtn = new Button('Accept', {
+      variant: 'primary',
+      size: 'small',
+      fullWidth: true,
+      onClick: () => {
+        syncBattleClient.respondToInvitation(payload.battleId, payload.invitationId, state.player.id, true);
+        modal.close();
+      },
+    });
+    this.buttons.push(acceptBtn);
+    content.appendChild(acceptBtn.element);
+
+    const declineBtn = new Button('Decline', {
+      variant: 'ghost',
+      size: 'small',
+      fullWidth: true,
+      onClick: () => {
+        syncBattleClient.respondToInvitation(payload.battleId, payload.invitationId, state.player.id, false);
+        modal.close();
+      },
+    });
+    this.buttons.push(declineBtn);
+    content.appendChild(declineBtn.element);
+
+    modal.setContent(content);
+    modal.open();
+  }
+
+  private handleMatchStarted(payload: SyncMatchStartedPayload): void {
+    if (!this.groups.some((group) => group.$id === payload.battleId)) return;
+    const mappedDifficulty = this.mapSyncDifficulty(payload.difficulty);
+    stateManager.updateUI({
+      currentGroupId: payload.battleId,
+      currentGameMode: 'multiplayerRace',
+      multiplayerMode: 'sync',
+    });
+    stateManager.updateGame({ difficulty: mappedDifficulty });
+    Router.getInstance().navigate(ROUTES.GAME, { difficulty: mappedDifficulty });
+  }
+
+  private mapSyncDifficulty(difficulty: 'easy' | 'medium' | 'hard'): DifficultyLevel {
+    if (difficulty === 'easy') return DifficultyLevel.EASY;
+    if (difficulty === 'hard') return DifficultyLevel.FIERCE;
+    return DifficultyLevel.STANDARD;
+  }
+
+  public onMount(): void {
+    this.invitationListener = (event: Event) => {
+      const customEvent = event as CustomEvent<SyncInvitationPayload>;
+      this.handleSyncInvitation(customEvent.detail);
+    };
+    this.matchStartedListener = (event: Event) => {
+      const customEvent = event as CustomEvent<SyncMatchStartedPayload>;
+      this.handleMatchStarted(customEvent.detail);
+    };
+    window.addEventListener('syncInvitationReceived', this.invitationListener);
+    window.addEventListener('syncMatchStarted', this.matchStartedListener);
+  }
+
   public onUnmount(): void {
+    if (this.invitationListener) {
+      window.removeEventListener('syncInvitationReceived', this.invitationListener);
+      this.invitationListener = null;
+    }
+    if (this.matchStartedListener) {
+      window.removeEventListener('syncMatchStarted', this.matchStartedListener);
+      this.matchStartedListener = null;
+    }
     this.buttons.forEach((btn) => btn.destroy());
     this.buttons = [];
   }

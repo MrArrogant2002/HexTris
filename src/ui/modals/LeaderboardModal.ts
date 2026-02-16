@@ -11,6 +11,8 @@ export interface LeaderboardModalOptions {
   timerEntries?: LeaderboardEntry[];
   groups?: Group[];
   currentPlayerName?: string;
+  refreshIntervalMs?: number;
+  onRefresh?: () => Promise<Pick<LeaderboardModalOptions, 'globalEntries' | 'timerEntries' | 'groups'>>;
   onOpenGroup?: (group: Group) => void;
 }
 
@@ -25,6 +27,8 @@ export class LeaderboardModal {
   private filterLimit: FilterLimit = 'all';
   private pageSize = 20;
   private currentPage = 1;
+  private refreshIntervalId: number | null = null;
+  private isRefreshing = false;
 
   constructor(options: LeaderboardModalOptions) {
     this.options = options;
@@ -33,12 +37,14 @@ export class LeaderboardModal {
       closeOnBackdrop: true,
       closeOnEscape: true,
       maxWidth: 'lg',
+      onClose: () => this.stopLiveRefresh(),
     });
   }
 
   public open(): void {
     this.modal.setContent(this.renderContent());
     this.modal.open();
+    this.startLiveRefresh();
   }
 
   private renderContent(): HTMLElement {
@@ -397,5 +403,35 @@ export class LeaderboardModal {
   private getBody(): HTMLElement | null {
     return this.modal.element.querySelector('.modal-container .p-6');
   }
-}
 
+  private startLiveRefresh(): void {
+    if (!this.options.onRefresh) return;
+    const interval = this.options.refreshIntervalMs ?? 5000;
+    this.refreshIntervalId = window.setInterval(() => {
+      void this.refreshLeaderboardData();
+    }, interval);
+  }
+
+  private stopLiveRefresh(): void {
+    if (this.refreshIntervalId !== null) {
+      window.clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = null;
+    }
+  }
+
+  private async refreshLeaderboardData(): Promise<void> {
+    if (!this.options.onRefresh || this.isRefreshing) return;
+    this.isRefreshing = true;
+    try {
+      const nextData = await this.options.onRefresh();
+      this.options.globalEntries = nextData.globalEntries;
+      this.options.timerEntries = nextData.timerEntries;
+      this.options.groups = nextData.groups;
+      this.updateListAndPagination();
+    } catch (error) {
+      console.warn('Leaderboard live refresh failed:', error);
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+}
