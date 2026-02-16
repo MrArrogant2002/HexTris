@@ -1,8 +1,14 @@
 ﻿// Network Configuration
-// Always target deployed backend for both REST and socket endpoints.
-const DEPLOYED_BACKEND_URL = 'https://hextris-backend.onrender.com';
-export const API_URL = DEPLOYED_BACKEND_URL;
-export const BASE_URL = DEPLOYED_BACKEND_URL;
+// Backend URL is configured through Vite env variables to keep secrets out of source control.
+const DEFAULT_BACKEND_URL = 'http://localhost:3001';
+const backendUrl = import.meta.env.VITE_BACKEND_URL || DEFAULT_BACKEND_URL;
+
+if (!import.meta.env.VITE_BACKEND_URL) {
+  console.warn('VITE_BACKEND_URL not set. Falling back to local backend URL.');
+}
+
+export const API_URL = backendUrl;
+export const BASE_URL = backendUrl;
 
 // Connection status
 export const CONNECTION_STATUS = {
