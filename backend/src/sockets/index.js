@@ -19,9 +19,15 @@ export function initSockets(httpServer, options = {}) {
     };
   }
 
-  const corsOrigin = options.corsOrigin || ['http://localhost:5173'];
+  const corsOrigin = Array.isArray(options.corsOrigin)
+    ? options.corsOrigin
+    : String(options.corsOrigin || 'http://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean);
 
   const io = new Server(httpServer, {
+    path: '/socket.io',
     cors: {
       origin: corsOrigin,
       methods: ['GET', 'POST'],
@@ -32,6 +38,8 @@ export function initSockets(httpServer, options = {}) {
   ioInstance = io;
 
   io.on('connection', (socket) => {
+    // eslint-disable-next-line no-console
+    console.log('[socket] connected', socket.id, socket.handshake?.headers?.origin || 'unknown-origin');
     registerBattleHandler(io, socket);
   });
 

@@ -138,6 +138,8 @@ export function registerBattleHandler(io, socket) {
     joinedCrewId = String(groupId);
     socket.join(crewRoom);
     crewMembers.set(String(playerId), { socketId: socket.id, crewId: joinedCrewId });
+    // eslint-disable-next-line no-console
+    console.log('[socket] joinCrew', { socketId: socket.id, crewRoom, playerId: String(playerId) });
     ack?.({ ok: true, crewId: joinedCrewId });
   });
 
@@ -156,6 +158,8 @@ export function registerBattleHandler(io, socket) {
       difficulty: String(difficulty),
       memberCount: Number(memberCount) || 0,
     });
+    // eslint-disable-next-line no-console
+    console.log('[socket] startMatchInvite', { groupId: String(groupId), battleId: String(battleId) });
     ack?.({ ok: true });
   });
 
@@ -246,6 +250,8 @@ export function registerBattleHandler(io, socket) {
   });
 
   socket.on('disconnect', () => {
+    // eslint-disable-next-line no-console
+    console.log('[socket] disconnect', { socketId: socket.id, joinedCrewId, joinedBattleId, joinedPlayerId });
     if (joinedPlayerId) crewMembers.delete(joinedPlayerId);
     if (!joinedBattleId || !joinedPlayerId) return;
 

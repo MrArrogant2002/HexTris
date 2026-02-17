@@ -19,6 +19,7 @@ import { stateManager } from '@core/StateManager';
 import { ThemeName, getThemeOrDefault, normalizeThemesUnlocked } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
 import { themeManager } from '@/managers/ThemeManager';
+import { preferenceCache } from '@services/PreferenceCache';
 
 /**
  * Restore user session if exists
@@ -35,8 +36,13 @@ async function restoreSession(): Promise<boolean> {
         // Restore state
         const resolvedThemes = normalizeThemesUnlocked(user.themesUnlocked);
         const resolvedTheme = getThemeOrDefault(user.selectedTheme).id;
+        const cachedTheme = preferenceCache.getSelectedTheme();
+        const preferredTheme = cachedTheme ? getThemeOrDefault(cachedTheme).id : resolvedTheme;
         if (!resolvedThemes.includes(resolvedTheme)) {
           resolvedThemes.push(resolvedTheme);
+        }
+        if (!resolvedThemes.includes(preferredTheme)) {
+          resolvedThemes.push(preferredTheme);
         }
 
         stateManager.updatePlayer({
@@ -47,11 +53,11 @@ async function restoreSession(): Promise<boolean> {
           gamesPlayed: user.gamesPlayed,
           totalPlayTime: user.totalPlayTime,
           themesUnlocked: resolvedThemes as ThemeName[],
-          selectedTheme: resolvedTheme as ThemeName,
+          selectedTheme: preferredTheme as ThemeName,
           inventory: user.inventory ?? createEmptyInventory(),
         });
 
-        themeManager.applyTheme(resolvedTheme);
+        themeManager.applyTheme(preferredTheme);
         
         console.log('Session restored for:', user.name);
         return true;
@@ -69,6 +75,14 @@ async function restoreSession(): Promise<boolean> {
  * Initialize the application
  */
 async function init(): Promise<void> {
+  const cachedAudio = preferenceCache.getAudioPreferences();
+  stateManager.updateUI({
+    ...(cachedAudio.isMusicMuted !== undefined ? { isMusicMuted: cachedAudio.isMusicMuted } : {}),
+    ...(cachedAudio.isSfxMuted !== undefined ? { isSfxMuted: cachedAudio.isSfxMuted } : {}),
+    ...(cachedAudio.musicVolume !== undefined ? { musicVolume: cachedAudio.musicVolume } : {}),
+    ...(cachedAudio.sfxVolume !== undefined ? { sfxVolume: cachedAudio.sfxVolume } : {}),
+  });
+
   // Get app container
   const appContainer = document.getElementById('app');
   
@@ -194,4 +208,3 @@ function showErrorNotification(title: string, message: string): void {
     setTimeout(() => notification.remove(), 300);
   }, 5000);
 }
-

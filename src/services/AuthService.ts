@@ -8,6 +8,7 @@ import { ID } from 'appwrite';
 import { stateManager } from '@core/StateManager';
 import { ThemeName } from '@config/themes';
 import { createEmptyInventory } from '@config/shopItems';
+import { preferenceCache } from './PreferenceCache';
 
 export interface AuthCredentials {
   email: string;
@@ -76,11 +77,13 @@ export class AuthService {
         name: user.name,
         sessionId: user.$id,
       };
+      preferenceCache.setSession(this.currentSession);
       return this.currentSession;
     } catch (error) {
       console.log('No active session');
-      this.currentSession = null;
-      return null;
+      const cachedSession = preferenceCache.getSession();
+      this.currentSession = cachedSession;
+      return cachedSession;
     }
   }
 
@@ -115,6 +118,7 @@ export class AuthService {
         name: user.name || 'Player',
         sessionId: user.$id,
       };
+      preferenceCache.setSession(this.currentSession);
 
       console.log('Session created for:', this.currentSession.name);
       return this.currentSession;
@@ -154,6 +158,7 @@ export class AuthService {
         name: user.name,
         sessionId: user.$id,
       };
+      preferenceCache.setSession(this.currentSession);
 
       console.log('Logged in:', this.currentSession.name);
       return this.currentSession;
@@ -197,6 +202,7 @@ export class AuthService {
       if (shouldClearState) {
         this.currentSession = null;
         this.sessionCheckPromise = null; // Clear any pending checks
+        preferenceCache.clearSession();
         console.log('Logged out successfully');
 
         // Clear state
@@ -305,6 +311,7 @@ export class AuthService {
       await account.deleteSession('current');
       this.currentSession = null;
       this.sessionCheckPromise = null; // Clear any pending checks
+      preferenceCache.clearSession();
     } catch (error) {
       console.error('Failed to delete session:', error);
       throw error;
@@ -321,4 +328,3 @@ export class AuthService {
 
 // Singleton instance
 export const authService = new AuthService();
-

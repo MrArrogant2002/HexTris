@@ -334,11 +334,17 @@ export class MultiplayerPage extends BasePage {
       difficulty,
       memberCount: group.memberCount,
     };
+    const crewJoinResult = await syncSocket.joinCrew(group.$id, state.player.id, state.player.name);
+    if (!crewJoinResult.ok) {
+      this.showMessage('Socket Error', crewJoinResult.error || 'Unable to join crew room.');
+      return;
+    }
     const result = await syncSocket.sendMatchInvitation(payload);
     if (!result.ok) {
       this.showMessage('Invite Failed', result.error || 'Unable to broadcast invitation.');
       return;
     }
+    console.log('[MultiplayerPage] Invitation broadcast', payload);
 
     stateManager.updateGame({ difficulty });
     stateManager.updateUI({
@@ -359,7 +365,11 @@ export class MultiplayerPage extends BasePage {
     if (!state.player.id) return;
 
     this.groups.forEach((group) => {
-      void syncSocket.joinCrew(group.$id, state.player.id!, state.player.name);
+      void syncSocket.joinCrew(group.$id, state.player.id!, state.player.name).then((result) => {
+        if (!result.ok) {
+          console.warn('[MultiplayerPage] joinCrew failed', group.$id, result.error);
+        }
+      });
     });
 
     if (this.invitationHandler) {
@@ -369,6 +379,7 @@ export class MultiplayerPage extends BasePage {
     this.invitationHandler = (payload: MatchInvitationPayload) => {
       if (payload.leaderId === state.player.id) return;
       const difficulty = normalizePlayableDifficulty(payload.difficulty);
+      console.log('[MultiplayerPage] Invitation received', payload);
       this.showInvitationModal(payload, difficulty);
     };
     syncSocket.on('crew:matchInvitation', this.invitationHandler);
