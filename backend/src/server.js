@@ -19,7 +19,7 @@ const server = http.createServer(app);
 
 // Only responsibility here: attach sockets to HTTP server.
 const { emitBattleUpdate } = initSockets(server, {
-  corsOrigin: [process.env.CLIENT_ORIGIN || 'http://localhost:5173'],
+  corsOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
 });
 
 // Example: trigger live battle update from REST controller.

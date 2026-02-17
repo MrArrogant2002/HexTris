@@ -10,6 +10,7 @@ import {
   normalizeThemesUnlocked,
   ThemeName,
 } from '@config/themes';
+import { preferenceCache } from '@services/PreferenceCache';
 
 const STORAGE_KEYS = {
   selectedTheme: 'hextris:selectedTheme',
@@ -36,6 +37,7 @@ export class ThemeManager {
     this.currentTheme = theme.id;
     applyThemeToDocument(theme);
     this.persistSelectedTheme();
+    preferenceCache.setSelectedTheme(this.currentTheme);
     return this.currentTheme;
   }
 
@@ -157,4 +159,3 @@ if (typeof window !== 'undefined') {
   (window as any).ThemeManager = ThemeManager;
   (window as any).themeManager = themeManager;
 }
-

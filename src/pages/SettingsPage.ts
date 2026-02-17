@@ -23,6 +23,7 @@ import {
 import { MODE_GUIDES, UI_GUIDELINES } from '@config/modeGuide';
 import { POWER_DEFINITIONS } from '@config/powers';
 import { authService } from '@services/AuthService';
+import { preferenceCache } from '@services/PreferenceCache';
 import { appwriteClient } from '@network/AppwriteClient';
 import { audioManager } from '@/managers/AudioManager';
 import { themeManager } from '@/managers/ThemeManager';
@@ -254,6 +255,7 @@ export class SettingsPage extends BasePage {
     const sfxToggle = this.createToggle('Sound Effects', !state.ui.isSfxMuted, (enabled) => {
       stateManager.updateUI({ isSfxMuted: !enabled });
       audioManager.setSfxMuted(!enabled);
+      preferenceCache.setAudioPreferences({ isSfxMuted: !enabled });
     });
     audioControls.appendChild(sfxToggle);
 
@@ -261,6 +263,7 @@ export class SettingsPage extends BasePage {
     const musicToggle = this.createToggle('Background Music', !state.ui.isMusicMuted, (enabled) => {
       stateManager.updateUI({ isMusicMuted: !enabled });
       audioManager.setMusicMuted(!enabled);
+      preferenceCache.setAudioPreferences({ isMusicMuted: !enabled });
     });
     audioControls.appendChild(musicToggle);
 
@@ -268,6 +271,7 @@ export class SettingsPage extends BasePage {
     const musicSlider = this.createSlider('Music Volume', state.ui.musicVolume, (value) => {
       stateManager.updateUI({ musicVolume: value });
       audioManager.setMusicVolume(value);
+      preferenceCache.setAudioPreferences({ musicVolume: value });
     });
     audioControls.appendChild(musicSlider);
 
@@ -275,6 +279,7 @@ export class SettingsPage extends BasePage {
     const sfxSlider = this.createSlider('SFX Volume', state.ui.sfxVolume, (value) => {
       stateManager.updateUI({ sfxVolume: value });
       audioManager.setSfxVolume(value);
+      preferenceCache.setAudioPreferences({ sfxVolume: value });
     });
     audioControls.appendChild(sfxSlider);
 

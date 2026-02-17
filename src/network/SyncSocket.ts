@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { API_URL } from './config';
 
 type AckResponse<T = Record<string, unknown>> = { ok: boolean; error?: string } & T;
+const ACK_TIMEOUT_MS = 5000;
 
 export interface MatchInvitationPayload {
   groupId: string;
@@ -14,14 +15,18 @@ export interface MatchInvitationPayload {
 
 class SyncSocketClient {
   private socket: Socket | null = null;
+  private listenersAttached = false;
 
   public connect(): Socket {
     if (!this.socket) {
       this.socket = io(API_URL, {
-        transports: ['websocket'],
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
         withCredentials: true,
+        reconnection: true,
       });
     }
+    this.attachDebugListeners();
     return this.socket;
   }
 
@@ -65,9 +70,28 @@ class SyncSocketClient {
 
   private emitWithAck<T extends object>(event: string, payload: T): Promise<AckResponse> {
     return new Promise((resolve) => {
-      this.connect().emit(event, payload, (response: AckResponse) => {
+      const socket = this.connect();
+      socket.timeout(ACK_TIMEOUT_MS).emit(event, payload, (error: Error | null, response: AckResponse) => {
+        if (error) {
+          resolve({ ok: false, error: `${event} timed out` });
+          return;
+        }
         resolve(response ?? { ok: false, error: `${event} failed` });
       });
+    });
+  }
+
+  private attachDebugListeners(): void {
+    if (!this.socket || this.listenersAttached) return;
+    this.listenersAttached = true;
+    this.socket.on('connect', () => {
+      console.log('[SyncSocket] connected', this.socket?.id);
+    });
+    this.socket.on('disconnect', (reason) => {
+      console.warn('[SyncSocket] disconnected', reason);
+    });
+    this.socket.on('connect_error', (error) => {
+      console.error('[SyncSocket] connect_error', error.message);
     });
   }
 }

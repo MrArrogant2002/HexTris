@@ -182,7 +182,22 @@ Create a `.env` file in the root:
 ```env
 VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
 VITE_APPWRITE_PROJECT_ID=your_project_id
+VITE_BACKEND_URL=https://hextris-backend.onrender.com
 ```
+
+For the backend service, set:
+
+```env
+CLIENT_ORIGIN=https://<your-frontend-domain>
+```
+
+If you support multiple frontend domains, pass a comma-separated `CLIENT_ORIGIN` list.
+
+### Appwrite session warning
+
+If the browser logs `Appwrite is using localStorage for session management...`, it means the Appwrite endpoint is cross-site and third-party cookies are unavailable. This is expected for local development and still works with the SDK fallback.
+
+For production, prefer a custom Appwrite domain on the same site as the frontend to use secure first-party cookies and avoid the warning.
 
 ### Schema Automation
 
