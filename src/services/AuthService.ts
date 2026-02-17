@@ -81,6 +81,12 @@ export class AuthService {
       return this.currentSession;
     } catch (error) {
       console.log('No active session');
+      const code = (error as { code?: number })?.code;
+      if (code === 401 || code === 403) {
+        preferenceCache.clearSession();
+        this.currentSession = null;
+        return null;
+      }
       const cachedSession = preferenceCache.getSession();
       this.currentSession = cachedSession;
       return cachedSession;

@@ -10,10 +10,15 @@ type AudioPreferences = {
 
 type CachedPreferences = AudioPreferences & {
   selectedTheme?: ThemeName;
-  session?: Session;
+  session?: {
+    value: Session;
+    expiresAt: number;
+  };
 };
 
 const KEY = 'hextris:preferences-cache';
+// Keep cached session short-lived to avoid trusting stale identities for too long.
+const SESSION_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
 class PreferenceCache {
   private read(): CachedPreferences {
@@ -59,13 +64,22 @@ class PreferenceCache {
   }
 
   public getSession(): Session | null {
-    return this.read().session || null;
+    const sessionEntry = this.read().session;
+    if (!sessionEntry) return null;
+    if (Date.now() > sessionEntry.expiresAt) {
+      this.clearSession();
+      return null;
+    }
+    return sessionEntry.value;
   }
 
   public setSession(session: Session): void {
     this.write({
       ...this.read(),
-      session,
+      session: {
+        value: session,
+        expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
+      },
     });
   }
 

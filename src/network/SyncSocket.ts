@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { API_URL } from './config';
 
 type AckResponse<T = Record<string, unknown>> = { ok: boolean; error?: string } & T;
+const ACK_TIMEOUT_MS = 5000;
 
 export interface MatchInvitationPayload {
   groupId: string;
@@ -70,7 +71,7 @@ class SyncSocketClient {
   private emitWithAck<T extends object>(event: string, payload: T): Promise<AckResponse> {
     return new Promise((resolve) => {
       const socket = this.connect();
-      socket.timeout(5000).emit(event, payload, (error: Error | null, response: AckResponse) => {
+      socket.timeout(ACK_TIMEOUT_MS).emit(event, payload, (error: Error | null, response: AckResponse) => {
         if (error) {
           resolve({ ok: false, error: `${event} timed out` });
           return;
